@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>平仮名キーボード</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>VOCAアプリ</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
     
@@ -16,6 +16,7 @@
         margin: 0; 
         display: flex; 
         flex-direction: column; 
+        height: 100vh; 
         height: 100dvh; 
         width: 100vw;
         background: #fff; 
@@ -31,6 +32,7 @@
         align-items: flex-start; 
         padding: 2vh 2vw; 
         flex-grow: 1;
+        min-height: 0;
         box-sizing: border-box; 
         border-bottom: 2px solid #eee;
         z-index: 10;
@@ -81,7 +83,7 @@
         flex-shrink: 0;
         background: #fff;
         z-index: 2;
-        padding-bottom: 2vh;
+        padding-bottom: max(2vh, env(safe-area-inset-bottom));
     }
 
     #instruction {
@@ -225,7 +227,6 @@
         }
     }, { passive: false });
 
-    // デフォルト設定
     let kbSettings = {
         showDakuon: true,
         showYoon: true,
@@ -389,13 +390,12 @@
 
         const colCount = colsToRender.length;
         
-        // 追加・修正：マージンとギャップを考慮して正確な幅を算出
         let blockStartCount = 0;
         colsToRender.forEach(col => { if (col.isBlockStart) blockStartCount++; });
         
-        const totalGapVw = (colCount - 1) * 0.5; // 列間の0.5vw gap
-        const totalMarginVw = blockStartCount * 2; // isBlockStartによる2vw marginRight
-        const paddingVw = 2; // #keyboard の左右padding (1vw * 2)
+        const totalGapVw = (colCount - 1) * 0.5;
+        const totalMarginVw = blockStartCount * 2;
+        const paddingVw = 2;
         
         const availableVw = 100 - paddingVw - totalGapVw - totalMarginVw;
         const vwPerKey = availableVw / colCount;
