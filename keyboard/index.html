@@ -22,7 +22,12 @@
         background: #fff; 
         user-select: none; 
         touch-action: none; 
-        overflow: hidden; 
+        overflow: hidden;
+        /* セーフエリア対応 */
+        padding-top: env(safe-area-inset-top);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        box-sizing: border-box;
     }
     .hidden { display: none !important; }
 
@@ -97,7 +102,7 @@
     #keyboard { 
         display: flex; 
         flex-direction: row-reverse; 
-        width: 100vw;
+        width: 100%;
         padding: 0 1vw; 
         gap: 0.5vw; 
         box-sizing: border-box; 
@@ -176,18 +181,6 @@
         font-size: 3vh;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
-    
-    .settings-content label {
-        display: flex;
-        align-items: center;
-        margin-bottom: 2vh;
-        cursor: pointer;
-    }
-    
-    .settings-content input[type="checkbox"] {
-        transform: scale(1.5);
-        margin-right: 1.5vw;
-    }
 </style>
 </head>
 <body>
@@ -210,10 +203,10 @@
 <div id="settings-modal" class="hidden">
     <div class="settings-content">
         <h2 style="margin-top:0; text-align:center;">表示設定</h2>
-        <label><input type="checkbox" id="chk-dakuon"> 濁音・半濁音（が〜ぽ）</label>
-        <label><input type="checkbox" id="chk-yoon"> 拗音・小文字（ゃゅょっ等）</label>
-        <label><input type="checkbox" id="chk-number"> 数字（1〜0）</label>
-        <label><input type="checkbox" id="chk-symbol"> 句読点・記号（ー、。␣）</label>
+        <label style="display:flex; align-items:center; margin-bottom:2vh;"><input type="checkbox" id="chk-dakuon" style="transform:scale(1.5); margin-right:1.5vw;"> 濁音・半濁音（が〜ぽ）</label>
+        <label style="display:flex; align-items:center; margin-bottom:2vh;"><input type="checkbox" id="chk-yoon" style="transform:scale(1.5); margin-right:1.5vw;"> 拗音・小文字（ゃゅょっ等）</label>
+        <label style="display:flex; align-items:center; margin-bottom:2vh;"><input type="checkbox" id="chk-number" style="transform:scale(1.5); margin-right:1.5vw;"> 数字（1〜0）</label>
+        <label style="display:flex; align-items:center; margin-bottom:2vh;"><input type="checkbox" id="chk-symbol" style="transform:scale(1.5); margin-right:1.5vw;"> 句読点・記号（ー、。␣）</label>
         <div style="text-align:center; margin-top:3vh;">
             <button class="btn" style="background:#007AFF; color:white; padding: 1vh 3vw;" onclick="saveSettings()">保存して閉じる</button>
         </div>
@@ -222,71 +215,32 @@
 
 <script>
     document.addEventListener('touchmove', function(e) {
-        if (!e.target.closest('#text')) {
-            e.preventDefault();
-        }
+        if (!e.target.closest('#text')) e.preventDefault();
     }, { passive: false });
 
-    let kbSettings = {
-        showDakuon: true,
-        showYoon: true,
-        showNumber: true,
-        showSymbol: true
-    };
-
-    const baseCols = [
-        ["あ","い","う","え","お"],
-        ["か","き","く","け","こ"],
-        ["さ","し","す","せ","そ"],
-        ["た","ち","つ","て","と"],
-        ["な","に","ぬ","ね","の"],
-        ["は","ひ","ふ","へ","ほ"],
-        ["ま","み","む","め","も"],
-        ["や"," ","ゆ"," ","よ"],
-        ["ら","り","る","れ","ろ"],
-        ["わ"," "," "," ","を"]
-    ];
-
+    let kbSettings = { showDakuon: true, showYoon: true, showNumber: true, showSymbol: true };
+    const baseCols = [["あ","い","う","え","お"],["か","き","く","け","こ"],["さ","し","す","せ","そ"],["た","ち","つ","て","と"],["な","に","ぬ","ね","の"],["は","ひ","ふ","へ","ほ"],["ま","み","む","め","も"],["や"," ","ゆ"," ","よ"],["ら","り","る","れ","ろ"],["わ"," "," "," ","を"]];
     const symbolCol = ["ん","ー","、","。","␣"];
     const symbolHiddenCol = ["ん"," "," "," "," "];
-
-    const dakuonCols = [
-        ["が","ぎ","ぐ","げ","ご"],
-        ["ざ","じ","ず","ぜ","ぞ"],
-        ["だ","ぢ","づ","で","ど"],
-        ["ば","び","ぶ","べ","ぼ"],
-        ["ぱ","ぴ","ぷ","ぺ","ぽ"]
-    ];
-
-    const yoonCols = [
-        ["ゃ"," ","ゅ"," ","ょ"],
-        ["っ"," "," "," "," "],
-        ["ぁ","ぃ","ぅ","ぇ","ぉ"]
-    ];
-
-    const numberCols = [
-        ["1","2","3","4","5"],
-        ["6","7","8","9","0"]
-    ];
+    const dakuonCols = [["が","ぎ","ぐ","げ","ご"],["ざ","じ","ず","ぜ","ぞ"],["だ","ぢ","づ","で","ど"],["ば","び","ぶ","べ","ぼ"],["ぱ","ぴ","ぷ","ぺ","ぽ"]];
+    const yoonCols = [["ゃ"," ","ゅ"," ","ょ"],["っ"," "," "," "," "],["ぁ","ぃ","ぅ","ぇ","ぉ"]];
+    const numberCols = [["1","2","3","4","5"],["6","7","8","9","0"]];
     
     let txt = "";
     let isInit = false;
     const synth = window.speechSynthesis;
 
-    document.body.addEventListener('pointerdown', () => {
+    function spk(str) {
+        // 最初の操作で音声を初期化（ブラウザ制限回避）
         if (!isInit) {
             let u = new SpeechSynthesisUtterance("");
             u.volume = 0;
             synth.speak(u);
             isInit = true;
         }
-    }, { once: true });
-
-    function spk(str) {
         synth.cancel();
         let u = new SpeechSynthesisUtterance(str);
         u.lang = 'ja-JP';
-        u.rate = 1.0;
         synth.speak(u);
     }
 
@@ -297,9 +251,7 @@
     function clr() { 
         const btn = document.getElementById('btn-clr');
         if (btn.dataset.confirm === "true") {
-            txt = ""; 
-            update();
-            resetClr();
+            txt = ""; update(); resetClr();
         } else {
             btn.dataset.confirm = "true";
             btn.innerText = "けす？";
@@ -315,9 +267,7 @@
         if (!btn) return;
         btn.dataset.confirm = "false";
         btn.innerText = "🗑";
-        btn.style.background = "";
-        btn.style.color = "";
-        btn.style.borderColor = "";
+        btn.style.background = ""; btn.style.color = ""; btn.style.borderColor = "";
         clearTimeout(clrTimer);
     }
 
@@ -329,9 +279,7 @@
 
     function loadSettings() {
         const saved = localStorage.getItem('vocaKbSettings');
-        if (saved) {
-            Object.assign(kbSettings, JSON.parse(saved));
-        }
+        if (saved) Object.assign(kbSettings, JSON.parse(saved));
     }
 
     function openSettings() {
@@ -347,9 +295,7 @@
         kbSettings.showYoon = document.getElementById('chk-yoon').checked;
         kbSettings.showNumber = document.getElementById('chk-number').checked;
         kbSettings.showSymbol = document.getElementById('chk-symbol').checked;
-        
         localStorage.setItem('vocaKbSettings', JSON.stringify(kbSettings));
-        
         document.getElementById('settings-modal').classList.add('hidden');
         buildKeyboard();
     }
@@ -357,59 +303,26 @@
     function buildKeyboard() {
         const kb = document.getElementById('keyboard');
         kb.innerHTML = '';
-        
         let colsToRender = [];
         baseCols.forEach(col => colsToRender.push(col));
-        
-        if (kbSettings.showSymbol) colsToRender.push(symbolCol);
-        else colsToRender.push(symbolHiddenCol);
-
-        if (kbSettings.showDakuon) {
-            dakuonCols.forEach((col, index) => {
-                let colData = [...col];
-                colData.isBlockStart = (index === 0);
-                colsToRender.push(colData);
-            });
-        }
-        
-        if (kbSettings.showYoon) {
-            yoonCols.forEach((col, index) => {
-                let colData = [...col];
-                if (!kbSettings.showDakuon && index === 0) colData.isBlockStart = true;
-                colsToRender.push(colData);
-            });
-        }
-        
-        if (kbSettings.showNumber) {
-            numberCols.forEach((col, index) => {
-                let colData = [...col];
-                if (!kbSettings.showDakuon && !kbSettings.showYoon && index === 0) colData.isBlockStart = true;
-                colsToRender.push(colData);
-            });
-        }
+        colsToRender.push(kbSettings.showSymbol ? symbolCol : symbolHiddenCol);
+        if (kbSettings.showDakuon) dakuonCols.forEach((col, i) => { let c = [...col]; c.isBlockStart = (i === 0); colsToRender.push(c); });
+        if (kbSettings.showYoon) yoonCols.forEach((col, i) => { let c = [...col]; if (!kbSettings.showDakuon && i === 0) c.isBlockStart = true; colsToRender.push(c); });
+        if (kbSettings.showNumber) numberCols.forEach((col, i) => { let c = [...col]; if (!kbSettings.showDakuon && !kbSettings.showYoon && i === 0) c.isBlockStart = true; colsToRender.push(c); });
 
         const colCount = colsToRender.length;
-        
         let blockStartCount = 0;
         colsToRender.forEach(col => { if (col.isBlockStart) blockStartCount++; });
-        
         const totalGapVw = (colCount - 1) * 0.5;
         const totalMarginVw = blockStartCount * 2;
-        const paddingVw = 2;
-        
-        const availableVw = 100 - paddingVw - totalGapVw - totalMarginVw;
+        const availableVw = 98 - totalGapVw - totalMarginVw;
         const vwPerKey = availableVw / colCount;
-
         document.documentElement.style.setProperty('--key-size', `min(${vwPerKey}vw, 11vh)`);
 
         colsToRender.forEach(colArr => {
             const colDiv = document.createElement('div');
             colDiv.className = 'kb-col';
-            
-            if (colArr.isBlockStart) {
-                colDiv.style.marginRight = "2vw";
-            }
-            
+            if (colArr.isBlockStart) colDiv.style.marginRight = "2vw";
             const cb = document.createElement('div');
             cb.className = 'col-checkbox active';
             let lastTap = 0;
@@ -418,42 +331,24 @@
                 if (now - lastTap < 300) {
                     cb.classList.toggle('active');
                     colDiv.querySelectorAll('.key').forEach(k => {
-                        if (!k.classList.contains('empty')) {
-                            if (cb.classList.contains('active')) {
-                                k.classList.remove('disabled-key');
-                            } else {
-                                k.classList.add('disabled-key');
-                            }
-                        }
+                        if (!k.classList.contains('empty')) k.classList.toggle('disabled-key', !cb.classList.contains('active'));
                     });
                     e.preventDefault();
                 }
                 lastTap = now;
             });
             colDiv.appendChild(cb);
-            
             colArr.forEach(char => {
                 const btn = document.createElement('button');
                 btn.className = char === " " ? 'key empty' : 'key';
-                
-                if (char === "␣") {
-                    btn.innerText = "空白";
-                    btn.style.fontSize = "calc(var(--key-size) * 0.35)";
-                } else {
-                    btn.innerText = char === " " ? "" : char;
-                }
-                
+                btn.innerText = char === "␣" ? "空白" : (char === " " ? "" : char);
+                if (char === "␣") btn.style.fontSize = "calc(var(--key-size) * 0.35)";
                 if (char !== " ") {
                     btn.addEventListener('pointerdown', (e) => {
                         e.preventDefault();
                         resetClr();
-                        if (char === "␣") {
-                            txt += "　";
-                            spk("スペース");
-                        } else {
-                            txt += char;
-                            spk(char);
-                        }
+                        txt += char === "␣" ? "　" : char;
+                        spk(char === "␣" ? "スペース" : char);
                         update();
                     });
                 }
