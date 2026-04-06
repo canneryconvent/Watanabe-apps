@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>段階別教育アプリ系統マップ（エディタ）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@4.0.1/cytoscape-edgehandles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@2.0.0/cytoscape-popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy-bundle.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/animations/shift-away.css">
+    <style>
+        body { background-color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; margin: 0; }
+        #cy { flex-grow: 1; width: 100%; height: 100%; }
+        .eh-handle { background-color: #ef4444; width: 12px; height: 12px; shape: ellipse; overlay-opacity: 0; border-width: 12px; border-opacity: 0; }
+        .eh-source, .eh-target { border-width: 4px; border-color: #ef4444; }
+        .eh-preview, .eh-ghost-edge { background-color: #ef4444; line-color: #ef4444; target-arrow-color: #ef4444; source-arrow-color: #ef4444; }
+        .eh-ghost-edge.eh-preview-active { opacity: 0; }
+        .tippy-box[data-theme~='edu-dark'] { background-color: #1e293b; color: #f8fafc; font-size: 0.8rem; border-radius: 6px; padding: 4px; max-width: 260px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
+        #export-modal { display: none; position: absolute; top: 80px; right: 20px; width: 320px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 50; }
+        #export-text { width: 100%; height: 200px; font-family: monospace; font-size: 10px; margin-top: 8px; resize: none; border: 1px solid #cbd5e1; padding: 4px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <header class="bg-slate-900 text-slate-100 p-4 shadow-xl z-10 flex justify-between items-center border-b border-slate-700">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight">段階別教科アプリ系統マップ（エディタ）</h1>
+            <p id="mode-desc" class="text-xs text-rose-400 font-bold">移動中：ノードをドラッグして配置を調整できます</p>
+        </div>
+        <div class="flex gap-4 text-sm font-bold items-center">
+            <div class="flex items-center gap-2 mr-4">
+                <div class="bg-rose-900/40 px-3 py-1 rounded border border-rose-500/50 text-rose-200 text-xs">国語</div>
+                <div class="bg-emerald-900/40 px-3 py-1 rounded border border-emerald-500/50 text-emerald-200 text-xs">自立活動</div>
+                <div class="bg-blue-900/40 px-3 py-1 rounded border border-blue-500/50 text-blue-200 text-xs">算数</div>
+            </div>
+            <button id="btn-toggle-draw" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-white transition-colors">線引きモードにする</button>
+            <button id="btn-edit" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white hidden transition-colors">編集モードに戻る</button>
+            <button id="btn-view" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-white transition-colors">出力＆閲覧モードにする</button>
+        </div>
+    </header>
+
+    <div id="cy"></div>
+
+    <div id="export-modal">
+        <h3 class="font-bold text-slate-800 text-sm">現在の状態データ (JSON)</h3>
+        <p class="text-xs text-slate-500 mt-1">このデータを保存して次回読み込むことで状態を復元できます。</p>
+        <textarea id="export-text" readonly></textarea>
+        <button onclick="document.getElementById('export-modal').style.display='none'" class="mt-2 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold py-2 rounded">閉じる</button>
+    </div>
+
+    <script>
+        const appNodes = [
+            // Stage 1
+            { id: 's_look', name: '○○を探せ', stage: 1, type: 'support', goal: 'マッチング。視覚的に複数の情報から必要な情報を取り出す' },
+            { id: 'm_dist', name: 'くばろう', stage: 1, type: 'math', goal: '1対1対応の基礎' },
+            { id: 'm_match', name: 'マッチング', stage: 1, type: 'math', goal: '同じの理解' },
+            { id: 'm_count_s', name: '数唱', stage: 1, type: 'math', goal: '数唱への意欲付け' },
+            { id: 's_tap', name: '点タップ', stage: 1, type: 'support', goal: '具体物に気づく、タッチする' },
+            
+            // Stage 1.5
+            { id: 'm_base', name: 'かぞえよう基礎', stage: 1.5, type: 'math', goal: '数を数える基礎。1対1対応。左から並べる' },
+            { id: 'm_puz1', name: '絵あわせパズル', stage: 1.5, type: 'math', goal: '分割した絵カードを組み合わせる' },
+            { id: 'm_dish', name: '皿に○個ずつ', stage: 1.5, type: 'math', goal: '1対1対応の繰り返しによって同じ数ずつ配る' },
+            { id: 'm_puz2', name: '分割パズル', stage: 1.5, type: 'math', goal: '分割した絵カードを組み合わせる（基本）' },
+            { id: 's_shape', name: '形探し', stage: 1.5, type: 'support', goal: '図地弁別。複雑な背景から特定の形を探す' },
+            
+            // Stage 2
+            { id: 'm_cat', name: 'カテゴリー分類', stage: 2, type: 'math', goal: 'イラストを機能、色、形等で分類' },
+            { id: 'm_flag', name: 'はたをつくろう', stage: 2, type: 'math', goal: '縦線、横線、四角等をかく' },
+            { id: 'm_shape', name: '図形組み合わせ', stage: 2, type: 'math', goal: '図形を楽しく扱う' },
+            { id: 'j_find', name: 'ひらがなさがし', stage: 2, type: 'jp', goal: '文字の識別。似た文字を見分ける' },
+            { id: 'j_one', name: '一文字の平仮名', stage: 2, type: 'jp', goal: '平仮名と音が結びついていることの理解' },
+            { id: 's_pos', name: '位置マッチング', stage: 2, type: 'support', goal: '緩やかな空間概念(上下、左右?)' },
+            { id: 's_dot', name: '点', stage: 2, type: 'support', goal: '空間概念。鏡文字に関連' },
+            { id: 's_ice', name: 'アイス並べ', stage: 2, type: 'support', goal: '空間概念(上下)。見比べる' },
+            { id: 's_maze', name: '迷路', stage: 2, type: 'support', goal: '運筆。複雑な線を見分ける。目と手の高度な協応' },
+            
+            // Stage 2.5
+            { id: 'm_count2', name: 'かずをかぞえよう', stage: 2.5, type: 'math', goal: '数を数える。数字→具体物。15程度まで' },
+            { id: 'm_which', name: 'なんばんめ？', stage: 2.5, type: 'math', goal: '順序数の理解' },
+            { id: 'm_t_tap', name: '数字タッチ', stage: 2.5, type: 'math', goal: '数字の順の理解。視認知向上' },
+            { id: 'm_t_arr', name: '数字ならべ', stage: 2.5, type: 'math', goal: '数字の系列・順序の理解' },
+            { id: 'j_karuta', name: 'カルタ', stage: 2.5, type: 'jp', goal: '平仮名の読み。視覚性語彙の増大' },
+            { id: 'j_kbd', name: 'ひらがなキーボード', stage: 2.5, type: 'jp', goal: '平仮名の読み。音韻意識（分解、語頭音等）' },
+            { id: 'j_pict', name: 'ひらがな図鑑', stage: 2.5, type: 'jp', goal: '平仮名への興味。なぞり書き。読みのきっかけ' },
+            { id: 'j_trace', name: 'ひらがななぞり', stage: 2.5, type: 'jp', goal: '平仮名の書き。なぞり書き、写書き' },
+            { id: 's_lines', name: '点つなぎ', stage: 2.5, type: 'support', goal: '図地弁別' },
+            { id: 's_memory', name: '神経衰弱', stage: 2.5, type: 'support', goal: '視覚的短期記憶' },
+            
+            // Stage 3
+            { id: 'm_math1', name: 'いくつといくつ', stage: 3, type: 'math', goal: '数の合成・分解。足し算、引き算の前段階' },
+            { id: 'm_clock', name: '時計（時・分）', stage: 3, type: 'math', goal: '時計の読みの習得' },
+            { id: 'j_50', name: '50音表', stage: 3, type: 'jp', goal: '平仮名の読み・書き。語頭音と結びつけた読み' },
+            { id: 'j_order', name: '書き順', stage: 3, type: 'jp', goal: '平仮名の書き順の視覚的提示' },
+            { id: 'j_write', name: 'ひらがな書き', stage: 3, type: 'jp', goal: '平仮名の単語の書き' },
+            { id: 'j_quiz', name: 'ひらがな単語クイズ', stage: 3, type: 'jp', goal: '平仮名の単語の読みの定着' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: appNodes.map(n => ({
+                    data: { 
+                        id: n.id, 
+                        name: n.name, 
+                        goal: n.goal, 
+                        stage: n.stage,
+                        type: n.type,
+                        color: n.type === 'jp' ? '#f43f5e' : (n.type === 'support' ? '#10b981' : '#3b82f6')
+                    }
+                })),
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(name)',
+                            'width': '140px',
+                            'height': '36px',
+                            'background-color': 'data(color)',
+                            'color': '#fff',
+                            'font-size': '11px',
+                            'font-weight': 'bold',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'shape': 'round-rectangle',
+                            'border-width': 2,
+                            'border-color': '#fff',
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#94a3b8',
+                            'target-arrow-color': '#94a3b8',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                        }
+                    },
+                    { selector: '.eh-handle', style: { 'background-color': '#ef4444', 'width': 10, 'height': 10, 'shape': 'ellipse', 'overlay-opacity': 0, 'border-width': 8, 'border-opacity': 0 } },
+                    { selector: '.eh-source', style: { 'border-width': 4, 'border-color': '#ef4444' } },
+                    { selector: '.eh-target', style: { 'border-width': 4, 'border-color': '#ef4444' } },
+                    { selector: '.eh-preview, .eh-ghost-edge', style: { 'background-color': '#ef4444', 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'source-arrow-color': '#ef4444' } },
+                    { selector: '.eh-ghost-edge.eh-preview-active', style: { 'opacity': 0 } }
+                ],
+                layout: { name: 'preset' }
+            });
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const type_x = { 'jp': width * 0.2, 'support': width * 0.5, 'math': width * 0.8 };
+
+            cy.nodes().forEach(node => {
+                const data = node.data();
+                const x = type_x[data.type];
+                const y = (data.stage - 1) * (height * 0.3) + 80;
+                
+                const siblings = cy.nodes().filter(n => n.data('stage') === data.stage && n.data('type') === data.type);
+                const index = siblings.indexOf(node);
+                const offset = (index - (siblings.length - 1) / 2) * 150;
+                node.position({ x: x + offset, y: y });
+            });
+            cy.fit(null, 50);
+
+            cy.nodes().forEach(node => {
+                let tippyInstance = null;
+                node.on('mouseover', () => {
+                    const popperRef = node.popperRef();
+                    if (!tippyInstance) {
+                        const dummyDom = document.createElement('div');
+                        tippyInstance = tippy(dummyDom, {
+                            getReferenceClientRect: popperRef.getBoundingClientRect,
+                            content: `<div class="font-bold text-[10px] border-b border-slate-600 mb-1 pb-1">段階: ${node.data('stage')}</div><div class="text-xs">🎯 ${node.data('goal')}</div>`,
+                            allowHTML: true,
+                            theme: 'edu-dark',
+                            placement: 'top',
+                            trigger: 'manual',
+                            animation: 'shift-away'
+                        });
+                    }
+                    tippyInstance.setProps({ getReferenceClientRect: popperRef.getBoundingClientRect });
+                    tippyInstance.show();
+                });
+                node.on('mouseout', () => { if (tippyInstance) tippyInstance.hide(); });
+            });
+
+            let eh = null;
+            if (typeof cy.edgehandles === 'function') {
+                eh = cy.edgehandles({ snap: true, noEdgeEventsInDraw: true, disableBrowserGestures: true });
+            }
+
+            const btnEdit = document.getElementById('btn-edit');
+            const btnView = document.getElementById('btn-view');
+            const btnToggleDraw = document.getElementById('btn-toggle-draw');
+            const modeDesc = document.getElementById('mode-desc');
+            const exportModal = document.getElementById('export-modal');
+            const exportText = document.getElementById('export-text');
+
+            let isDrawMode = false;
+
+            btnToggleDraw.addEventListener('click', () => {
+                if (!eh) return alert("プラグインがロードされていません。");
+                isDrawMode = !isDrawMode;
+                if (isDrawMode) {
+                    eh.enableDrawMode();
+                    btnToggleDraw.innerText = "移動モードにする";
+                    btnToggleDraw.classList.replace('bg-indigo-600', 'bg-amber-600');
+                    btnToggleDraw.classList.replace('hover:bg-indigo-500', 'hover:bg-amber-500');
+                    modeDesc.innerText = "線引き中：ノードからノードへドラッグして線を結びます";
+                    modeDesc.className = "text-xs text-indigo-400 font-bold";
+                } else {
+                    eh.disableDrawMode();
+                    btnToggleDraw.innerText = "線引きモードにする";
+                    btnToggleDraw.classList.replace('bg-amber-600', 'bg-indigo-600');
+                    btnToggleDraw.classList.replace('hover:bg-amber-500', 'hover:bg-indigo-500');
+                    modeDesc.innerText = "移動中：ノードをドラッグして配置を調整できます";
+                    modeDesc.className = "text-xs text-rose-400 font-bold";
+                }
+            });
+
+            btnView.addEventListener('click', () => {
+                if (eh) { eh.disableDrawMode(); eh.disable(); }
+                cy.autolock(true);
+                btnView.classList.add('hidden');
+                btnToggleDraw.classList.add('hidden');
+                btnEdit.classList.remove('hidden');
+                modeDesc.innerText = "閲覧モード：配置と線は固定されています";
+                modeDesc.className = "text-xs text-emerald-400 font-bold";
+                const exportData = cy.elements().map(ele => ({
+                    group: ele.group(),
+                    data: { id: ele.data('id'), source: ele.data('source'), target: ele.data('target') },
+                    position: ele.isNode() ? ele.position() : undefined
+                }));
+                exportText.value = JSON.stringify(exportData, null, 2);
+                exportModal.style.display = 'block';
+            });
+
+            btnEdit.addEventListener('click', () => {
+                if (eh) eh.enable();
+                if (isDrawMode && eh) {
+                    eh.enableDrawMode();
+                    modeDesc.innerText = "線引き中：ノードからノードへドラッグして線を結びます";
+                    modeDesc.className = "text-xs text-indigo-400 font-bold";
+                } else {
+                    modeDesc.innerText = "移動中：ノードをドラッグして配置を調整できます";
+                    modeDesc.className = "text-xs text-rose-400 font-bold";
+                }
+                cy.autolock(false);
+                btnEdit.classList.add('hidden');
+                btnView.classList.remove('hidden');
+                btnToggleDraw.classList.remove('hidden');
+                exportModal.style.display = 'none';
+            });
+            
+            cy.on('cxttap', 'edge', function(evt){
+                if (!cy.autolock()) evt.target.remove();
+            });
+        });
+    </script>
+</body>
+</html>
