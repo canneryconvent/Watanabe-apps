@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>数えよう基礎</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
+
+    body { 
+        font-family: "UD Digi Kyokasho N-R", "UD Digi Kyokasho N-B", "UDデジタル教科書体 N-R", "UDデジタル教科書体 N-B", "Klee One", sans-serif; 
+        margin: 0; padding: 0; display: flex; flex-direction: column; height: 100dvh; background: #fff; user-select: none; touch-action: none; overflow: hidden; 
+    }
+    .hidden { display: none !important; }
+    
+    #header { display: flex; justify-content: flex-end; padding: 10px; height: 60px; box-sizing: border-box; position: absolute; top: 0; right: 0; width: 100%; z-index: 10; pointer-events: none; }
+    .btn { pointer-events: auto; font-size: 20px; padding: 10px 20px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #f9f9f9; font-family: inherit; }
+    
+    #game-area { flex-grow: 1; position: relative; width: 100vw; height: 100dvh; }
+    
+    .square { position: absolute; border: 5px solid black; box-sizing: border-box; background: transparent; }
+    .square.filled { background: yellow; }
+    .square.hint { background: rgba(255, 255, 0, 0.2); }
+    
+    #quiz-target-text { position: absolute; width: 100%; text-align: center; font-size: 10vh; font-weight: bold; top: 5vh; font-family: inherit; }
+    #quiz-box { position: absolute; border: 5px solid blue; background: rgba(0, 0, 255, 0.1); border-radius: 10px; box-sizing: border-box; }
+    #btn-quiz-done { position: absolute; top: 8vh; left: 2vw; background: orange; color: white; border: none; font-size: 3vh; font-weight: bold; padding: 15px 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; pointer-events: auto; font-family: inherit; }
+    
+    .piece { position: absolute; border-radius: 50%; background: red; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; touch-action: none; z-index: 5; box-sizing: border-box; font-family: inherit; }
+    .piece.placed { border: 2px solid white; }
+    .piece.dragging { z-index: 100; opacity: 0.8; }
+    
+    #feedback-layer { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(255,255,255,0.5); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .mark-circle { width: 15vh; height: 15vh; border: 10px solid red; border-radius: 50%; background: rgba(255,255,255,0.8); margin-bottom: 10vh; }
+    .mark-cross { width: 15vh; height: 15vh; position: relative; margin-bottom: 10vh; }
+    .mark-cross::before, .mark-cross::after { content: ''; position: absolute; width: 10px; height: 100%; background: blue; top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
+    .mark-cross::after { transform: translateX(-50%) rotate(-45deg); }
+    #btn-next { font-size: 4vh; padding: 15px 40px; border-radius: 50px; background: yellow; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); font-family: inherit; }
+    
+    #setting-view { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: white; z-index: 300; display: flex; flex-direction: column; }
+    .setting-header { font-size: 24px; font-weight: bold; padding: 20px; border-bottom: 1px solid #ccc; text-align: center; }
+    .setting-content { padding: 20px; overflow-y: auto; flex-grow: 1; font-size: 20px; -webkit-overflow-scrolling: touch; }
+    .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+    .setting-row input[type="number"] { width: 60px; font-size: 20px; text-align: center; font-family: inherit; }
+    .setting-row select { font-size: 20px; padding: 5px; font-family: inherit; }
+    #btn-save { margin: 20px; padding: 15px; font-size: 24px; background: blue; color: white; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+
+<div id="header">
+    <button class="btn" onclick="openSetting()">setting</button>
+</div>
+
+<div id="game-area">
+    <div id="quiz-target-text" class="hidden"></div>
+    <div id="quiz-box" class="hidden"></div>
+    <button id="btn-quiz-done" class="hidden" onclick="checkQuizManual()">できた！</button>
+</div>
+
+<div id="feedback-layer" class="hidden">
+    <div id="feedback-mark"></div>
+    <button id="btn-next" class="hidden" onclick="nextQuestion()">つぎへ</button>
+</div>
+
+<div id="setting-view" class="hidden">
+    <div class="setting-header">設定</div>
+    <div class="setting-content">
+        <div class="setting-row">
+            <label>モード</label>
+            <select id="s-mode">
+                <option value="normal">ノーマル</option>
+                <option value="quizAuto">クイズ（自動判定）</option>
+                <option value="quizManual">クイズ（ボタン判定）</option>
+            </select>
+        </div>
+        <div class="setting-row">
+            <label>最小値</label>
+            <input type="number" id="s-min" min="1" max="20">
+        </div>
+        <div class="setting-row">
+            <label>最大値</label>
+            <input type="number" id="s-max" min="1" max="20">
+        </div>
+        <div class="setting-row">
+            <label>円の数</label>
+            <input type="number" id="s-pieces" min="1" max="30">
+        </div>
+        <div class="setting-row">
+            <label>左から順に置く (ノーマルのみ)</label>
+            <input type="checkbox" id="s-left">
+        </div>
+        <div class="setting-row">
+            <label>円に数字を表示する</label>
+            <input type="checkbox" id="s-overlay">
+        </div>
+    </div>
+    <button id="btn-save" onclick="saveSetting()">保存して閉じる</button>
+</div>
+
+<script>
+    // iPadでのドラッグ中のスクロール（バウンス）を防止
+    document.addEventListener('touchmove', function(e) {
+        // 設定画面などのスクロール可能領域以外でのスワイプを無効化
+        if (!e.target.closest('.setting-content')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    const state = {
+        min: 1, max: 5, pieces: 5, mode: 'normal', setFromLeft: true, overlay: true,
+        targetNumber: 0, currentOrder: 1, isProcessing: false, piecesData: [], targetsData: []
+    };
+
+    const synth = window.speechSynthesis;
+    let isSpkInit = false;
+    function initSpk() {
+        if (!isSpkInit) { synth.speak(new SpeechSynthesisUtterance("")); isSpkInit = true; }
+    }
+    function spk(str) {
+        synth.cancel();
+        let u = new SpeechSynthesisUtterance(String(str));
+        u.lang = 'ja-JP';
+        u.rate = 1.0;
+        synth.speak(u);
+    }
+
+    function loadSetting() {
+        const saved = localStorage.getItem('appSetting');
+        if (saved) {
+            Object.assign(state, JSON.parse(saved));
+            if (state.pieces < state.max) state.pieces = state.max;
+            if (state.min > state.max) state.min = state.max;
+        }
+        document.getElementById('s-mode').value = state.mode;
+        document.getElementById('s-min').value = state.min;
+        document.getElementById('s-max').value = state.max;
+        document.getElementById('s-pieces').value = state.pieces;
+        document.getElementById('s-left').checked = state.setFromLeft;
+        document.getElementById('s-overlay').checked = state.overlay;
+    }
+
+    function saveSetting() {
+        state.mode = document.getElementById('s-mode').value;
+        state.min = parseInt(document.getElementById('s-min').value);
+        state.max = parseInt(document.getElementById('s-max').value);
+        state.pieces = parseInt(document.getElementById('s-pieces').value);
+        state.setFromLeft = document.getElementById('s-left').checked;
+        state.overlay = document.getElementById('s-overlay').checked;
+        
+        if (state.pieces < state.max) state.pieces = state.max;
+        if (state.min > state.max) state.min = state.max;
+        
+        localStorage.setItem('appSetting', JSON.stringify(state));
+        document.getElementById('setting-view').classList.add('hidden');
+        resetGame();
+    }
+
+    function openSetting() {
+        loadSetting();
+        document.getElementById('setting-view').classList.remove('hidden');
+    }
+
+    const gameArea = document.getElementById('game-area');
+    let pieceSize = 0;
+    let draggingPiece = null;
+
+    function resetGame() {
+        state.isProcessing = false;
+        gameArea.querySelectorAll('.square, .piece').forEach(e => e.remove());
+        document.getElementById('feedback-layer').classList.add('hidden');
+        document.getElementById('quiz-target-text').classList.add('hidden');
+        document.getElementById('quiz-box').classList.add('hidden');
+        document.getElementById('btn-quiz-done').classList.add('hidden');
+        
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        pieceSize = Math.max(100, Math.min(w, h) / 7);
+        
+        state.targetNumber = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
+        spk(state.targetNumber);
+
+        if (state.mode === 'normal') {
+            setupNormalMode(w, h);
+        } else {
+            setupQuizMode(w, h);
+        }
+    }
+
+    function setupNormalMode(w, h) {
+        state.currentOrder = 1;
+        state.targetsData = [];
+        state.piecesData = [];
+        
+        const startX = w / 2 - ((state.targetNumber - 1) / 2) * pieceSize;
+        const squareY = pieceSize;
+        const pieceY = h - pieceSize * 1.5;
+
+        for (let i = 0; i < state.targetNumber; i++) {
+            const x = startX + i * pieceSize;
+            createSquare(i, x, squareY);
+            state.targetsData.push({ id: i, x: x, y: squareY, filled: false });
+            
+            const p = createPiece(i, x, pieceY, true);
+            state.piecesData.push({ el: p, id: i, isPlaced: false });
+        }
+        updateHint();
+    }
+
+    function createSquare(id, x, y) {
+        const sq = document.createElement('div');
+        sq.className = 'square';
+        sq.id = 'sq-' + id;
+        sq.style.width = pieceSize + 'px';
+        sq.style.height = pieceSize + 'px';
+        sq.style.left = (x - pieceSize/2) + 'px';
+        sq.style.top = (y - pieceSize/2) + 'px';
+        gameArea.appendChild(sq);
+    }
+
+    function updateHint() {
+        if (!state.setFromLeft) {
+            state.targetsData.forEach(t => document.getElementById('sq-' + t.id).classList.add('hint'));
+            return;
+        }
+        let firstEmptyIndex = state.targetsData.findIndex(t => !t.filled);
+        state.targetsData.forEach((t, i) => {
+            const sq = document.getElementById('sq-' + t.id);
+            if (i === firstEmptyIndex) sq.classList.add('hint');
+            else sq.classList.remove('hint');
+        });
+    }
+
+    let quizRect = { x: 0, y: 0, w: 0, h: 0 };
+    function setupQuizMode(w, h) {
+        const txt = document.getElementById('quiz-target-text');
+        txt.textContent = state.targetNumber;
+        txt.classList.remove('hidden');
+
+        const box = document.getElementById('quiz-box');
+        quizRect.w = w * 0.9;
+        quizRect.h = pieceSize * 2.5;
+        quizRect.x = (w - quizRect.w) / 2;
+        quizRect.y = 150; 
+        box.style.width = quizRect.w + 'px';
+        box.style.height = quizRect.h + 'px';
+        box.style.left = quizRect.x + 'px';
+        box.style.top = quizRect.y + 'px';
+        box.classList.remove('hidden');
+
+        if (state.mode === 'quizManual') {
+            document.getElementById('btn-quiz-done').classList.remove('hidden');
+        }
+
+        state.piecesData = [];
+        const num = state.pieces;
+        let spacing = num > 1 ? Math.min((quizRect.w - pieceSize) / (num - 1), pieceSize * 1.1) : 0;
+        const totalW = spacing * (num - 1);
+        const startX = (w - totalW) / 2;
+        const pieceY = h - pieceSize * 1.2;
+
+        for (let i = 0; i < num; i++) {
+            const x = startX + i * spacing;
+            const p = createPiece(i, x, pieceY, false);
+            state.piecesData.push({ el: p, id: i, startX: x, startY: pieceY, isPlaced: false });
+        }
+    }
+
+    function layoutQuizPieces() {
+        const placed = state.piecesData.filter(p => p.isPlaced).sort((a,b) => a.el.offsetLeft - b.el.offsetLeft);
+        const padding = window.innerWidth * 0.05;
+        const availableW = quizRect.w - (padding * 2) - pieceSize;
+        const count = Math.max(1, state.pieces);
+        let spacing = count > 1 ? Math.min(availableW / (count - 1), pieceSize * 1.2) : 0;
+        const startX = quizRect.x + padding + (pieceSize / 2);
+        const targetY = quizRect.y + quizRect.h / 2;
+
+        placed.forEach((p, index) => {
+            const targetX = startX + index * spacing;
+            p.el.style.transition = 'left 0.25s, top 0.25s';
+            p.el.style.left = (targetX - pieceSize*0.75/2) + 'px';
+            p.el.style.top = (targetY - pieceSize*0.75/2) + 'px';
+            updatePieceText(p.el, index + 1);
+        });
+    }
+
+    function updatePieceText(el, number) {
+        if (state.overlay) {
+            el.textContent = number;
+            el.style.fontSize = (pieceSize * 0.4) + 'px';
+        } else {
+            el.textContent = "";
+        }
+    }
+
+    function createPiece(id, x, y, isNormal) {
+        const p = document.createElement('div');
+        p.className = 'piece';
+        p.dataset.id = id;
+        const r = isNormal ? pieceSize * 0.75 : pieceSize * 0.75;
+        p.style.width = r + 'px';
+        p.style.height = r + 'px';
+        p.style.left = (x - r/2) + 'px';
+        p.style.top = (y - r/2) + 'px';
+
+        p.addEventListener('pointerdown', onPointerDown);
+        gameArea.appendChild(p);
+        return p;
+    }
+
+    let dragStartX, dragStartY, initialLeft, initialTop;
+
+    function onPointerDown(e) {
+        if (state.isProcessing) return;
+        const id = parseInt(e.target.dataset.id);
+        const pData = state.piecesData.find(p => p.id === id);
+        
+        initSpk();
+        draggingPiece = pData;
+        draggingPiece.el.setPointerCapture(e.pointerId);
+        draggingPiece.el.classList.add('dragging');
+        draggingPiece.el.style.transition = 'none';
+        
+        if (state.mode !== 'normal') {
+            draggingPiece.isPlaced = false;
+            draggingPiece.el.classList.remove('placed');
+            draggingPiece.el.textContent = "";
+            layoutQuizPieces();
+        }
+
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        initialLeft = parseFloat(draggingPiece.el.style.left);
+        initialTop = parseFloat(draggingPiece.el.style.top);
+
+        draggingPiece.el.addEventListener('pointermove', onPointerMove);
+        draggingPiece.el.addEventListener('pointerup', onPointerUp);
+        draggingPiece.el.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+        if (!draggingPiece) return;
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        draggingPiece.el.style.left = (initialLeft + dx) + 'px';
+        draggingPiece.el.style.top = (initialTop + dy) + 'px';
+    }
+
+    function onPointerUp(e) {
+        if (!draggingPiece) return;
+        const el = draggingPiece.el;
+        el.classList.remove('dragging');
+        el.releasePointerCapture(e.pointerId);
+        el.removeEventListener('pointermove', onPointerMove);
+        el.removeEventListener('pointerup', onPointerUp);
+        el.removeEventListener('pointercancel', onPointerUp);
+
+        const cx = parseFloat(el.style.left) + el.offsetWidth / 2;
+        const cy = parseFloat(el.style.top) + el.offsetHeight / 2;
+
+        if (state.mode === 'normal') {
+            handleNormalDrop(cx, cy);
+        } else {
+            handleQuizDrop(cx, cy);
+        }
+        draggingPiece = null;
+    }
+
+    function handleNormalDrop(cx, cy) {
+        let snapped = false;
+        for (let i = 0; i < state.targetsData.length; i++) {
+            const t = state.targetsData[i];
+            if (Math.abs(cx - t.x) < pieceSize/2 && Math.abs(cy - t.y) < pieceSize/2) {
+                let canPlace = true;
+                if (state.setFromLeft) {
+                    for (let j = 0; j < i; j++) {
+                        if (!state.targetsData[j].filled) canPlace = false;
+                    }
+                }
+                if (canPlace && !t.filled) {
+                    t.filled = true;
+                    draggingPiece.isPlaced = true;
+                    draggingPiece.el.style.transition = 'left 0.2s, top 0.2s';
+                    draggingPiece.el.style.left = (t.x - draggingPiece.el.offsetWidth/2) + 'px';
+                    draggingPiece.el.style.top = (t.y - draggingPiece.el.offsetHeight/2) + 'px';
+                    draggingPiece.el.style.pointerEvents = 'none';
+                    
+                    document.getElementById('sq-' + t.id).classList.add('filled');
+                    
+                    let numToSpk = state.setFromLeft ? (i + 1) : state.currentOrder++;
+                    updatePieceText(draggingPiece.el, numToSpk);
+                    spk(numToSpk);
+                    updateHint();
+                    snapped = true;
+                    
+                    if (state.targetsData.every(x => x.filled)) {
+                        showSuccess();
+                    }
+                    break;
+                }
+            }
+        }
+        if (!snapped) {
+            draggingPiece.el.style.transition = 'left 0.3s, top 0.3s';
+            draggingPiece.el.style.left = initialLeft + 'px';
+            draggingPiece.el.style.top = initialTop + 'px';
+        }
+    }
+
+    function handleQuizDrop(cx, cy) {
+        const inBox = cx >= quizRect.x && cx <= quizRect.x + quizRect.w && cy >= quizRect.y && cy <= quizRect.y + quizRect.h;
+        if (inBox) {
+            state.isProcessing = true;
+            draggingPiece.isPlaced = true;
+            draggingPiece.el.classList.add('placed');
+            
+            const placedCount = state.piecesData.filter(p => p.isPlaced).length;
+            spk(placedCount);
+            
+            if (state.mode === 'quizAuto') {
+                if (placedCount === state.targetNumber) {
+                    layoutQuizPieces();
+                    showSuccess();
+                    return;
+                }
+            }
+            layoutQuizPieces();
+            setTimeout(() => { state.isProcessing = false; }, 300);
+        } else {
+            draggingPiece.isPlaced = false;
+            draggingPiece.el.classList.remove('placed');
+            draggingPiece.el.style.transition = 'left 0.3s, top 0.3s';
+            draggingPiece.el.style.left = (draggingPiece.startX - draggingPiece.el.offsetWidth/2) + 'px';
+            draggingPiece.el.style.top = (draggingPiece.startY - draggingPiece.el.offsetHeight/2) + 'px';
+            layoutQuizPieces();
+        }
+    }
+
+    function checkQuizManual() {
+        const count = state.piecesData.filter(p => p.isPlaced).length;
+        if (count === state.targetNumber) {
+            showSuccess();
+        } else {
+            showFail();
+        }
+    }
+
+    function showSuccess() {
+        const layer = document.getElementById('feedback-layer');
+        const mark = document.getElementById('feedback-mark');
+        const btn = document.getElementById('btn-next');
+        layer.classList.remove('hidden');
+        layer.style.background = 'rgba(255,255,255,0.5)';
+        mark.className = 'mark-circle';
+        btn.classList.remove('hidden');
+    }
+
+    function showFail() {
+        const layer = document.getElementById('feedback-layer');
+        const mark = document.getElementById('feedback-mark');
+        const btn = document.getElementById('btn-next');
+        layer.classList.remove('hidden');
+        layer.style.background = 'transparent';
+        mark.className = 'mark-cross';
+        btn.classList.add('hidden');
+        setTimeout(() => {
+            layer.classList.add('hidden');
+        }, 1000);
+    }
+
+    function nextQuestion() {
+        resetGame();
+    }
+
+    window.addEventListener('resize', resetGame);
+    
+    loadSetting();
+    resetGame();
+</script>
+</body>
+</html>
