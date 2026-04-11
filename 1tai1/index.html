@@ -8,7 +8,7 @@
         /* CSS リセットと基本設定 */
         :root {
             --primary: #4CAF50;
-            --bg-color: #ffffff; /* 背景色を白に変更 */
+            --bg-color: #ffffff;
             --text-color: #333;
         }
         * {
@@ -50,75 +50,75 @@
         #start-screen {
             justify-content: center;
             align-items: center;
-            background-color: #ffffff; /* 白に変更 */
+            background-color: #ffffff;
         }
         #start-btn {
-            font-size: 4rem;
-            padding: 1rem 4rem;
+            font-size: 5rem; /* サイズアップ */
+            padding: 1.5rem 5rem;
             border: none;
-            border-radius: 50px;
+            border-radius: 60px;
             background-color: #ff9800;
             color: white;
             cursor: pointer;
-            box-shadow: 0 10px 0 #e65100;
+            box-shadow: 0 12px 0 #e65100;
             transition: transform 0.1s, box-shadow 0.1s;
             font-weight: bold;
             font-family: inherit;
         }
         #start-btn:active {
-            transform: translateY(10px);
+            transform: translateY(12px);
             box-shadow: 0 0 0 #e65100;
         }
 
         /* --- プレイ画面 --- */
         #score-board {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 25px;
+            left: 25px;
             z-index: 10;
         }
         .score-badge {
             background-color: #ff9800;
             color: white;
-            font-size: 2.5rem;
-            padding: 0.5rem 2rem;
-            border-radius: 15px;
-            border: 4px solid #e65100;
+            font-size: 3rem; /* サイズアップ */
+            padding: 0.6rem 2.5rem;
+            border-radius: 20px;
+            border: 5px solid #e65100;
             font-weight: bold;
         }
 
         /* レイアウト用のコンテナ */
         #plates-container {
-            flex: 1; /* 上半分を広く取る */
+            flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end; /* 下寄せにしてアイテムと近づける */
-            gap: 2vh;
-            padding: 20px;
-            padding-bottom: 5vh;
+            justify-content: flex-end;
+            gap: 3vh; /* 余白を少し広めに */
+            padding: 30px;
+            padding-bottom: 6vh;
         }
         #items-container {
-            height: 40vh; /* 下部は一定の高さ */
+            height: 42vh; /* 少し高さを確保 */
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* 上寄せ */
-            gap: 2vh;
-            padding: 20px;
-            padding-top: 5vh;
-            background-color: rgba(240, 240, 240, 0.5); /* 境界をわかりやすく */
-            border-top: 4px dashed #ccc;
+            justify-content: flex-start;
+            gap: 3vh;
+            padding: 30px;
+            padding-top: 6vh;
+            background-color: rgba(240, 240, 240, 0.5);
+            border-top: 5px dashed #ccc;
         }
 
         .row {
             display: flex;
             justify-content: center;
-            gap: 2vw;
+            gap: 3vw;
             width: 100%;
         }
 
-        /* オブジェクトのサイズ調整 */
+        /* オブジェクトのサイズ調整（全体的に大きく） */
         .plate {
-            width: clamp(60px, 16vw, 180px);
+            width: clamp(100px, 22vw, 240px); /* 全体的に大きく */
             aspect-ratio: 2 / 1;
             position: relative;
         }
@@ -138,7 +138,7 @@
         }
 
         .item-slot {
-            width: clamp(40px, 11vw, 110px);
+            width: clamp(70px, 16vw, 160px); /* アイテムも大きく */
             aspect-ratio: 1 / 1;
             position: relative;
         }
@@ -156,8 +156,8 @@
             cursor: grabbing;
         }
         .item.dragging {
-            transform: scale(1.15);
-            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.3));
+            transform: scale(1.2);
+            filter: drop-shadow(0 20px 20px rgba(0,0,0,0.3));
             z-index: 1000;
         }
 
@@ -176,60 +176,61 @@
         }
         .modal-content {
             background-color: white;
-            padding: 2rem 3rem;
-            border-radius: 20px;
-            min-width: 320px;
+            padding: 2.5rem 3.5rem;
+            border-radius: 25px;
+            min-width: 350px;
             max-width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            font-size: 1.2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 1.4rem;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
         }
         .modal-content h2 {
             margin-top: 0;
             text-align: center;
             color: var(--primary);
+            font-size: 2rem;
         }
         .setting-item {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
         .setting-item label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
             font-weight: bold;
         }
         .radio-group {
             display: flex;
-            gap: 1rem;
+            gap: 1.2rem;
             flex-wrap: wrap;
         }
         .radio-group label {
             font-weight: normal;
             display: flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.5rem;
             cursor: pointer;
             background: #f5f5f5;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
+            padding: 0.7rem 1.2rem;
+            border-radius: 12px;
         }
         input[type="range"] {
             width: 100%;
-            height: 30px;
+            height: 40px;
         }
         input[type="radio"] {
-            width: 25px;
-            height: 25px;
+            width: 30px;
+            height: 30px;
         }
         .primary-btn {
             display: block;
             width: 100%;
-            padding: 1rem;
-            font-size: 1.5rem;
+            padding: 1.2rem;
+            font-size: 1.8rem;
             background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 15px;
             margin-top: 2rem;
             cursor: pointer;
             font-weight: bold;
@@ -243,32 +244,30 @@
             position: fixed;
             top: 10px;
             right: 10px;
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 0.2;
+            opacity: 0.15;
             cursor: pointer;
         }
         #settings-trigger svg {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             fill: #333;
         }
     </style>
 </head>
 <body>
 
-    <!-- トリプルタップ設定ボタン（右上） -->
     <div id="settings-trigger">
         <svg viewBox="0 0 24 24">
             <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
         </svg>
     </div>
 
-    <!-- 設定モーダル -->
     <div id="settings-modal" class="hidden">
         <div class="modal-content">
             <h2>設定</h2>
@@ -285,9 +284,8 @@
                 <div class="radio-group">
                     <label><input type="radio" name="setting-item-type" value="apple"> りんご</label>
                     <label><input type="radio" name="setting-item-type" value="orange"> みかん</label>
-                    <label><input type="radio" name="setting-item-type" value="red-circle"> 赤丸</label>
-                    <label><input type="radio" name="setting-item-type" value="blue-circle"> 青丸</label>
-                    <label><input type="radio" name="setting-item-type" value="star"> 星</label>
+                    <label><input type="radio" name="setting-item-type" value="grape"> ぶどう</label>
+                    <label><input type="radio" name="setting-item-type" value="red-circle"> 赤い丸</label>
                     <label><input type="radio" name="setting-item-type" value="random"> ランダム</label>
                 </div>
             </div>
@@ -309,12 +307,10 @@
         </div>
     </div>
 
-    <!-- スタート画面 -->
     <div id="start-screen" class="screen">
         <button id="start-btn">スタート</button>
     </div>
 
-    <!-- プレイ画面 -->
     <div id="play-screen" class="screen hidden">
         <div id="score-board">
             <div id="round-count" class="score-badge">1 / 5</div>
@@ -398,17 +394,19 @@
                     <circle cx="50" cy="55" r="35" fill="#FF9800" stroke="#E65100" stroke-width="2"/>
                     <path d="M 30 45 Q 25 55 35 65" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
                 </svg>`;
+            } else if (type === 'grape') {
+                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <path d="M 50 20 Q 55 5 65 10" stroke="#4a3000" stroke-width="3" fill="none"/>
+                    <circle cx="40" cy="35" r="12" fill="#9C27B0"/>
+                    <circle cx="60" cy="35" r="12" fill="#9C27B0"/>
+                    <circle cx="50" cy="50" r="12" fill="#9C27B0"/>
+                    <circle cx="35" cy="55" r="12" fill="#7B1FA2"/>
+                    <circle cx="65" cy="55" r="12" fill="#7B1FA2"/>
+                    <circle cx="50" cy="70" r="12" fill="#7B1FA2"/>
+                </svg>`;
             } else if (type === 'red-circle') {
                 return `<svg viewBox="0 0 100 100" width="100%" height="100%">
                     <circle cx="50" cy="50" r="35" fill="#F44336" stroke="#D32F2F" stroke-width="2"/>
-                </svg>`;
-            } else if (type === 'blue-circle') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <circle cx="50" cy="50" r="35" fill="#2196F3" stroke="#1976D2" stroke-width="2"/>
-                </svg>`;
-            } else if (type === 'star') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <polygon points="50,15 61,38 86,42 68,60 72,85 50,73 28,85 32,60 14,42 39,38" fill="#FFEB3B" stroke="#FBC02D" stroke-width="2"/>
                 </svg>`;
             }
             return '';
@@ -434,7 +432,6 @@
         }
 
         function initRound() {
-            // バグ修正: body直下に残ってしまったアイテムを全消去
             document.querySelectorAll('.item').forEach(el => el.remove());
 
             const pContainer = document.getElementById('plates-container');
@@ -442,15 +439,13 @@
             pContainer.innerHTML = '';
             aContainer.innerHTML = '';
 
-            // ランダム設定の処理
             currentItemType = settings.itemType;
             if (currentItemType === 'random') {
-                const types = ['apple', 'orange', 'red-circle', 'blue-circle', 'star'];
+                const types = ['apple', 'orange', 'grape', 'red-circle'];
                 currentItemType = types[Math.floor(Math.random() * types.length)];
             }
 
             const count = settings.plateCount;
-            // 5個以下の場合は1列、それより多い場合は2段に分けて配置
             let topCount, bottomCount;
             if (count <= 5) {
                 topCount = count;
@@ -507,11 +502,8 @@
                 container.appendChild(row);
             }
 
-            // 皿の生成
             createRow(pContainer, topCount, true, 0);
             createRow(pContainer, bottomCount, true, topCount);
-
-            // アイテムの生成
             createRow(aContainer, topCount, false, 0);
             createRow(aContainer, bottomCount, false, topCount);
         }
@@ -524,7 +516,6 @@
 
             activeItem = e.currentTarget;
 
-            // スナップされていた場合は皿から解除
             if (activeItem.dataset.snappedPlate) {
                 const plate = document.querySelector(`.plate[data-index="${activeItem.dataset.snappedPlate}"]`);
                 if (plate) plate.dataset.hasItem = "false";
@@ -572,7 +563,6 @@
             const plates = document.querySelectorAll('.plate');
             let snapped = false;
 
-            // 当たり判定
             for (let plate of plates) {
                 if (plate.dataset.hasItem === "true") continue;
 
@@ -602,7 +592,6 @@
             }
 
             if (!snapped) {
-                // スナップしなかった場合は元のスロットへアニメーションで戻す
                 const originalSlotIndex = activeItem.dataset.originalSlot;
                 const targetSlot = document.querySelector(`.item-slot[data-slot-index="${originalSlotIndex}"]`);
                 
@@ -647,12 +636,10 @@
                 AudioController.play('clear');
                 
                 if (round >= settings.totalRounds) {
-                    // 全問題クリア
                     setTimeout(() => {
                         returnToHome();
                     }, 2000);
                 } else {
-                    // 次の問題へ
                     round++;
                     setTimeout(() => {
                         updateScoreDisplay();
@@ -662,7 +649,6 @@
             }
         }
 
-        // --- レスポンシブ対応 ---
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -691,22 +677,18 @@
             });
         }
 
-        // --- トリプルタップ設定画面呼び出し ---
         let tapTimes = [];
         document.getElementById('settings-trigger').addEventListener('pointerdown', (e) => {
             e.preventDefault();
             const now = Date.now();
             tapTimes.push(now);
-            
             tapTimes = tapTimes.filter(t => now - t <= 600);
-            
             if (tapTimes.length >= 3) {
                 tapTimes = [];
                 openSettings();
             }
         });
 
-        // --- 設定モーダル制御 ---
         const slider = document.getElementById('setting-count');
         const countDisp = document.getElementById('plate-count-disp');
         const totalRoundsSlider = document.getElementById('setting-total-rounds');
@@ -727,7 +709,7 @@
             document.querySelector(`input[name="setting-style"][value="${settings.plateStyle}"]`).checked = true;
             document.querySelector(`input[name="setting-sound"][value="${settings.soundType}"]`).checked = true;
             
-            if(!settings.itemType) settings.itemType = 'apple';
+            if(!settings.itemType || settings.itemType === 'star' || settings.itemType === 'blue-circle') settings.itemType = 'apple';
             document.querySelector(`input[name="setting-item-type"][value="${settings.itemType}"]`).checked = true;
             
             document.getElementById('settings-modal').classList.remove('hidden');
