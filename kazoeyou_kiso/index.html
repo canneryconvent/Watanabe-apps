@@ -7,14 +7,29 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
 
+    * {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    input, select, textarea {
+        -webkit-user-select: auto;
+        -moz-user-select: auto;
+        -ms-user-select: auto;
+        user-select: auto;
+    }
+
     body { 
         font-family: "UD Digi Kyokasho N-R", "UD Digi Kyokasho N-B", "UDデジタル教科書体 N-R", "UDデジタル教科書体 N-B", "Klee One", sans-serif; 
-        margin: 0; padding: 0; display: flex; flex-direction: column; height: 100dvh; background: #fff; user-select: none; touch-action: none; overflow: hidden; 
+        margin: 0; padding: 0; display: flex; flex-direction: column; height: 100dvh; background: #fff; touch-action: none; overflow: hidden; 
     }
     .hidden { display: none !important; }
     
-    #header { display: flex; justify-content: flex-end; padding: 10px; height: 60px; box-sizing: border-box; position: absolute; top: 0; right: 0; width: 100%; z-index: 10; pointer-events: none; }
-    .btn { pointer-events: auto; font-size: 20px; padding: 10px 20px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #f9f9f9; font-family: inherit; }
+    #header { display: flex; justify-content: flex-end; padding: 10px; height: 70px; box-sizing: border-box; position: absolute; top: 0; right: 0; width: 100%; z-index: 10; pointer-events: none; }
+    .btn { pointer-events: auto; font-size: 20px; padding: 5px 20px; cursor: pointer; border-radius: 8px; border: 1px solid #ccc; background: #f9f9f9; font-family: inherit; line-height: 1.2; text-align: center; }
+    .btn-subtext { font-size: 12px; color: #aaa; font-weight: normal; }
     
     #game-area { flex-grow: 1; position: relative; width: 100vw; height: 100dvh; }
     
@@ -38,18 +53,43 @@
     #btn-next { font-size: 4vh; padding: 15px 40px; border-radius: 50px; background: yellow; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); font-family: inherit; }
     
     #setting-view { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; background: white; z-index: 300; display: flex; flex-direction: column; }
-    .setting-header { font-size: 24px; font-weight: bold; padding: 20px; border-bottom: 1px solid #ccc; text-align: center; }
-    .setting-content { padding: 20px; overflow-y: auto; flex-grow: 1; font-size: 20px; -webkit-overflow-scrolling: touch; }
+    .setting-header { font-size: 24px; font-weight: bold; padding: 20px; border-bottom: 1px solid #ccc; text-align: center; flex-shrink: 0; }
+    
+    .setting-body { display: flex; flex-direction: row; flex-grow: 1; overflow: hidden; padding: 20px; gap: 20px; box-sizing: border-box; }
+    .setting-left { display: flex; flex-direction: column; flex: 1; gap: 20px; min-width: 0; }
+    .setting-right { flex: 1; overflow-y: auto; background: #fafafa; padding: 20px; border-radius: 10px; border: 1px solid #eee; -webkit-overflow-scrolling: touch; min-width: 0; }
+    .setting-common { background: #fafafa; padding: 20px; border-radius: 10px; border: 1px solid #eee; flex-shrink: 0; }
+
+    #preview-wrapper { flex-grow: 1; background: #f0f8ff; display: flex; justify-content: center; align-items: center; border-radius: 10px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; min-height: 200px; overflow: hidden; }
+    #setting-preview-container { background: white; border: 1px solid #ddd; position: relative; overflow: hidden; pointer-events: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    
+    .setting-section-title { font-size: 18px; font-weight: bold; color: #666; margin-bottom: 15px; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+    
+    .segmented-control { display: flex; width: 100%; background-color: #e0e0e0; border-radius: 10px; overflow: hidden; margin-bottom: 30px; }
+    .segmented-control input[type="radio"] { display: none; }
+    .segmented-control label { flex: 1; text-align: center; padding: 12px 0; cursor: pointer; font-size: 18px; color: #555; transition: background-color 0.2s, color 0.2s; border-right: 1px solid #ccc; }
+    .segmented-control label:last-child { border-right: none; }
+    .segmented-control input[type="radio"]:checked + label { background-color: #007aff; color: white; font-weight: bold; }
+
     .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
     .setting-row input[type="number"] { width: 60px; font-size: 20px; text-align: center; font-family: inherit; }
-    .setting-row select { font-size: 20px; padding: 5px; font-family: inherit; }
-    #btn-save { margin: 20px; padding: 15px; font-size: 24px; background: blue; color: white; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; }
+    #btn-save { margin: 20px; padding: 15px; font-size: 24px; background: blue; color: white; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+
+    @media (max-width: 768px) {
+        .setting-body { flex-direction: column; overflow-y: auto; }
+        .setting-left { flex: none; }
+        .setting-right { flex: none; overflow-y: visible; }
+        #preview-wrapper { min-height: 30vh; }
+    }
 </style>
 </head>
 <body>
 
 <div id="header">
-    <button class="btn" onclick="openSetting()">setting</button>
+    <button class="btn" id="btn-setting">
+        <div>設定</div>
+        <div class="btn-subtext">トリプルタップ</div>
+    </button>
 </div>
 
 <div id="game-area">
@@ -65,59 +105,191 @@
 
 <div id="setting-view" class="hidden">
     <div class="setting-header">設定</div>
-    <div class="setting-content">
-        <div class="setting-row">
-            <label>モード</label>
-            <select id="s-mode">
-                <option value="normal">ノーマル</option>
-                <option value="quizAuto">クイズ（自動判定）</option>
-                <option value="quizManual">クイズ（ボタン判定）</option>
-            </select>
+    <div class="setting-body">
+        <div class="setting-left">
+            <div class="setting-common">
+                <div class="setting-section-title">共通設定</div>
+                <div class="setting-row">
+                    <label>効果音（正解・不正解）</label>
+                    <input type="checkbox" id="s-se">
+                </div>
+                <div class="setting-row">
+                    <label>出題時の読み上げ</label>
+                    <input type="checkbox" id="s-voice-question">
+                </div>
+                <div class="setting-row">
+                    <label>円を置いた時の読み上げ</label>
+                    <input type="checkbox" id="s-voice-placement">
+                </div>
+            </div>
+            <div id="preview-wrapper">
+                <div id="setting-preview-container"></div>
+            </div>
         </div>
-        <div class="setting-row">
-            <label>最小値</label>
-            <input type="number" id="s-min" min="1" max="20">
-        </div>
-        <div class="setting-row">
-            <label>最大値</label>
-            <input type="number" id="s-max" min="1" max="20">
-        </div>
-        <div class="setting-row">
-            <label>円の数</label>
-            <input type="number" id="s-pieces" min="1" max="30">
-        </div>
-        <div class="setting-row">
-            <label>左から順に置く (ノーマルのみ)</label>
-            <input type="checkbox" id="s-left">
-        </div>
-        <div class="setting-row">
-            <label>円に数字を表示する</label>
-            <input type="checkbox" id="s-overlay">
+        <div class="setting-right">
+            <div class="setting-section-title">モード別設定</div>
+            <div class="segmented-control">
+                <input type="radio" name="mode" id="mode-normal" value="normal">
+                <label for="mode-normal">ノーマル</label>
+                <input type="radio" name="mode" id="mode-quizAuto" value="quizAuto">
+                <label for="mode-quizAuto">クイズ(自動)</label>
+                <input type="radio" name="mode" id="mode-quizManual" value="quizManual">
+                <label for="mode-quizManual">クイズ(手動)</label>
+            </div>
+
+            <div class="setting-row">
+                <label>最小値</label>
+                <input type="number" id="s-min" min="1" max="20">
+            </div>
+            <div class="setting-row">
+                <label>最大値</label>
+                <input type="number" id="s-max" min="1" max="20">
+            </div>
+            <div class="setting-row">
+                <label>円の数</label>
+                <input type="number" id="s-pieces" min="1" max="30">
+            </div>
+            <div class="setting-row" id="row-s-left">
+                <label>左から順に置く</label>
+                <input type="checkbox" id="s-left">
+            </div>
+            <div class="setting-row">
+                <label>円に数字を表示する</label>
+                <input type="checkbox" id="s-overlay">
+            </div>
+            <div class="setting-row">
+                <label>上部の数字表示</label>
+                <input type="checkbox" id="s-show-number">
+            </div>
         </div>
     </div>
     <button id="btn-save" onclick="saveSetting()">保存して閉じる</button>
 </div>
 
 <script>
-    // iPadでのドラッグ中のスクロール（バウンス）を防止
     document.addEventListener('touchmove', function(e) {
-        // 設定画面などのスクロール可能領域以外でのスワイプを無効化
-        if (!e.target.closest('.setting-content')) {
+        if (!e.target.closest('.setting-body') && !e.target.closest('.setting-right') && !e.target.closest('.setting-left')) {
             e.preventDefault();
         }
     }, { passive: false });
 
+    let tapCount = 0;
+    let tapTimeout = null;
+    document.getElementById('btn-setting').addEventListener('pointerdown', function(e) {
+        initAudio();
+        tapCount++;
+        if (tapCount === 1) {
+            tapTimeout = setTimeout(() => { tapCount = 0; }, 600);
+        }
+        if (tapCount >= 3) {
+            clearTimeout(tapTimeout);
+            tapCount = 0;
+            openSetting();
+        }
+    });
+
+    document.getElementById('s-voice-question').addEventListener('change', function(e) {
+        if (!this.checked && !document.getElementById('s-show-number').checked) {
+            this.checked = true;
+        }
+    });
+    
+    document.getElementById('s-show-number').addEventListener('change', function(e) {
+        if (!this.checked && !document.getElementById('s-voice-question').checked) {
+            this.checked = true;
+        }
+    });
+
+    const defaultModeSettings = () => ({
+        min: 1, max: 5, pieces: 5, setFromLeft: true, overlay: true, showNumber: true
+    });
+
     const state = {
-        min: 1, max: 5, pieces: 5, mode: 'normal', setFromLeft: true, overlay: true,
+        currentMode: 'normal',
+        common: { se: true, voiceQuestion: true, voicePlacement: true },
+        settings: {
+            normal: defaultModeSettings(),
+            quizAuto: defaultModeSettings(),
+            quizManual: defaultModeSettings()
+        },
         targetNumber: 0, currentOrder: 1, isProcessing: false, piecesData: [], targetsData: []
     };
+
+    let editingMode = 'normal';
+
+    function getSettings() {
+        return state.settings[state.currentMode];
+    }
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function initAudio() {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playCorrectSound() {
+        if (!state.common.se) return;
+        initAudio();
+        const now = audioCtx.currentTime;
+        const playTone = (freq, startTime, duration) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.5, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        };
+        playTone(783.99, now, 0.2); 
+        playTone(1046.50, now + 0.15, 0.4);
+    }
+
+    function playIncorrectSound() {
+        if (!state.common.se) return;
+        initAudio();
+        const now = audioCtx.currentTime;
+        const playTone = (freq, startTime, duration) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.1, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        };
+        playTone(150, now, 0.2);
+        playTone(150, now + 0.25, 0.3);
+    }
 
     const synth = window.speechSynthesis;
     let isSpkInit = false;
     function initSpk() {
-        if (!isSpkInit) { synth.speak(new SpeechSynthesisUtterance("")); isSpkInit = true; }
+        if (!isSpkInit && (state.common.voiceQuestion || state.common.voicePlacement)) { 
+            synth.speak(new SpeechSynthesisUtterance("")); 
+            isSpkInit = true; 
+        }
     }
-    function spk(str) {
+    
+    function spkQuestion(str) {
+        if (!state.common.voiceQuestion) return;
+        synth.cancel();
+        let u = new SpeechSynthesisUtterance(String(str));
+        u.lang = 'ja-JP';
+        u.rate = 1.0;
+        synth.speak(u);
+    }
+
+    function spkPlacement(str) {
+        if (!state.common.voicePlacement) return;
         synth.cancel();
         let u = new SpeechSynthesisUtterance(String(str));
         u.lang = 'ja-JP';
@@ -126,39 +298,246 @@
     }
 
     function loadSetting() {
-        const saved = localStorage.getItem('appSetting');
+        const saved = localStorage.getItem('appSetting_v3');
         if (saved) {
             Object.assign(state, JSON.parse(saved));
-            if (state.pieces < state.max) state.pieces = state.max;
-            if (state.min > state.max) state.min = state.max;
+            ['normal', 'quizAuto', 'quizManual'].forEach(m => {
+                if (!state.settings[m]) state.settings[m] = defaultModeSettings();
+            });
+        } else {
+            const oldSaved = localStorage.getItem('appSetting_v2');
+            if (oldSaved) {
+                const old = JSON.parse(oldSaved);
+                state.currentMode = old.currentMode || 'normal';
+                
+                const ref = (old.settings && old.settings.normal) ? old.settings.normal : {};
+                state.common.se = ref.se !== undefined ? ref.se : true;
+                state.common.voiceQuestion = ref.voice !== undefined ? ref.voice : true;
+                state.common.voicePlacement = ref.voice !== undefined ? ref.voice : true;
+
+                ['normal', 'quizAuto', 'quizManual'].forEach(m => {
+                    const mOld = (old.settings && old.settings[m]) ? old.settings[m] : {};
+                    state.settings[m] = {
+                        min: mOld.min || 1, max: mOld.max || 5, pieces: mOld.pieces || 5,
+                        setFromLeft: mOld.setFromLeft !== undefined ? mOld.setFromLeft : true,
+                        overlay: mOld.overlay !== undefined ? mOld.overlay : true,
+                        showNumber: mOld.showNumber !== undefined ? mOld.showNumber : true
+                    };
+                });
+            }
         }
-        document.getElementById('s-mode').value = state.mode;
-        document.getElementById('s-min').value = state.min;
-        document.getElementById('s-max').value = state.max;
-        document.getElementById('s-pieces').value = state.pieces;
-        document.getElementById('s-left').checked = state.setFromLeft;
-        document.getElementById('s-overlay').checked = state.overlay;
+    }
+
+    function updatePreviewLayout() {
+        const wrapper = document.getElementById('preview-wrapper');
+        const container = document.getElementById('setting-preview-container');
+        if (!wrapper || !container) return;
+
+        const screenRatio = window.innerHeight / window.innerWidth;
+        const wrapperW = wrapper.clientWidth;
+        const wrapperH = wrapper.clientHeight;
+        
+        const maxW = wrapperW - 20;
+        const maxH = wrapperH - 20;
+
+        let targetW = maxH / screenRatio;
+        let targetH = maxH;
+
+        if (targetW > maxW) {
+            targetW = maxW;
+            targetH = targetW * screenRatio;
+        }
+
+        container.style.width = targetW + 'px';
+        container.style.height = targetH + 'px';
+    }
+
+    function updateSettingUI(mode) {
+        document.getElementById('s-se').checked = state.common.se;
+        document.getElementById('s-voice-question').checked = state.common.voiceQuestion;
+        document.getElementById('s-voice-placement').checked = state.common.voicePlacement;
+
+        const s = state.settings[mode];
+        document.getElementById('s-min').value = s.min;
+        document.getElementById('s-max').value = s.max;
+        document.getElementById('s-pieces').value = s.pieces;
+        document.getElementById('s-overlay').checked = s.overlay;
+        document.getElementById('s-show-number').checked = s.showNumber;
+        
+        const leftRow = document.getElementById('row-s-left');
+        if (mode === 'normal') {
+            leftRow.classList.remove('hidden');
+            document.getElementById('s-left').checked = s.setFromLeft;
+        } else {
+            leftRow.classList.add('hidden');
+        }
+        renderPreview();
+    }
+
+    function saveCurrentTabSettings(mode) {
+        state.common.se = document.getElementById('s-se').checked;
+        state.common.voiceQuestion = document.getElementById('s-voice-question').checked;
+        state.common.voicePlacement = document.getElementById('s-voice-placement').checked;
+
+        const s = state.settings[mode];
+        s.min = parseInt(document.getElementById('s-min').value) || 1;
+        s.max = parseInt(document.getElementById('s-max').value) || 5;
+        s.pieces = parseInt(document.getElementById('s-pieces').value) || 5;
+        s.overlay = document.getElementById('s-overlay').checked;
+        s.showNumber = document.getElementById('s-show-number').checked;
+        
+        if (s.pieces < s.max) s.pieces = s.max;
+        if (s.min > s.max) s.min = s.max;
+
+        if (mode === 'normal') {
+            s.setFromLeft = document.getElementById('s-left').checked;
+        }
+    }
+
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            saveCurrentTabSettings(editingMode);
+            editingMode = e.target.value;
+            updateSettingUI(editingMode);
+        });
+    });
+
+    const settingInputs = document.querySelectorAll('#setting-view input:not([name="mode"])');
+    settingInputs.forEach(input => {
+        input.addEventListener('input', renderPreview);
+        input.addEventListener('change', renderPreview);
+    });
+
+    function openSetting() {
+        loadSetting();
+        editingMode = state.currentMode;
+        document.querySelector(`input[name="mode"][value="${editingMode}"]`).checked = true;
+        document.getElementById('setting-view').classList.remove('hidden');
+        updatePreviewLayout();
+        updateSettingUI(editingMode);
+        
+        setTimeout(renderPreview, 10);
     }
 
     function saveSetting() {
-        state.mode = document.getElementById('s-mode').value;
-        state.min = parseInt(document.getElementById('s-min').value);
-        state.max = parseInt(document.getElementById('s-max').value);
-        state.pieces = parseInt(document.getElementById('s-pieces').value);
-        state.setFromLeft = document.getElementById('s-left').checked;
-        state.overlay = document.getElementById('s-overlay').checked;
-        
-        if (state.pieces < state.max) state.pieces = state.max;
-        if (state.min > state.max) state.min = state.max;
-        
-        localStorage.setItem('appSetting', JSON.stringify(state));
+        saveCurrentTabSettings(editingMode);
+        state.currentMode = editingMode;
+        localStorage.setItem('appSetting_v3', JSON.stringify(state));
         document.getElementById('setting-view').classList.add('hidden');
         resetGame();
     }
 
-    function openSetting() {
-        loadSetting();
-        document.getElementById('setting-view').classList.remove('hidden');
+    function renderPreview() {
+        const container = document.getElementById('setting-preview-container');
+        if(!container || container.clientWidth === 0) return;
+        container.innerHTML = '';
+        
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        const scale = w / window.innerWidth;
+        
+        const mode = editingMode;
+        const min = parseInt(document.getElementById('s-min').value) || 1;
+        const max = parseInt(document.getElementById('s-max').value) || 5;
+        const pieces = parseInt(document.getElementById('s-pieces').value) || 5;
+        const setFromLeft = document.getElementById('s-left').checked;
+        const overlay = document.getElementById('s-overlay').checked;
+        const showNumber = document.getElementById('s-show-number').checked;
+        
+        let targetNum = Math.floor((min + max) / 2);
+        if(targetNum < min) targetNum = min;
+        if(targetNum > max) targetNum = max;
+        
+        let pSize = Math.max(60 * scale, Math.min(w, h) / 7);
+        
+        if (showNumber) {
+            const txt = document.createElement('div');
+            txt.textContent = targetNum;
+            txt.style.position = 'absolute';
+            txt.style.width = '100%';
+            txt.style.textAlign = 'center';
+            txt.style.fontSize = (10 * scale) + 'vh';
+            txt.style.fontWeight = 'bold';
+            txt.style.top = (5 * scale) + 'vh';
+            txt.style.fontFamily = 'inherit';
+            container.appendChild(txt);
+        }
+        
+        if (mode === 'normal') {
+            let spacing = pSize - (5 * scale);
+            if (spacing * targetNum > w * 0.9) {
+                spacing = (w * 0.9) / targetNum;
+                pSize = spacing + (5 * scale);
+            }
+            const totalW = spacing * (targetNum - 1) + pSize;
+            const startX = w / 2 - totalW / 2 + pSize / 2;
+            const squareY = showNumber ? Math.max(pSize * 1.5, h * 0.25) : Math.max(pSize * 1.5, h * 0.2);
+            const pieceY = h - pSize * 1.5;
+            
+            for(let i=0; i<targetNum; i++) {
+                const sq = document.createElement('div');
+                sq.className = 'square' + (i===0 && setFromLeft ? ' hint' : (!setFromLeft ? ' hint' : ''));
+                sq.style.width = pSize + 'px'; sq.style.height = pSize + 'px';
+                sq.style.left = (startX + i * spacing - pSize/2) + 'px';
+                sq.style.top = (squareY - pSize/2) + 'px';
+                sq.style.borderWidth = Math.max(1, 5 * scale) + 'px';
+                container.appendChild(sq);
+                
+                const p = document.createElement('div');
+                p.className = 'piece';
+                const r = pSize * 0.75;
+                p.style.width = r + 'px'; p.style.height = r + 'px';
+                p.style.left = (startX + i * spacing - r/2) + 'px';
+                p.style.top = (pieceY - r/2) + 'px';
+                if(overlay) {
+                    p.textContent = i+1;
+                    p.style.fontSize = (pSize*0.4) + 'px';
+                }
+                container.appendChild(p);
+            }
+        } else {
+            const box = document.createElement('div');
+            const boxW = w * 0.9; 
+            const boxH = Math.max(pSize * 2.5, h * 0.4);
+            const boxX = (w - boxW) / 2;
+            const boxY = Math.max(pSize * 1.5, h * 0.15);
+            
+            box.style.position = 'absolute';
+            box.style.border = Math.max(1, 5 * scale) + 'px solid blue';
+            box.style.background = 'rgba(0,0,255,0.1)';
+            box.style.borderRadius = (10 * scale) + 'px';
+            box.style.width = boxW + 'px'; box.style.height = boxH + 'px';
+            box.style.left = boxX + 'px';
+            box.style.top = boxY + 'px';
+            container.appendChild(box);
+            
+            if (mode === 'quizManual') {
+                const btn = document.createElement('div');
+                btn.textContent = 'できた！';
+                btn.style.position = 'absolute';
+                btn.style.left = '2vw'; btn.style.top = '8vh';
+                btn.style.fontSize = (3 * scale) + 'vh'; btn.style.padding = (15 * scale) + 'px ' + (30 * scale) + 'px';
+                btn.style.background = 'orange'; btn.style.color = 'white'; btn.style.borderRadius = (15 * scale) + 'px';
+                btn.style.fontWeight = 'bold';
+                container.appendChild(btn);
+            }
+
+            const num = pieces;
+            let spacing = num > 1 ? Math.min((w * 0.9 - pSize) / (num - 1), pSize * 1.1) : 0;
+            const totalW = spacing * (num - 1);
+            const startX = (w - totalW) / 2;
+            const pieceY = h - pSize * 1.2;
+            
+            for (let i = 0; i < num; i++) {
+                const p = document.createElement('div');
+                p.className = 'piece';
+                const r = pSize * 0.75;
+                p.style.width = r + 'px'; p.style.height = r + 'px';
+                p.style.left = (startX + i * spacing - r/2) + 'px';
+                p.style.top = (pieceY - r/2) + 'px';
+                container.appendChild(p);
+            }
+        }
     }
 
     const gameArea = document.getElementById('game-area');
@@ -169,18 +548,26 @@
         state.isProcessing = false;
         gameArea.querySelectorAll('.square, .piece').forEach(e => e.remove());
         document.getElementById('feedback-layer').classList.add('hidden');
-        document.getElementById('quiz-target-text').classList.add('hidden');
         document.getElementById('quiz-box').classList.add('hidden');
         document.getElementById('btn-quiz-done').classList.add('hidden');
         
         const w = window.innerWidth;
         const h = window.innerHeight;
-        pieceSize = Math.max(100, Math.min(w, h) / 7);
+        pieceSize = Math.max(60, Math.min(w, h) / 7); 
         
-        state.targetNumber = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
-        spk(state.targetNumber);
+        const s = getSettings();
+        state.targetNumber = Math.floor(Math.random() * (s.max - s.min + 1)) + s.min;
+        spkQuestion(state.targetNumber);
 
-        if (state.mode === 'normal') {
+        const txt = document.getElementById('quiz-target-text');
+        txt.textContent = state.targetNumber;
+        if (s.showNumber) {
+            txt.classList.remove('hidden');
+        } else {
+            txt.classList.add('hidden');
+        }
+
+        if (state.currentMode === 'normal') {
             setupNormalMode(w, h);
         } else {
             setupQuizMode(w, h);
@@ -192,12 +579,20 @@
         state.targetsData = [];
         state.piecesData = [];
         
-        const startX = w / 2 - ((state.targetNumber - 1) / 2) * pieceSize;
-        const squareY = pieceSize;
+        const s = getSettings();
+        let spacing = pieceSize - 5; 
+        if (spacing * state.targetNumber > w * 0.9) {
+            spacing = (w * 0.9) / state.targetNumber;
+            pieceSize = spacing + 5; 
+        }
+
+        const totalW = spacing * (state.targetNumber - 1) + pieceSize;
+        const startX = w / 2 - totalW / 2 + pieceSize / 2;
+        const squareY = s.showNumber ? Math.max(pieceSize * 1.5, h * 0.25) : Math.max(pieceSize * 1.5, h * 0.2);
         const pieceY = h - pieceSize * 1.5;
 
         for (let i = 0; i < state.targetNumber; i++) {
-            const x = startX + i * pieceSize;
+            const x = startX + i * spacing;
             createSquare(i, x, squareY);
             state.targetsData.push({ id: i, x: x, y: squareY, filled: false });
             
@@ -219,7 +614,8 @@
     }
 
     function updateHint() {
-        if (!state.setFromLeft) {
+        const s = getSettings();
+        if (!s.setFromLeft) {
             state.targetsData.forEach(t => document.getElementById('sq-' + t.id).classList.add('hint'));
             return;
         }
@@ -233,28 +629,24 @@
 
     let quizRect = { x: 0, y: 0, w: 0, h: 0 };
     function setupQuizMode(w, h) {
-        const txt = document.getElementById('quiz-target-text');
-        txt.textContent = state.targetNumber;
-        txt.classList.remove('hidden');
-
         const box = document.getElementById('quiz-box');
         quizRect.w = w * 0.9;
-        quizRect.h = pieceSize * 2.5;
+        quizRect.h = Math.max(pieceSize * 2.5, h * 0.4);
         quizRect.x = (w - quizRect.w) / 2;
-        quizRect.y = 150; 
+        quizRect.y = Math.max(pieceSize * 1.5, h * 0.15); 
         box.style.width = quizRect.w + 'px';
         box.style.height = quizRect.h + 'px';
         box.style.left = quizRect.x + 'px';
         box.style.top = quizRect.y + 'px';
         box.classList.remove('hidden');
 
-        if (state.mode === 'quizManual') {
+        if (state.currentMode === 'quizManual') {
             document.getElementById('btn-quiz-done').classList.remove('hidden');
         }
 
         state.piecesData = [];
-        const num = state.pieces;
-        let spacing = num > 1 ? Math.min((quizRect.w - pieceSize) / (num - 1), pieceSize * 1.1) : 0;
+        const num = getSettings().pieces;
+        let spacing = num > 1 ? Math.min((w * 0.9 - pieceSize) / (num - 1), pieceSize * 1.1) : 0;
         const totalW = spacing * (num - 1);
         const startX = (w - totalW) / 2;
         const pieceY = h - pieceSize * 1.2;
@@ -268,9 +660,9 @@
 
     function layoutQuizPieces() {
         const placed = state.piecesData.filter(p => p.isPlaced).sort((a,b) => a.el.offsetLeft - b.el.offsetLeft);
-        const padding = window.innerWidth * 0.05;
+        const padding = quizRect.w * 0.05;
         const availableW = quizRect.w - (padding * 2) - pieceSize;
-        const count = Math.max(1, state.pieces);
+        const count = Math.max(1, getSettings().pieces);
         let spacing = count > 1 ? Math.min(availableW / (count - 1), pieceSize * 1.2) : 0;
         const startX = quizRect.x + padding + (pieceSize / 2);
         const targetY = quizRect.y + quizRect.h / 2;
@@ -285,7 +677,7 @@
     }
 
     function updatePieceText(el, number) {
-        if (state.overlay) {
+        if (getSettings().overlay) {
             el.textContent = number;
             el.style.fontSize = (pieceSize * 0.4) + 'px';
         } else {
@@ -297,7 +689,7 @@
         const p = document.createElement('div');
         p.className = 'piece';
         p.dataset.id = id;
-        const r = isNormal ? pieceSize * 0.75 : pieceSize * 0.75;
+        const r = pieceSize * 0.75;
         p.style.width = r + 'px';
         p.style.height = r + 'px';
         p.style.left = (x - r/2) + 'px';
@@ -315,13 +707,14 @@
         const id = parseInt(e.target.dataset.id);
         const pData = state.piecesData.find(p => p.id === id);
         
+        initAudio();
         initSpk();
         draggingPiece = pData;
         draggingPiece.el.setPointerCapture(e.pointerId);
         draggingPiece.el.classList.add('dragging');
         draggingPiece.el.style.transition = 'none';
         
-        if (state.mode !== 'normal') {
+        if (state.currentMode !== 'normal') {
             draggingPiece.isPlaced = false;
             draggingPiece.el.classList.remove('placed');
             draggingPiece.el.textContent = "";
@@ -358,7 +751,7 @@
         const cx = parseFloat(el.style.left) + el.offsetWidth / 2;
         const cy = parseFloat(el.style.top) + el.offsetHeight / 2;
 
-        if (state.mode === 'normal') {
+        if (state.currentMode === 'normal') {
             handleNormalDrop(cx, cy);
         } else {
             handleQuizDrop(cx, cy);
@@ -367,12 +760,13 @@
     }
 
     function handleNormalDrop(cx, cy) {
+        const s = getSettings();
         let snapped = false;
         for (let i = 0; i < state.targetsData.length; i++) {
             const t = state.targetsData[i];
             if (Math.abs(cx - t.x) < pieceSize/2 && Math.abs(cy - t.y) < pieceSize/2) {
                 let canPlace = true;
-                if (state.setFromLeft) {
+                if (s.setFromLeft) {
                     for (let j = 0; j < i; j++) {
                         if (!state.targetsData[j].filled) canPlace = false;
                     }
@@ -387,9 +781,9 @@
                     
                     document.getElementById('sq-' + t.id).classList.add('filled');
                     
-                    let numToSpk = state.setFromLeft ? (i + 1) : state.currentOrder++;
+                    let numToSpk = s.setFromLeft ? (i + 1) : state.currentOrder++;
                     updatePieceText(draggingPiece.el, numToSpk);
-                    spk(numToSpk);
+                    spkPlacement(numToSpk);
                     updateHint();
                     snapped = true;
                     
@@ -415,9 +809,9 @@
             draggingPiece.el.classList.add('placed');
             
             const placedCount = state.piecesData.filter(p => p.isPlaced).length;
-            spk(placedCount);
+            spkPlacement(placedCount);
             
-            if (state.mode === 'quizAuto') {
+            if (state.currentMode === 'quizAuto') {
                 if (placedCount === state.targetNumber) {
                     layoutQuizPieces();
                     showSuccess();
@@ -446,6 +840,7 @@
     }
 
     function showSuccess() {
+        playCorrectSound();
         const layer = document.getElementById('feedback-layer');
         const mark = document.getElementById('feedback-mark');
         const btn = document.getElementById('btn-next');
@@ -456,6 +851,7 @@
     }
 
     function showFail() {
+        playIncorrectSound();
         const layer = document.getElementById('feedback-layer');
         const mark = document.getElementById('feedback-mark');
         const btn = document.getElementById('btn-next');
@@ -472,7 +868,17 @@
         resetGame();
     }
 
-    window.addEventListener('resize', resetGame);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (!document.getElementById('setting-view').classList.contains('hidden')) {
+                updatePreviewLayout();
+                renderPreview();
+            }
+            resetGame();
+        }, 200);
+    });
     
     loadSetting();
     resetGame();
