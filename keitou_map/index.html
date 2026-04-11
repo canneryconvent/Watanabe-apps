@@ -57,6 +57,7 @@
     </div>
 
     <script>
+        // 背景ノードの定義
         const bgData = [
             { id: 'bg1', name: '聞くこと・話すこと', color: '#fef2f2' },
             { id: 'bg2', name: '書くこと', color: '#fffbeb' },
@@ -79,9 +80,10 @@
             grabbable: false
         }));
 
+        // アプリのメタデータ定義
         const appNodes = [
-            { id: 's_look', name: '○○を探せ', stage: 1, type: 'support', goal: 'マッチング。視覚的に複数の情報から必要な情報を取り出す' },
             { id: 'm_dist', name: 'くばろう', stage: 1, type: 'math', goal: '1対1対応の基礎' },
+            { id: 'm_dist_one', name: '一つずつ配ろう', stage: 1, type: 'math', goal: '1対1対応の実践', url: 'https://watanabe-apps.github.io/apps/1tai1/index.html' },
             { id: 'm_match', name: 'マッチング', stage: 1, type: 'math', goal: '同じの理解' },
             { id: 'm_count_s', name: '数唱', stage: 1, type: 'math', goal: '数唱への意欲付け' },
             { id: 's_tap', name: '点タップ', stage: 1, type: 'support', goal: '具体物に気づく、タッチする' },
@@ -112,14 +114,14 @@
             { id: 'm_math1', name: 'いくつといくつ', stage: 3, type: 'math', goal: '数の合成・分解。足し算、引き算の前段階' },
             { id: 'm_clock', name: '時計（時・分）', stage: 3, type: 'math', goal: '時計の読みの習得' },
             { id: 'j_50', name: '50音表', stage: 3, type: 'jp', goal: '平仮名の読み・書き。語頭音と結びつけた読み' },
-            { id: 'j_order', name: '書き順', stage: 3, type: 'jp', goal: '平仮名の書き順の視覚的提示' },
             { id: 'j_write', name: '平仮名書き', stage: 3, type: 'jp', goal: '平仮名の単語の書き' },
             { id: 'j_quiz', name: '平仮名単語クイズ', stage: 3, type: 'jp', goal: '平仮名の単語の読みの定着' }
         ];
 
+        // 座標とエッジ（線の繋がり）のデータ反映場所
         const importedData = [
-          { "group": "nodes", "data": { "id": "s_look" }, "position": { "x": 380.11854199683034, "y": 31.916323296354996 } },
-          { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1065.8697913675774, "y": 53.71376731611819 } },
+          { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1060.9142358120218, "y": 105.74710064945151 } },
+          { "group": "nodes", "data": { "id": "m_dist_one" }, "position": { "x": 1060.9142358120218, "y": 18.411111111111104 } },
           { "group": "nodes", "data": { "id": "m_match" }, "position": { "x": 1510.7251982847026, "y": 21.195603057704858 } },
           { "group": "nodes", "data": { "id": "m_count_s" }, "position": { "x": 1255.004673627296, "y": 105.55833709331593 } },
           { "group": "nodes", "data": { "id": "s_tap" }, "position": { "x": 610.6307448494453, "y": 34.152773375594286 } },
@@ -150,7 +152,6 @@
           { "group": "nodes", "data": { "id": "m_math1" }, "position": { "x": 1267.6287689941273, "y": 616.6253230166868 } },
           { "group": "nodes", "data": { "id": "m_clock" }, "position": { "x": 1410.6095087163233, "y": 496.42662440570524 } },
           { "group": "nodes", "data": { "id": "j_50" }, "position": { "x": 655.2175886081851, "y": 365.78945949473297 } },
-          { "group": "nodes", "data": { "id": "j_order" }, "position": { "x": 525.8825775146827, "y": 728.4042823715857 } },
           { "group": "nodes", "data": { "id": "j_write" }, "position": { "x": 395.1988738696746, "y": 630.0004788850564 } },
           { "group": "nodes", "data": { "id": "j_quiz" }, "position": { "x": 890.949706162021, "y": 440.5153724247226 } },
           { "group": "edges", "data": { "id": "07ed4e46-09ba-4579-acaa-dabfd535aaad", "source": "s_maze", "target": "j_trace" } },
@@ -170,8 +171,6 @@
           { "group": "edges", "data": { "id": "68926cea-db53-4225-bf47-5161f22ae8c1", "source": "m_count_s", "target": "m_base" } },
           { "group": "edges", "data": { "id": "ccc12f4c-8269-489a-8f79-6be4db487e9b", "source": "m_dish", "target": "m_base" } },
           { "group": "edges", "data": { "id": "4233e79b-9e3b-42d9-9fd8-0766c34129b9", "source": "m_base", "target": "m_dish" } },
-          { "group": "edges", "data": { "id": "510dfa1b-c679-435b-9078-fd6e0175642c", "source": "s_dot", "target": "bg2" } },
-          { "group": "edges", "data": { "id": "bc0189b9-a9f4-4e3f-89d8-d81bf624a44f", "source": "s_lines", "target": "bg2" } },
           { "group": "edges", "data": { "id": "bf747eaa-cf46-4118-9bd1-089574faa952", "source": "m_base", "target": "m_count2" } },
           { "group": "edges", "data": { "id": "6d86b823-f62f-4448-b3b2-d7850912bbae", "source": "m_base", "target": "m_t_arr" } },
           { "group": "edges", "data": { "id": "bbd87b31-97f7-40d2-bb05-d6507dccdfc9", "source": "m_t_arr", "target": "m_which" } },
@@ -185,10 +184,10 @@
           { "group": "edges", "data": { "id": "7a356379-c9c4-4a11-bcaf-7b927fd5d538", "source": "m_puz2", "target": "m_puz1" } },
           { "group": "edges", "data": { "id": "ea939353-c1cd-4905-b10f-d16c9907dce4", "source": "m_cat", "target": "m_count2" } },
           { "group": "edges", "data": { "id": "5e205d24-c5d2-47d6-8f9d-853b139d140d", "source": "j_pict", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "3af94eb2-b27d-4bb5-92b2-50582fb6556f", "source": "s_dot", "target": "bg2" } },
-          { "group": "edges", "data": { "id": "7ec04556-81d2-4d4a-9a0c-74c48b2bd570", "source": "s_dot", "target": "bg2" } }
+          { "group": "edges", "data": { "id": "5f08a98b-59d2-46f5-b93b-bd96e85602e9", "source": "m_dist_one", "target": "m_dist" } }
         ];
 
+        // データ結合
         const initialElements = [...bgElements];
         appNodes.forEach(n => {
             const importedNode = importedData.find(item => item.group === 'nodes' && item.data.id === n.id);
@@ -289,10 +288,20 @@
             let eh = null;
             if (typeof cy.edgehandles === 'function') {
                 eh = cy.edgehandles({ 
-                    snap: true, 
+                    snap: false, 
                     noEdgeEventsInDraw: true, 
                     disableBrowserGestures: true,
-                    handleNodes: 'node[type != "bg"]'
+                    handleNodes: 'node[type != "bg"]',
+                    edgeType: function( sourceNode, targetNode ) {
+                        if (targetNode.data('type') === 'bg') return undefined;
+                        return 'flat';
+                    }
+                });
+
+                cy.on('ehcomplete', (event, sourceNode, targetNode, addedEdge) => {
+                    if (targetNode.data('type') === 'bg' || sourceNode.data('type') === 'bg') {
+                        if (addedEdge) addedEdge.remove();
+                    }
                 });
             }
 
@@ -327,16 +336,13 @@
 
                 const showTippy = (e) => {
                     if (isDrawMode) return; 
-                    
                     if (tippyInstance.state.isVisible) {
                         tippyInstance.hide();
                         return;
                     }
-                    
                     activeTippies.forEach(t => { if(t !== tippyInstance) t.hide(); });
                     tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
                     tippyInstance.show();
-                    
                     if (e && (e.type === 'tap' || e.type === 'click')) {
                         setTimeout(() => {
                             document.addEventListener('click', hideTippyOnClickOutside);
@@ -347,7 +353,6 @@
                 const hideTippyOnClickOutside = (event) => {
                     const isClickInsideTippy = event.target.closest('.tippy-box');
                     const isClickOnNode = event.target.closest('canvas');
-                    
                     if (!isClickInsideTippy && !isClickOnNode) {
                          tippyInstance.hide();
                          document.removeEventListener('click', hideTippyOnClickOutside);
@@ -355,18 +360,13 @@
                 };
 
                 node.on('tap', showTippy);
-
-                node.on('mouseover', () => {
-                    if(node.data('url')) node.style('cursor', 'pointer');
-                });
-
+                node.on('mouseover', () => { if(node.data('url')) node.style('cursor', 'pointer'); });
                 node.on('position drag zoom pan', () => {
                    if (tippyInstance.state.isVisible) {
                        tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
                    }
                 });
             });
-
 
             const btnEdit = document.getElementById('btn-edit');
             const btnView = document.getElementById('btn-view');
@@ -378,7 +378,6 @@
             let isDrawMode = false;
 
             btnToggleDraw.addEventListener('click', () => {
-                if (!eh) return alert("プラグインがロードされていません。");
                 isDrawMode = !isDrawMode;
                 if (isDrawMode) {
                     eh.enableDrawMode();
@@ -417,14 +416,6 @@
 
             btnEdit.addEventListener('click', () => {
                 if (eh) eh.enable();
-                if (isDrawMode && eh) {
-                    eh.enableDrawMode();
-                    modeDesc.innerText = "線引き中：ノードからノードへドラッグして線を結びます";
-                    modeDesc.className = "text-xs text-indigo-400 font-bold";
-                } else {
-                    modeDesc.innerText = "移動中：ノードをドラッグして配置を調整できます";
-                    modeDesc.className = "text-xs text-rose-400 font-bold";
-                }
                 cy.autolock(false);
                 btnEdit.classList.add('hidden');
                 btnView.classList.remove('hidden');
