@@ -57,7 +57,6 @@
     </div>
 
     <script>
-        // 背景ノードの定義
         const bgData = [
             { id: 'bg1', name: '聞くこと・話すこと', color: '#fef2f2' },
             { id: 'bg2', name: '書くこと', color: '#fffbeb' },
@@ -80,7 +79,6 @@
             grabbable: false
         }));
 
-        // アプリのメタデータ定義
         const appNodes = [
             { id: 'm_dist', name: 'くばろう', stage: 1, type: 'math', goal: '1対1対応の基礎' },
             { id: 'm_dist_one', name: '一つずつ配ろう', stage: 1, type: 'math', goal: '1対1対応の実践', url: 'https://watanabe-apps.github.io/apps/1tai1/index.html' },
@@ -100,7 +98,7 @@
             { id: 's_pos', name: '位置マッチング', stage: 2, type: 'support', goal: '緩やかな空間概念(上下、左右?)' },
             { id: 's_dot', name: '点', stage: 2, type: 'support', goal: '空間概念。鏡文字に関連' },
             { id: 's_ice', name: 'アイスならべ', stage: 2, type: 'support', goal: '空間概念(上下)。見比べる', url: 'https://scratch.mit.edu/projects/846717854/fullscreen/' },
-            { id: 's_maze', name: '迷路', stage: 2, type: 'support', goal: '運筆。複雑な線を見分ける。目と手の高度な協応' },
+            { id: 's_maze', name: '迷路', stage: 2, type: 'support', goal: '運筆。複雑な線を見分ける。目と手の高度な協応', url: 'https://watanabe-apps.github.io/apps/maze/index.html' },
             { id: 'm_count2', name: 'かずをかぞえよう', stage: 2.5, type: 'math', goal: '数を数える。数字→具体物。15程度まで' },
             { id: 'm_which', name: 'なんばんめ？', stage: 2.5, type: 'math', goal: '順序数の理解' },
             { id: 'm_t_tap', name: '数字タッチ', stage: 2.5, type: 'math', goal: '数字の順の理解。視認知向上' },
@@ -118,7 +116,6 @@
             { id: 'j_quiz', name: '平仮名単語クイズ', stage: 3, type: 'jp', goal: '平仮名の単語の読みの定着' }
         ];
 
-        // 座標とエッジ（線の繋がり）のデータ反映場所
         const importedData = [
           { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1060.9142358120218, "y": 105.74710064945151 } },
           { "group": "nodes", "data": { "id": "m_dist_one" }, "position": { "x": 1060.9142358120218, "y": 18.411111111111104 } },
