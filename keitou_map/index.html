@@ -53,22 +53,41 @@
     </div>
 
     <script>
+        // 背景ノードの定義 (7つの枠)
+        const bgData = [
+            { id: 'bg1', name: '聞くこと・話すこと', color: '#fef2f2' },
+            { id: 'bg2', name: '書くこと', color: '#fffbeb' },
+            { id: 'bg3', name: '読むこと', color: '#f0fdf4' },
+            { id: 'bg4', name: '数量・数と計算', color: '#eff6ff' },
+            { id: 'bg5', name: '図形', color: '#f5f3ff' },
+            { id: 'bg6', name: '測定', color: '#fdf4ff' },
+            { id: 'bg7', name: 'データの活用', color: '#f8fafc' }
+        ];
+        
+        const bgWidth = 350;
+        const bgHeight = 1200;
+
+        const bgElements = bgData.map((bg, index) => ({
+            group: 'nodes',
+            data: { id: bg.id, name: bg.name, type: 'bg', bgColor: bg.color },
+            position: { x: (index * bgWidth) + (bgWidth / 2) - 50, y: bgHeight / 2 - 100 },
+            locked: true,
+            selectable: false,
+            grabbable: false
+        }));
+
+        // ベースのメタデータ（表示名や目標など）
         const appNodes = [
-            // Stage 1
             { id: 's_look', name: '○○を探せ', stage: 1, type: 'support', goal: 'マッチング。視覚的に複数の情報から必要な情報を取り出す' },
             { id: 'm_dist', name: 'くばろう', stage: 1, type: 'math', goal: '1対1対応の基礎' },
             { id: 'm_match', name: 'マッチング', stage: 1, type: 'math', goal: '同じの理解' },
             { id: 'm_count_s', name: '数唱', stage: 1, type: 'math', goal: '数唱への意欲付け' },
             { id: 's_tap', name: '点タップ', stage: 1, type: 'support', goal: '具体物に気づく、タッチする' },
-            
-            // Stage 1.5
             { id: 'm_base', name: 'かぞえよう基礎', stage: 1.5, type: 'math', goal: '数を数える基礎。1対1対応。左から並べる' },
             { id: 'm_puz1', name: '絵あわせパズル', stage: 1.5, type: 'math', goal: '分割した絵カードを組み合わせる' },
             { id: 'm_dish', name: '皿に○個ずつ', stage: 1.5, type: 'math', goal: '1対1対応の繰り返しによって同じ数ずつ配る' },
             { id: 'm_puz2', name: '分割パズル', stage: 1.5, type: 'math', goal: '分割した絵カードを組み合わせる（基本）' },
             { id: 's_shape', name: '形探し', stage: 1.5, type: 'support', goal: '図地弁別。複雑な背景から特定の形を探す' },
-            
-            // Stage 2
             { id: 'm_cat', name: 'カテゴリー分類', stage: 2, type: 'math', goal: 'イラストを機能、色、形等で分類' },
             { id: 'm_flag', name: 'はたをつくろう', stage: 2, type: 'math', goal: '縦線、横線、四角等をかく' },
             { id: 'm_shape', name: '図形組み合わせ', stage: 2, type: 'math', goal: '図形を楽しく扱う' },
@@ -78,8 +97,6 @@
             { id: 's_dot', name: '点', stage: 2, type: 'support', goal: '空間概念。鏡文字に関連' },
             { id: 's_ice', name: 'アイス並べ', stage: 2, type: 'support', goal: '空間概念(上下)。見比べる' },
             { id: 's_maze', name: '迷路', stage: 2, type: 'support', goal: '運筆。複雑な線を見分ける。目と手の高度な協応' },
-            
-            // Stage 2.5
             { id: 'm_count2', name: 'かずをかぞえよう', stage: 2.5, type: 'math', goal: '数を数える。数字→具体物。15程度まで' },
             { id: 'm_which', name: 'なんばんめ？', stage: 2.5, type: 'math', goal: '順序数の理解' },
             { id: 'm_t_tap', name: '数字タッチ', stage: 2.5, type: 'math', goal: '数字の順の理解。視認知向上' },
@@ -90,8 +107,6 @@
             { id: 'j_trace', name: 'ひらがななぞり', stage: 2.5, type: 'jp', goal: '平仮名の書き。なぞり書き、写書き' },
             { id: 's_lines', name: '点つなぎ', stage: 2.5, type: 'support', goal: '図地弁別' },
             { id: 's_memory', name: '神経衰弱', stage: 2.5, type: 'support', goal: '視覚的短期記憶' },
-            
-            // Stage 3
             { id: 'm_math1', name: 'いくつといくつ', stage: 3, type: 'math', goal: '数の合成・分解。足し算、引き算の前段階' },
             { id: 'm_clock', name: '時計（時・分）', stage: 3, type: 'math', goal: '時計の読みの習得' },
             { id: 'j_50', name: '50音表', stage: 3, type: 'jp', goal: '平仮名の読み・書き。語頭音と結びつけた読み' },
@@ -100,19 +115,109 @@
             { id: 'j_quiz', name: 'ひらがな単語クイズ', stage: 3, type: 'jp', goal: '平仮名の単語の読みの定着' }
         ];
 
+        // ユーザー提供のJSONデータ
+        const importedData = [
+          { "group": "nodes", "data": { "id": "s_look" }, "position": { "x": 380.11854199683034, "y": 31.916323296354996 } },
+          { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1002.2206022187006, "y": 120.25610142630742 } },
+          { "group": "nodes", "data": { "id": "m_match" }, "position": { "x": 1374.7473851030115, "y": 24.088748019017434 } },
+          { "group": "nodes", "data": { "id": "m_count_s" }, "position": { "x": 1113.2405705229799, "y": 27.44342313787639 } },
+          { "group": "nodes", "data": { "id": "s_tap" }, "position": { "x": 610.6307448494453, "y": 34.152773375594286 } },
+          { "group": "nodes", "data": { "id": "m_base" }, "position": { "x": 1195.594611727417, "y": 208.4280507131538 } },
+          { "group": "nodes", "data": { "id": "m_puz1" }, "position": { "x": 1389.2053882725831, "y": 113.37892234548337 } },
+          { "group": "nodes", "data": { "id": "m_dish" }, "position": { "x": 1027.0583201267827, "y": 210.66450079239303 } },
+          { "group": "nodes", "data": { "id": "m_puz2" }, "position": { "x": 1616.520760697306, "y": 120.08827258320127 } },
+          { "group": "nodes", "data": { "id": "s_shape" }, "position": { "x": 763.7486529318542, "y": 170.40839936608558 } },
+          { "group": "nodes", "data": { "id": "m_cat" }, "position": { "x": 1372.353090332805, "y": 208.26022187004762 } },
+          { "group": "nodes", "data": { "id": "m_flag" }, "position": { "x": 1615.1657686212366, "y": 332.3832012678288 } },
+          { "group": "nodes", "data": { "id": "m_shape" }, "position": { "x": 1443.1169572107765, "y": 331.26497622820926 } },
+          { "group": "nodes", "data": { "id": "j_find" }, "position": { "x": 153.78922345483363, "y": 307.78225039619656 } },
+          { "group": "nodes", "data": { "id": "j_one" }, "position": { "x": 322.7990491283677, "y": 304.4275752773376 } },
+          { "group": "nodes", "data": { "id": "s_pos" }, "position": { "x": 575.6500792393025, "y": 236.21584786053876 } },
+          { "group": "nodes", "data": { "id": "s_dot" }, "position": { "x": 652.9654516640253, "y": 289.89064976228207 } },
+          { "group": "nodes", "data": { "id": "s_ice" }, "position": { "x": 412.7049128367667, "y": 231.74294770206023 } },
+          { "group": "nodes", "data": { "id": "s_maze" }, "position": { "x": 377.07955625990473, "y": 354.747702060222 } },
+          { "group": "nodes", "data": { "id": "m_count2" }, "position": { "x": 1272.7521394611726, "y": 327.74247226624396 } },
+          { "group": "nodes", "data": { "id": "m_which" }, "position": { "x": 891.5952456418383, "y": 414.9640253565768 } },
+          { "group": "nodes", "data": { "id": "m_t_tap" }, "position": { "x": 1055.0139461172737, "y": 412.7275752773375 } },
+          { "group": "nodes", "data": { "id": "m_t_arr" }, "position": { "x": 1013.797464342314, "y": 336.68827258320124 } },
+          { "group": "nodes", "data": { "id": "j_karuta" }, "position": { "x": 49.63645007923932, "y": 572.6337559429477 } },
+          { "group": "nodes", "data": { "id": "j_kbd" }, "position": { "x": 201.87290015847864, "y": 437.3285261489699 } },
+          { "group": "nodes", "data": { "id": "j_pict" }, "position": { "x": 541.9711568938194, "y": 574.870206022187 } },
+          { "group": "nodes", "data": { "id": "j_trace" }, "position": { "x": 500.7546751188588, "y": 439.5649762282092 } },
+          { "group": "nodes", "data": { "id": "s_lines" }, "position": { "x": 740.1870047543581, "y": 346.7522979397781 } },
+          { "group": "nodes", "data": { "id": "s_memory" }, "position": { "x": 199.12393026941365, "y": 168.95451664025353 } },
+          { "group": "nodes", "data": { "id": "m_math1" }, "position": { "x": 1216.998732171157, "y": 500.8995245641838 } },
+          { "group": "nodes", "data": { "id": "m_clock" }, "position": { "x": 1410.6095087163233, "y": 496.42662440570524 } },
+          { "group": "nodes", "data": { "id": "j_50" }, "position": { "x": 31.74484944532491, "y": 360.00316957210777 } },
+          { "group": "nodes", "data": { "id": "j_order" }, "position": { "x": 492.611410459588, "y": 671.9879556259905 } },
+          { "group": "nodes", "data": { "id": "j_write" }, "position": { "x": 337.3359746434231, "y": 573.5841521394611 } },
+          { "group": "nodes", "data": { "id": "j_quiz" }, "position": { "x": 14.326782884310678, "y": 440.5153724247226 } },
+          { "group": "edges", "data": { "id": "07ed4e46-09ba-4579-acaa-dabfd535aaad", "source": "s_maze", "target": "j_trace" } },
+          { "group": "edges", "data": { "id": "68db12c3-41fb-472c-a96b-e25ab24945ab", "source": "j_trace", "target": "j_write" } },
+          { "group": "edges", "data": { "id": "95b2ace3-be5e-4c7f-a235-d9155e4a22c8", "source": "j_find", "target": "j_kbd" } },
+          { "group": "edges", "data": { "id": "3f945dec-c163-446d-8fe6-a8480b4f68e5", "source": "s_ice", "target": "j_trace" } },
+          { "group": "edges", "data": { "id": "c3eca546-228d-4b74-a8ed-1a7bb3fd2156", "source": "j_trace", "target": "j_pict" } },
+          { "group": "edges", "data": { "id": "39d13ea8-5313-41ec-9c99-47b8f9cc377f", "source": "j_one", "target": "j_kbd" } },
+          { "group": "edges", "data": { "id": "d82876bc-5b80-4b29-9c4a-9f29cfcc6bbc", "source": "j_50", "target": "j_kbd" } },
+          { "group": "edges", "data": { "id": "610bd118-48ef-4e3d-b4e6-fb28675e8e00", "source": "j_kbd", "target": "j_karuta" } },
+          { "group": "edges", "data": { "id": "b22f3782-cfc0-4357-95fc-6df3cbe40ca2", "source": "j_kbd", "target": "j_write" } },
+          { "group": "edges", "data": { "id": "9feb0d6f-769a-4975-ba88-6647c96c19c6", "source": "s_lines", "target": "j_trace" } },
+          { "group": "edges", "data": { "id": "8ed7ff85-b9a5-49c5-8551-c648a712f910", "source": "s_pos", "target": "j_trace" } },
+          { "group": "edges", "data": { "id": "448373fe-ab9f-4804-9005-023d7527fa16", "source": "s_dot", "target": "j_trace" } },
+          { "group": "edges", "data": { "id": "da5e9273-1641-452f-9c58-70bdf9b0e36d", "source": "s_shape", "target": "s_lines" } },
+          { "group": "edges", "data": { "id": "a05bda42-4622-45e2-9c0a-78feaafab762", "source": "s_shape", "target": "s_dot" } },
+          { "group": "edges", "data": { "id": "68926cea-db53-4225-bf47-5161f22ae8c1", "source": "m_count_s", "target": "m_base" } },
+          { "group": "edges", "data": { "id": "ccc12f4c-8269-489a-8f79-6be4db487e9b", "source": "m_dish", "target": "m_base" } },
+          { "group": "edges", "data": { "id": "4233e79b-9e3b-42d9-9fd8-0766c34129b9", "source": "m_base", "target": "m_dish" } },
+          { "group": "edges", "data": { "id": "d3303c4f-1328-4240-90ab-7f6698c41bd5", "source": "m_puz2", "target": "m_cat" } },
+          { "group": "edges", "data": { "id": "0658bce3-f19e-4e72-9195-ab3e086fadca", "source": "m_puz1", "target": "m_cat" } },
+          { "group": "edges", "data": { "id": "bf747eaa-cf46-4118-9bd1-089574faa952", "source": "m_base", "target": "m_count2" } },
+          { "group": "edges", "data": { "id": "6d86b823-f62f-4448-b3b2-d7850912bbae", "source": "m_base", "target": "m_t_arr" } },
+          { "group": "edges", "data": { "id": "bbd87b31-97f7-40d2-bb05-d6507dccdfc9", "source": "m_t_arr", "target": "m_which" } },
+          { "group": "edges", "data": { "id": "3dec0ebe-75f6-48d5-8195-2b64938dd9ed", "source": "m_t_arr", "target": "m_t_tap" } },
+          { "group": "edges", "data": { "id": "8793bba5-ea3b-4aae-916c-148f4c246af5", "source": "m_count2", "target": "m_math1" } },
+          { "group": "edges", "data": { "id": "5a79b32a-9967-4af0-9792-369e22d8bd79", "source": "m_dist", "target": "m_dish" } },
+          { "group": "edges", "data": { "id": "23bd1170-baaa-49ae-ae44-a8891918505a", "source": "j_quiz", "target": "j_karuta" } },
+          { "group": "edges", "data": { "id": "60b1286b-9a33-415a-91a8-438216f82166", "source": "m_match", "target": "m_puz1" } },
+          { "group": "edges", "data": { "id": "d7224c0a-20d2-48e6-9ac0-92f98b20b9d2", "source": "m_match", "target": "m_puz2" } },
+          { "group": "edges", "data": { "id": "fd73e110-43fb-4fff-bf8c-d25d273010b6", "source": "m_puz1", "target": "m_puz2" } },
+          { "group": "edges", "data": { "id": "7a356379-c9c4-4a11-bcaf-7b927fd5d538", "source": "m_puz2", "target": "m_puz1" } },
+          { "group": "edges", "data": { "id": "ea939353-c1cd-4905-b10f-d16c9907dce4", "source": "m_cat", "target": "m_count2" } },
+          { "group": "edges", "data": { "id": "5e205d24-c5d2-47d6-8f9d-853b139d140d", "source": "j_pict", "target": "j_write" } },
+          { "group": "edges", "data": { "id": "ecabc485-2420-4a4e-9d2f-2667ba61e1cf", "source": "j_write", "target": "j_pict" } }
+        ];
+
+        // データの結合
+        const initialElements = [...bgElements];
+        appNodes.forEach(n => {
+            const importedNode = importedData.find(item => item.group === 'nodes' && item.data.id === n.id);
+            const position = importedNode && importedNode.position ? importedNode.position : { x: 0, y: 0 };
+            initialElements.push({
+                group: 'nodes',
+                data: { 
+                    id: n.id, 
+                    name: n.name, 
+                    goal: n.goal, 
+                    stage: n.stage,
+                    type: n.type,
+                    color: n.type === 'jp' ? '#f43f5e' : (n.type === 'support' ? '#10b981' : '#3b82f6')
+                },
+                position: position
+            });
+        });
+        importedData.forEach(item => {
+            if (item.group === 'edges') {
+                initialElements.push({
+                    group: 'edges',
+                    data: { id: item.data.id, source: item.data.source, target: item.data.target }
+                });
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             const cy = cytoscape({
                 container: document.getElementById('cy'),
-                elements: appNodes.map(n => ({
-                    data: { 
-                        id: n.id, 
-                        name: n.name, 
-                        goal: n.goal, 
-                        stage: n.stage,
-                        type: n.type,
-                        color: n.type === 'jp' ? '#f43f5e' : (n.type === 'support' ? '#10b981' : '#3b82f6')
-                    }
-                })),
+                elements: initialElements,
                 style: [
                     {
                         selector: 'node',
@@ -129,6 +234,26 @@
                             'shape': 'round-rectangle',
                             'border-width': 2,
                             'border-color': '#fff',
+                            'z-index': 10
+                        }
+                    },
+                    {
+                        selector: 'node[type="bg"]',
+                        style: {
+                            'shape': 'rectangle',
+                            'width': bgWidth,
+                            'height': bgHeight,
+                            'background-color': 'data(bgColor)',
+                            'label': 'data(name)',
+                            'text-valign': 'top',
+                            'text-halign': 'center',
+                            'text-margin-y': 20,
+                            'font-size': '20px',
+                            'font-weight': 'bold',
+                            'color': '#94a3b8',
+                            'border-width': 1,
+                            'border-color': '#e2e8f0',
+                            'z-index': 1
                         }
                     },
                     {
@@ -139,34 +264,22 @@
                             'target-arrow-color': '#94a3b8',
                             'target-arrow-shape': 'triangle',
                             'curve-style': 'bezier',
+                            'z-index': 5
                         }
                     },
-                    { selector: '.eh-handle', style: { 'background-color': '#ef4444', 'width': 10, 'height': 10, 'shape': 'ellipse', 'overlay-opacity': 0, 'border-width': 8, 'border-opacity': 0 } },
+                    { selector: '.eh-handle', style: { 'background-color': '#ef4444', 'width': 10, 'height': 10, 'shape': 'ellipse', 'overlay-opacity': 0, 'border-width': 8, 'border-opacity': 0, 'z-index': 20 } },
                     { selector: '.eh-source', style: { 'border-width': 4, 'border-color': '#ef4444' } },
                     { selector: '.eh-target', style: { 'border-width': 4, 'border-color': '#ef4444' } },
-                    { selector: '.eh-preview, .eh-ghost-edge', style: { 'background-color': '#ef4444', 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'source-arrow-color': '#ef4444' } },
+                    { selector: '.eh-preview, .eh-ghost-edge', style: { 'background-color': '#ef4444', 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'source-arrow-color': '#ef4444', 'z-index': 15 } },
                     { selector: '.eh-ghost-edge.eh-preview-active', style: { 'opacity': 0 } }
                 ],
                 layout: { name: 'preset' }
             });
 
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            const type_x = { 'jp': width * 0.2, 'support': width * 0.5, 'math': width * 0.8 };
-
-            cy.nodes().forEach(node => {
-                const data = node.data();
-                const x = type_x[data.type];
-                const y = (data.stage - 1) * (height * 0.3) + 80;
-                
-                const siblings = cy.nodes().filter(n => n.data('stage') === data.stage && n.data('type') === data.type);
-                const index = siblings.indexOf(node);
-                const offset = (index - (siblings.length - 1) / 2) * 150;
-                node.position({ x: x + offset, y: y });
-            });
             cy.fit(null, 50);
 
             cy.nodes().forEach(node => {
+                if(node.data('type') === 'bg') return;
                 let tippyInstance = null;
                 node.on('mouseover', () => {
                     const popperRef = node.popperRef();
@@ -230,7 +343,7 @@
                 btnEdit.classList.remove('hidden');
                 modeDesc.innerText = "閲覧モード：配置と線は固定されています";
                 modeDesc.className = "text-xs text-emerald-400 font-bold";
-                const exportData = cy.elements().map(ele => ({
+                const exportData = cy.elements().filter(ele => ele.data('type') !== 'bg').map(ele => ({
                     group: ele.group(),
                     data: { id: ele.data('id'), source: ele.data('source'), target: ele.data('target') },
                     position: ele.isNode() ? ele.position() : undefined
