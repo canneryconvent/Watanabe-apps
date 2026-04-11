@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>一つずつ配ろう</title>
+    <style>
+        /* CSS リセットと基本設定 */
+        :root {
+            --primary: #4CAF50;
+            --bg-color: #ffffff; /* 背景色を白に変更 */
+            --text-color: #333;
+        }
+        * {
+            box-sizing: border-box;
+            /* 誤操作防止: 長押しや選択を無効化 */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* スクロール無効化 */
+            background-color: var(--bg-color);
+            font-family: 'Hiragino Maru Gothic ProN', 'Arial Rounded MT Bold', sans-serif;
+            touch-action: none; /* スワイプやピンチズーム等のブラウザジェスチャーを無効化 */
+        }
+
+        /* 画面の共通クラス */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* --- スタート画面 --- */
+        #start-screen {
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+        }
+        #start-btn {
+            font-size: 4rem;
+            padding: 1rem 4rem;
+            border: none;
+            border-radius: 50px;
+            background-color: #ff9800;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #e65100;
+            transition: transform 0.1s, box-shadow 0.1s;
+            font-weight: bold;
+            font-family: inherit;
+        }
+        #start-btn:active {
+            transform: translateY(10px);
+            box-shadow: 0 0 0 #e65100;
+        }
+
+        /* --- プレイ画面 --- */
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        .score-badge {
+            background-color: #ff9800;
+            color: white;
+            font-size: 2.5rem;
+            padding: 0.5rem 2rem;
+            border-radius: 15px;
+            border: 4px solid #e65100;
+            font-weight: bold;
+        }
+
+        /* 2列レイアウト用のコンテナ */
+        #plates-container {
+            flex: 1; /* 上半分を広く取る */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* 下寄せにしてアイテムと近づける */
+            gap: 2vh;
+            padding: 20px;
+            padding-bottom: 5vh;
+        }
+        #items-container {
+            height: 40vh; /* 下部は一定の高さ */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* 上寄せ */
+            gap: 2vh;
+            padding: 20px;
+            padding-top: 5vh;
+            background-color: rgba(240, 240, 240, 0.5); /* うっすらグレーを敷いて境界をわかりやすく */
+            border-top: 4px dashed #ccc;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            gap: 2vw;
+            width: 100%;
+        }
+
+        /* オブジェクトのサイズ調整 */
+        .plate {
+            width: clamp(60px, 16vw, 180px); /* 10個（1列5個）でも収まるサイズ */
+            aspect-ratio: 2 / 1;
+            position: relative;
+        }
+        .plate-svg {
+            width: 100%;
+            height: 100%;
+        }
+        .plate-shadow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%);
+            width: 60%;
+            height: 60%;
+            pointer-events: none;
+            /* シルエット化 */
+            filter: brightness(0) invert(0.3) opacity(0.6);
+        }
+
+        .item-slot {
+            width: clamp(40px, 11vw, 110px); /* 皿より少し小さめ */
+            aspect-ratio: 1 / 1;
+            position: relative;
+        }
+
+        .item {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: grab;
+            transform-origin: center;
+        }
+        .item:active {
+            cursor: grabbing;
+        }
+        .item.dragging {
+            transform: scale(1.15); /* ドラッグ中は少し大きく */
+            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.3));
+            z-index: 1000;
+        }
+
+        /* --- 設定モーダル --- */
+        #settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem 3rem;
+            border-radius: 20px;
+            min-width: 320px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            text-align: center;
+            color: var(--primary);
+        }
+        .setting-item {
+            margin-bottom: 1.5rem;
+        }
+        .setting-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .radio-group label {
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+            background: #f5f5f5;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 30px;
+        }
+        input[type="radio"] {
+            width: 25px;
+            height: 25px;
+        }
+        .primary-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.5rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            margin-top: 2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .primary-btn:active {
+            background-color: #388E3C;
+        }
+
+        /* --- トリプルタップ用隠しボタン --- */
+        #settings-trigger {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 80px;
+            height: 80px;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.2; /* うっすら見える程度 */
+            cursor: pointer;
+        }
+        #settings-trigger svg {
+            width: 40px;
+            height: 40px;
+            fill: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- トリプルタップ設定ボタン（右上） -->
+    <div id="settings-trigger">
+        <svg viewBox="0 0 24 24">
+            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+        </svg>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settings-modal" class="hidden">
+        <div class="modal-content">
+            <h2>設定</h2>
+            <div class="setting-item">
+                <label>皿の数: <span id="plate-count-disp">3</span></label>
+                <input type="range" id="setting-count" min="1" max="10" value="3">
+            </div>
+            <div class="setting-item">
+                <label>のせるもの (汎化)</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="setting-item-type" value="apple"> りんご</label>
+                    <label><input type="radio" name="setting-item-type" value="orange"> みかん</label>
+                    <label><input type="radio" name="setting-item-type" value="red-circle"> 赤丸</label>
+                    <label><input type="radio" name="setting-item-type" value="blue-circle"> 青丸</label>
+                    <label><input type="radio" name="setting-item-type" value="star"> 星</label>
+                    <label><input type="radio" name="setting-item-type" value="random"> ランダム</label>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>皿の表示</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="setting-style" value="normal"> ふつう</label>
+                    <label><input type="radio" name="setting-style" value="shadow"> かげ</label>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>音</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="setting-sound" value="se"> 効果音</label>
+                    <label><input type="radio" name="setting-sound" value="none"> なし</label>
+                </div>
+            </div>
+            <button id="close-settings-btn" class="primary-btn">とじる</button>
+        </div>
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="start-screen" class="screen">
+        <button id="start-btn">スタート</button>
+    </div>
+
+    <!-- プレイ画面 -->
+    <div id="play-screen" class="screen hidden">
+        <div id="score-board">
+            <div id="round-count" class="score-badge">0</div>
+        </div>
+        <div id="plates-container"></div>
+        <div id="items-container"></div>
+    </div>
+
+    <script>
+        // --- 状態管理と初期設定 ---
+        const defaultSettings = {
+            plateCount: 3,
+            plateStyle: 'normal',
+            soundType: 'se',
+            itemType: 'apple'
+        };
+        let settings = JSON.parse(localStorage.getItem('1to1Settings')) || defaultSettings;
+        let round = 0;
+        let activeItem = null;
+        let offsetX = 0;
+        let offsetY = 0;
+        let currentItemType = 'apple';
+
+        // --- 音声・効果音コントローラー ---
+        const AudioController = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            play(type) {
+                if (settings.soundType === 'none') return;
+
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                const now = this.ctx.currentTime;
+
+                if (type === 'snap') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.5, now + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'clear') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);     
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); 
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); 
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                }
+            }
+        };
+
+        // --- SVG生成関数 ---
+        function getItemSVG(type) {
+            if (type === 'apple') {
+                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <path d="M 50 30 Q 55 10 70 5" stroke="#4a3000" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 50 30 Q 60 25 75 30 Q 60 40 50 30" fill="#4CAF50" />
+                    <path d="M 50 25 C 20 20 0 40 10 70 C 20 90 40 95 50 85 C 60 95 80 90 90 70 C 100 40 80 20 50 25 Z" fill="#ff2a2a" stroke="#cc0000" stroke-width="2"/>
+                    <path d="M 25 45 Q 20 60 30 70" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>`;
+            } else if (type === 'orange') {
+                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <path d="M 50 20 Q 65 10 75 25 Q 60 35 50 20" fill="#4CAF50" />
+                    <circle cx="50" cy="55" r="35" fill="#FF9800" stroke="#E65100" stroke-width="2"/>
+                    <path d="M 30 45 Q 25 55 35 65" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>`;
+            } else if (type === 'red-circle') {
+                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <circle cx="50" cy="50" r="35" fill="#F44336" stroke="#D32F2F" stroke-width="2"/>
+                </svg>`;
+            } else if (type === 'blue-circle') {
+                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <circle cx="50" cy="50" r="35" fill="#2196F3" stroke="#1976D2" stroke-width="2"/>
+                </svg>`;
+            } else if (type === 'star') {
+                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <polygon points="50,15 61,38 86,42 68,60 72,85 50,73 28,85 32,60 14,42 39,38" fill="#FFEB3B" stroke="#FBC02D" stroke-width="2"/>
+                </svg>`;
+            }
+            return '';
+        }
+
+        // --- ゲーム進行ロジック ---
+        function startGame() {
+            AudioController.init();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('play-screen').classList.remove('hidden');
+            round = 0;
+            document.getElementById('round-count').innerText = round;
+            initRound();
+        }
+
+        function initRound() {
+            // バグ修正: body直下に残ってしまったアイテム（ドラッグ中にクリア判定等になったもの）を確実に全消去
+            document.querySelectorAll('.item').forEach(el => el.remove());
+
+            const pContainer = document.getElementById('plates-container');
+            const aContainer = document.getElementById('items-container');
+            pContainer.innerHTML = '';
+            aContainer.innerHTML = '';
+
+            // ランダム設定の処理
+            currentItemType = settings.itemType;
+            if (currentItemType === 'random') {
+                const types = ['apple', 'orange', 'red-circle', 'blue-circle', 'star'];
+                currentItemType = types[Math.floor(Math.random() * types.length)];
+            }
+
+            const count = settings.plateCount;
+            // 5個以下の場合は1列、それより多い場合は2段に分けて配置
+            let topCount, bottomCount;
+            if (count <= 5) {
+                topCount = count;
+                bottomCount = 0;
+            } else {
+                topCount = Math.ceil(count / 2);
+                bottomCount = Math.floor(count / 2);
+            }
+
+            function createRow(container, countInRow, isPlate, startIndex) {
+                if (countInRow === 0) return;
+                const row = document.createElement('div');
+                row.className = 'row';
+                
+                for (let i = 0; i < countInRow; i++) {
+                    const index = startIndex + i;
+                    if (isPlate) {
+                        const plate = document.createElement('div');
+                        plate.className = 'plate';
+                        plate.dataset.index = index;
+                        plate.dataset.hasItem = "false";
+                        
+                        const svgContainer = document.createElement('div');
+                        svgContainer.className = 'plate-svg';
+                        svgContainer.innerHTML = `
+                            <svg viewBox="0 0 200 100" width="100%" height="100%">
+                                <ellipse cx="100" cy="50" rx="90" ry="40" fill="#fff5cc" stroke="#e6b800" stroke-width="4"/>
+                                <ellipse cx="100" cy="50" rx="60" ry="25" fill="#ffe066" />
+                            </svg>`;
+                        plate.appendChild(svgContainer);
+
+                        if (settings.plateStyle === 'shadow') {
+                            const shadow = document.createElement('div');
+                            shadow.className = 'plate-shadow';
+                            shadow.innerHTML = getItemSVG(currentItemType);
+                            plate.appendChild(shadow);
+                        }
+                        row.appendChild(plate);
+                    } else {
+                        const slot = document.createElement('div');
+                        slot.className = 'item-slot';
+                        slot.dataset.slotIndex = index;
+
+                        const item = document.createElement('div');
+                        item.className = 'item';
+                        item.dataset.originalSlot = index;
+                        item.innerHTML = getItemSVG(currentItemType);
+                        item.addEventListener('pointerdown', handlePointerDown);
+
+                        slot.appendChild(item);
+                        row.appendChild(slot);
+                    }
+                }
+                container.appendChild(row);
+            }
+
+            // 皿の生成
+            createRow(pContainer, topCount, true, 0);
+            createRow(pContainer, bottomCount, true, topCount);
+
+            // アイテムの生成
+            createRow(aContainer, topCount, false, 0);
+            createRow(aContainer, bottomCount, false, topCount);
+        }
+
+        // --- ドラッグ＆ドロップ処理 ---
+        function handlePointerDown(e) {
+            if (activeItem || !e.isPrimary) return; 
+            e.preventDefault();
+            AudioController.init();
+
+            activeItem = e.currentTarget;
+
+            // スナップされていた場合は皿から解除
+            if (activeItem.dataset.snappedPlate) {
+                const plate = document.querySelector(`.plate[data-index="${activeItem.dataset.snappedPlate}"]`);
+                if (plate) plate.dataset.hasItem = "false";
+                activeItem.dataset.snappedPlate = "";
+            }
+
+            const rect = activeItem.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            activeItem.style.width = rect.width + 'px';
+            activeItem.style.height = rect.height + 'px';
+            activeItem.style.position = 'fixed';
+            activeItem.style.left = rect.left + 'px';
+            activeItem.style.top = rect.top + 'px';
+            
+            activeItem.classList.add('dragging');
+            document.body.appendChild(activeItem);
+
+            document.addEventListener('pointermove', handlePointerMove);
+            document.addEventListener('pointerup', handlePointerUp);
+            document.addEventListener('pointercancel', handlePointerUp);
+        }
+
+        function handlePointerMove(e) {
+            if (!activeItem || !e.isPrimary) return;
+            e.preventDefault();
+            const x = e.clientX - offsetX;
+            const y = e.clientY - offsetY;
+            activeItem.style.left = x + 'px';
+            activeItem.style.top = y + 'px';
+        }
+
+        function handlePointerUp(e) {
+            if (!activeItem || !e.isPrimary) return;
+            
+            document.removeEventListener('pointermove', handlePointerMove);
+            document.removeEventListener('pointerup', handlePointerUp);
+            document.removeEventListener('pointercancel', handlePointerUp);
+
+            const itemRect = activeItem.getBoundingClientRect();
+            const itemCenterX = itemRect.left + itemRect.width / 2;
+            const itemCenterY = itemRect.top + itemRect.height / 2;
+
+            const plates = document.querySelectorAll('.plate');
+            let snapped = false;
+
+            // 当たり判定
+            for (let plate of plates) {
+                if (plate.dataset.hasItem === "true") continue;
+
+                const plateRect = plate.getBoundingClientRect();
+                const plateCenterX = plateRect.left + plateRect.width / 2;
+                const plateCenterY = plateRect.top + plateRect.height / 2;
+
+                const dist = Math.hypot(itemCenterX - plateCenterX, itemCenterY - plateCenterY);
+                
+                if (dist < plateRect.width / 1.5) {
+                    snapped = true;
+                    plate.dataset.hasItem = "true";
+                    activeItem.dataset.snappedPlate = plate.dataset.index;
+                    
+                    activeItem.style.transition = 'left 0.2s, top 0.2s';
+                    activeItem.style.left = (plateCenterX - itemRect.width / 2) + 'px';
+                    activeItem.style.top = (plateCenterY - itemRect.height / 2 - (plateRect.height * 0.2)) + 'px'; 
+                    
+                    AudioController.play('snap');
+
+                    const currentItem = activeItem;
+                    setTimeout(() => {
+                        if(currentItem) currentItem.style.transition = '';
+                    }, 200);
+                    break;
+                }
+            }
+
+            if (!snapped) {
+                // スナップしなかった場合は元のスロットへアニメーションで戻す
+                const originalSlotIndex = activeItem.dataset.originalSlot;
+                const targetSlot = document.querySelector(`.item-slot[data-slot-index="${originalSlotIndex}"]`);
+                
+                if (targetSlot) {
+                    const slotRect = targetSlot.getBoundingClientRect();
+                    activeItem.style.transition = 'left 0.1s ease, top 0.1s ease';
+                    activeItem.style.left = slotRect.left + 'px';
+                    activeItem.style.top = slotRect.top + 'px';
+
+                    const currentItem = activeItem;
+                    setTimeout(() => {
+                        if (currentItem && targetSlot) {
+                            currentItem.style.transition = '';
+                            currentItem.style.position = 'absolute';
+                            currentItem.style.left = '0';
+                            currentItem.style.top = '0';
+                            currentItem.style.width = '100%';
+                            currentItem.style.height = '100%';
+                            targetSlot.appendChild(currentItem);
+                        }
+                    }, 100);
+                }
+            }
+            
+            activeItem.classList.remove('dragging');
+            activeItem = null;
+
+            checkClear();
+        }
+
+        function checkClear() {
+            const plates = document.querySelectorAll('.plate');
+            let allFilled = true;
+            for (let p of plates) {
+                if (p.dataset.hasItem !== "true") {
+                    allFilled = false;
+                    break;
+                }
+            }
+
+            if (allFilled) {
+                AudioController.play('clear');
+                round++;
+                document.getElementById('round-count').innerText = round;
+                
+                setTimeout(() => {
+                    initRound();
+                }, 2000);
+            }
+        }
+
+        // --- レスポンシブ対応 ---
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                repositionSnappedItems();
+            }, 200);
+        });
+
+        function repositionSnappedItems() {
+            const items = document.querySelectorAll('.item');
+            items.forEach(item => {
+                if (item === activeItem) return;
+                
+                const snappedIndex = item.dataset.snappedPlate;
+                if (snappedIndex) {
+                    const plate = document.querySelector(`.plate[data-index="${snappedIndex}"]`);
+                    if (plate) {
+                        const plateRect = plate.getBoundingClientRect();
+                        const plateCenterX = plateRect.left + plateRect.width / 2;
+                        const plateCenterY = plateRect.top + plateRect.height / 2;
+                        
+                        item.style.left = (plateCenterX - item.offsetWidth / 2) + 'px';
+                        item.style.top = (plateCenterY - item.offsetHeight / 2 - (plateRect.height * 0.2)) + 'px';
+                    }
+                }
+            });
+        }
+
+        // --- トリプルタップ設定画面呼び出し ---
+        let tapTimes = [];
+        document.getElementById('settings-trigger').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            tapTimes.push(now);
+            
+            tapTimes = tapTimes.filter(t => now - t <= 600);
+            
+            if (tapTimes.length >= 3) {
+                tapTimes = [];
+                openSettings();
+            }
+        });
+
+        // --- 設定モーダル制御 ---
+        const slider = document.getElementById('setting-count');
+        const countDisp = document.getElementById('plate-count-disp');
+
+        slider.addEventListener('input', (e) => {
+            countDisp.innerText = e.target.value;
+        });
+
+        function openSettings() {
+            slider.value = settings.plateCount;
+            countDisp.innerText = settings.plateCount;
+            document.querySelector(`input[name="setting-style"][value="${settings.plateStyle}"]`).checked = true;
+            document.querySelector(`input[name="setting-sound"][value="${settings.soundType}"]`).checked = true;
+            
+            // 下位互換対応 (古い設定データにitemTypeがない場合)
+            if(!settings.itemType) settings.itemType = 'apple';
+            document.querySelector(`input[name="setting-item-type"][value="${settings.itemType}"]`).checked = true;
+            
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('close-settings-btn').addEventListener('click', () => {
+            settings.plateCount = parseInt(slider.value);
+            settings.plateStyle = document.querySelector('input[name="setting-style"]:checked').value;
+            settings.soundType = document.querySelector('input[name="setting-sound"]:checked').value;
+            settings.itemType = document.querySelector('input[name="setting-item-type"]:checked').value;
+            
+            localStorage.setItem('1to1Settings', JSON.stringify(settings));
+            document.getElementById('settings-modal').classList.add('hidden');
+            
+            if (!document.getElementById('play-screen').classList.contains('hidden')) {
+                initRound();
+            }
+        });
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+
+    </script>
+</body>
+</html>
