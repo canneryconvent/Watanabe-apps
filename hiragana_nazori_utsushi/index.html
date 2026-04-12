@@ -7,15 +7,13 @@
     
     <style>
         /* =========================================
-           0. ローカルフォントの読み込み (iOS対策強化版)
+           0. ローカルフォントの読み込み (iOS対策最終版)
         ========================================= */
         @font-face {
-            /* システムフォントと混同されないユニークな名前に変更 */
-            font-family: 'AppCustomFont';
+            font-family: 'klee';
             src: url('./KleeOne-Regular.ttf') format('truetype');
             font-weight: 400;
             font-style: normal;
-            /* 読み込みが完了するまでテキストを表示しないことで、チラつきと差し戻しを防ぐ */
             font-display: block;
         }
 
@@ -23,7 +21,7 @@
            1. 確実な画面高さの取得＆誤操作防止
         ========================================= */
         :root {
-            --main-font: 'AppCustomFont', 'UD Digi Kyokasho N-R', 'Hiragino Maru Gothic ProN', sans-serif;
+            --main-font: 'klee', 'UD Digi Kyokasho N-R', sans-serif;
         }
 
         * {
@@ -32,9 +30,10 @@
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             font-family: var(--main-font);
-            /* iOSの自動太字によるフォント解除を徹底的に防ぐ */
             font-weight: 400 !important;
             -webkit-font-smoothing: antialiased;
+            /* iOSによる勝手な太字・斜体合成を禁止（フォント解除の主要因） */
+            font-synthesis: none;
         }
         
         html, body {
@@ -49,7 +48,7 @@
         .screen.active { display: flex; }
 
         /* =========================================
-           ホーム画面 (文字選択)
+           ホーム画面
         ========================================= */
         .setting-wrapper {
             position: absolute;
@@ -61,7 +60,7 @@
             z-index: 10;
         }
         .setting-btn { font-size: clamp(20px, 4vh, 28px); padding: 5px; cursor: pointer; color: #666; border-radius: 50%; transition: background 0.2s;}
-        .setting-hint { font-size: 9px; color: #aaa; margin-top: -5px; letter-spacing: -0.5px;}
+        .setting-hint { font-size: 8px; color: #aaa; margin-top: -5px; letter-spacing: -0.5px;}
 
         .tabs { display: flex; justify-content: center; padding-top: 5px; margin-bottom: 5px; flex-shrink: 0; }
         .tab-btn { 
@@ -111,34 +110,41 @@
         .saved-images-container { padding: 5px 15px calc(5px + env(safe-area-inset-bottom)); background: #eaeaea; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid #ccc; flex-shrink: 0;}
         .saved-images-list { display: flex; gap: 8px; align-items: center; }
         .saved-image-item { height: 45px; width: auto; border: 1px solid #999; background: #fff; object-fit: contain; cursor: pointer; transition: transform 0.2s;}
-        .saved-image-item:active { transform: scale(0.95); }
         .saved-images-title { font-size: 11px; color: #666; margin-bottom: 2px; }
 
         /* =========================================
-           練習画面
+           練習画面 (上詰めレイアウト)
         ========================================= */
-        .toolbar { display: flex; justify-content: space-between; padding: 5px 15px; align-items: center; flex-shrink: 0; }
+        .toolbar { display: flex; justify-content: space-between; padding: 2px 15px; align-items: center; flex-shrink: 0; }
         .tools { display: flex; gap: 10px; }
-        .tool-btn { font-size: clamp(24px, 5vw, 32px); padding: 6px; border-radius: 10px; border: 3px solid transparent; background: #f0f0f0; opacity: 0.5; cursor: pointer;}
+        .tool-btn { font-size: clamp(24px, 5vw, 32px); padding: 5px; border-radius: 10px; border: 3px solid transparent; background: #f0f0f0; opacity: 0.5; cursor: pointer;}
         .tool-btn.active { border-color: #ff5252; opacity: 1; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
         
-        .done-btn { font-size: clamp(20px, 5vw, 28px); padding: 6px 20px; border-radius: 30px; border: 3px solid #ccc; background: #fff; color: #ccc; transition: 0.3s; }
+        .done-btn { font-size: clamp(20px, 5vw, 28px); padding: 5px 20px; border-radius: 30px; border: 3px solid #ccc; background: #fff; color: #ccc; transition: 0.3s; }
         .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #e8f5e9; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
 
-        /* お手本文字をさらに大きく表示 */
-        .main-letter { font-size: clamp(120px, 28vh, 350px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
+        /* お手本文字の上部スペースを詰める */
+        .main-letter { font-size: clamp(100px, 25vh, 320px); text-align: center; margin-top: -10px; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
         
-        .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 5px 15px calc(15px + env(safe-area-inset-bottom)); width: 100%; height: 100%; overflow: hidden; touch-action: none; }
+        /* 表を上に詰めるため、align-items: flex-start に変更 */
+        .canvas-container { 
+            flex-grow: 1; display: flex; justify-content: center; align-items: flex-start; 
+            padding: 5px 15px calc(30px + env(safe-area-inset-bottom)); width: 100%; height: 100%; overflow: hidden; touch-action: none; 
+        }
         
+        /* グリッドの潰れ防止策 */
         .grid { 
             display: grid; 
             gap: 2px; 
             background-color: #333; 
             border: 4px solid #333; 
-            grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); 
-            grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr));
+            grid-template-columns: repeat(var(--cols, 5), 1fr); 
+            grid-template-rows: repeat(var(--rows, 2), 1fr);
             aspect-ratio: var(--cols, 5) / var(--rows, 2); 
-            max-width: 100%; max-height: 100%; width: 100%;
+            max-width: 100%; 
+            max-height: 100%; 
+            width: 100%;
+            height: auto;
         }
         .cell { 
             position: relative; 
@@ -146,13 +152,23 @@
             display: flex; justify-content: center; align-items: center; 
             border: none; 
             border-radius: 0; 
+            overflow: hidden;
         }
-        /* 枠内文字サイズをさらに大きく調整 (99vmin) */
-        .cell-text { position: absolute; font-size: calc(99vmin / var(--max-dim, 5)); color: #bbb; pointer-events: none; transition: opacity 0.3s ease; line-height: 1;}
+        /* 枠内の文字。line-height: 1 と position を厳密に */
+        .cell-text { 
+            position: absolute; 
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: calc(98vmin / var(--max-dim, 5)); 
+            color: #ccc; pointer-events: none; transition: opacity 0.3s ease; 
+            line-height: 1;
+            margin: 0; padding: 0;
+            display: block;
+        }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0; cursor: crosshair;}
 
         /* =========================================
-           設定＆プレビュー画面 (モーダル)
+           設定＆プレビュー画面
         ========================================= */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 100; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;}
         .modal { 
@@ -201,7 +217,6 @@
             <div id="keyboard-right" class="keyboard"></div>
         </div>
 
-        <!-- 履歴画像表示欄 (セッション中のみ) -->
         <div class="saved-images-container" id="saved-images-container" style="display: none;">
             <div class="saved-images-title">かきおわったもじ</div>
             <div class="saved-images-list" id="saved-images-list"></div>
@@ -274,18 +289,18 @@ window.addEventListener('orientationchange', () => {
     setTimeout(setVh, 300);
 });
 
-/* フォント読み込み監視: 読み込み完了後に強制的に再描画させる */
+/* フォント読み込み監視 */
 if (document.fonts) {
     document.fonts.ready.then(() => {
-        setVh(); // フォントの高さ変化に備えて再計算
+        setVh();
         if (state.selectedText.length === 0) switchTab(0);
     });
 }
 
 const hiraLeft = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","","ゆ","","よ","ら","り","る","れ","ろ","わ","","を","","ん"];
 const hiraRight = ["ゃ","ゅ","ょ","っ","","が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
-const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","わ","","ヲ","","ン"];
-const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ぎ","グ","ゲ","ゴ","ザ","ジ","ズ","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","パ","ピ","ぷ","ぺ","ポ"];
+const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","む","め","も","や","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
+const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","パ","ピ","ぷ","ぺ","ポ"];
 const numsLeft = ["1","2","3","4","5","6","7","8","9","0"];
 
 let state = {
@@ -306,7 +321,6 @@ function saveSettings() {
     localStorage.setItem('nazoriSettingsPro', JSON.stringify(state.settings));
 }
 
-/* トリプルタップ判定 */
 let tapTimes = [];
 document.getElementById('setting-trigger').addEventListener('pointerdown', () => {
     const now = Date.now();
@@ -319,7 +333,6 @@ document.getElementById('setting-trigger').addEventListener('pointerdown', () =>
     }
 });
 
-/* 音声読み上げ */
 const synth = window.speechSynthesis;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
@@ -338,7 +351,6 @@ function speak(text) {
     synth.speak(ut);
 }
 
-/* タブ・キーボード表示 */
 function switchTab(index) {
     document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
     const leftArr = index === 0 ? hiraLeft : index === 1 ? kataLeft : numsLeft;
@@ -387,7 +399,6 @@ function startPractice() {
     initPracticeScreen();
 }
 
-/* 履歴画像 (セッション中保持) */
 function renderSavedImages() {
     const container = document.getElementById('saved-images-container');
     const list = document.getElementById('saved-images-list');
@@ -424,7 +435,6 @@ function deleteCurrentImage() {
     }
 }
 
-/* 設定 */
 function renderSettingValues() {
     document.getElementById('val-rows').textContent = state.settings.rows;
     document.getElementById('val-cols').textContent = state.settings.cols;
@@ -485,7 +495,6 @@ function closeSetting() {
     }
 }
 
-/* 描画ロジック */
 function setTool(tool) {
     state.currentTool = tool;
     document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
@@ -507,8 +516,8 @@ function initPracticeScreen() {
     grid.style.setProperty('--cols', cols);
     grid.style.setProperty('--rows', rows);
     grid.style.setProperty('--max-dim', Math.max(cols, rows));
-    grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-    grid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     grid.style.aspectRatio = `${cols} / ${rows}`;
     state.cellsStatus = Array(total).fill(false);
     state.strokes = Array.from({length: total}, () => []); 
@@ -677,7 +686,7 @@ function captureGrid() {
              ctx.font = `400 ${style.fontSize} ${style.fontFamily}`; 
              ctx.textAlign = 'center';
              ctx.textBaseline = 'middle';
-             ctx.fillText(textSpan.textContent, x + w/2, y + h/2 + (parseFloat(style.fontSize) * 0.05)); 
+             ctx.fillText(textSpan.textContent, x + w/2, y + h/2 + (parseFloat(style.fontSize) * 0.01)); 
         }
         const cellCanvas = cell.querySelector('canvas');
         if (cellCanvas) {
