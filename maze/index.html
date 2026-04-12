@@ -302,6 +302,7 @@ let countOfDone = 0;
 let correctRoot = []; let numsForRoot = []; let correctLines = [];
 let isSetHint = false; let currentPosForHint = 0; let hintCount = 0;
 let readyToStart = true;
+let isDrawingStarted = false; // スタート地点を触ったかどうかのフラグ
 
 // --- Canvas ---
 const canvas = document.getElementById('maze-canvas');
@@ -348,6 +349,7 @@ function makeMaze() {
     
     lines = []; hintLines = []; correctLines = []; correctRoot = []; isSetHint = false;
     firstPoint = null; hintCount = s.hintCount; isGoal = false;
+    isDrawingStarted = false; // 初期化
     document.getElementById('goal-overlay').style.display = 'none';
     updateButtonsUI();
 }
@@ -477,7 +479,7 @@ function selectColor(type) {
     if (type === "壁") return "rgba(0,0,0,1)";
     if (type === "道") return "rgba(255,255,255,0.1)";
     if (type === "スタート") return "rgba(255,165,0,0.9)";
-    if (type === "ゴール") return "rgba(0,0,255,0.9)";
+    if (type === "ゴール") return isDrawingStarted ? "rgba(0,0,255,0.9)" : "rgba(128,128,128,0.5)"; // スタートするまではグレー
     if (type === "済") return "rgba(128,128,128,0.1)";
     return "rgba(255,255,255,1)";
 }
@@ -490,7 +492,7 @@ function drawMaze() {
         ctx.fillStyle = selectColor(s.items[i].type);
         ctx.fillRect(r.x, r.y, r.w, r.h);
         if (s.items[i].type === "ゴール") {
-            ctx.fillStyle = "yellow";
+            ctx.fillStyle = isDrawingStarted ? "yellow" : "rgba(200,200,200,0.8)"; // スタートするまではグレーのアイコン
             ctx.beginPath(); ctx.arc(r.midX, r.midY, Math.min(r.w, r.h)*0.4, 0, Math.PI*2); ctx.fill();
         }
     }
@@ -532,7 +534,10 @@ function handlePointerDown(e) {
     for (let i = 0; i < rects.length; i++) {
         if (intersects(pos, rects[i])) {
             if (s.items[i].type === "スタート" || s.items[i].type === "済") {
-                firstPoint = i; drawMaze(); break;
+                firstPoint = i; 
+                isDrawingStarted = true; // タッチしたらスタートとみなす
+                drawMaze(); 
+                break;
             }
         }
     }
@@ -643,6 +648,7 @@ function checkDistance() {
 
 // --- ヒント機能 ---
 function hint() {
+    isDrawingStarted = true; // ヒント使用時もスタートとみなす
     if (correctLines.length === 0) {
         currentPosForHint = start; correctRoot.push(start); numsForRoot = [];
         while (!isSetHint) makeHint();
