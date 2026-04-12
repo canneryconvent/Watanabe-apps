@@ -14,7 +14,8 @@
     touch-action: none; 
   }
   body, html {
-    margin: 0; padding: 0; width: 100%; height: 100%;
+    margin: 0; padding: 0; width: 100%; 
+    height: 100dvh; /* iOS Safari等のバーを考慮した動的な高さに修正 */
     font-family: 'Hiragino Maru Gothic ProN', sans-serif;
     background-color: white; overflow: hidden;
   }
@@ -61,7 +62,7 @@
   #goal-btn svg { width: 40px; height: 40px; fill: currentColor; }
 
   /* 設定画面 (iOS設定アプリ風リストレイアウト) */
-  #setting-view { flex-direction: column; background: #f2f2f7; overflow-y: auto; padding: 20px; }
+  #setting-view { flex-direction: column; background: #f2f2f7; overflow-y: auto; padding: 20px; padding-bottom: 80px; /* 下部のスクロール余裕を追加 */ }
   #setting-content { max-width: 1000px; margin: 0 auto; width: 100%; padding-bottom: 40px; }
   
   .form-title { font-size: 0.9rem; color: #6d6d72; margin-bottom: 5px; margin-left: 15px; }
@@ -102,7 +103,6 @@
 <body>
 
 <div id="app">
-  <!-- スタート画面 -->
   <div id="start-view" class="view active">
     <button id="start-btn" class="big-btn">
       <span>スタート</span>
@@ -118,7 +118,6 @@
     <div id="loading"><div class="spinner"></div></div>
   </div>
 
-  <!-- プレイ画面 -->
   <div id="play-view" class="view">
     <div id="buttons-area">
       <button id="btn-back" class="icon-btn">
@@ -143,7 +142,6 @@
     </div>
   </div>
 
-  <!-- 設定画面 -->
   <div id="setting-view" class="view">
     <div id="setting-content">
       
@@ -868,7 +866,7 @@ function updateSettingUI() {
     const updatePicker = (id, key, otherKey) => {
         Array.from(document.getElementById(id).children).forEach(el => {
             el.className = el.dataset.val === s[key] ? "selected" : "";
-            // ランダム・四隅以外で相手が選んでいるものはdisabledにして選択不可にする
+            // ランダム・四隅以外で相手が選んでいるものは完全にdisabledにして選択不可にする
             if (el.dataset.val === s[otherKey] && el.dataset.val !== "ランダム" && el.dataset.val !== "四隅のどこか") {
                 el.classList.add("disabled");
             }
