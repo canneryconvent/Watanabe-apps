@@ -11,22 +11,22 @@
            ※ index.htmlと同じフォルダに KleeOne-Regular.ttf を置いてください
         ========================================= */
         @font-face {
-            font-family: 'KleeOneLocal';
-            /* iOS Safariのパス認識エラー対策で ./ を追加 */
-            /* TTFが重すぎてiOSが読み込みを諦めるバグに備え、超軽量なwoff2形式のCDNをバックアップとして指定 */
-            src: url('./KleeOne-Regular.ttf') format('truetype'),
-                 url('https://cdn.jsdelivr.net/npm/@fontsource/klee-one@5.0.8/files/klee-one-japanese-400-normal.woff2') format('woff2');
+            font-family: 'KleeOneOnly';
+            /* 明示的に現在のディレクトリを指定 */
+            src: url('./KleeOne-Regular.ttf') format('truetype');
             font-weight: 400;
             font-style: normal;
-            font-display: swap;
+            /* block: フォントの準備ができるまで表示をブロックし、チラつきを完全に防ぐ */
+            font-display: block;
         }
 
         /* =========================================
            1. 確実な画面高さの取得＆誤操作防止
         ========================================= */
         :root {
-            /* ローカルから読み込んだ KleeOneLocal を指定します */
-            --main-font: 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', 'KleeOneLocal', 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', sans-serif;
+            /* 読み込みに成功した KleeOneOnly を最優先に。
+               UDデジタル教科書体はインストールされている場合のみ適用されます。 */
+            --main-font: 'KleeOneOnly', 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', 'Hiragino Maru Gothic ProN', sans-serif;
         }
 
         * {
@@ -35,6 +35,8 @@
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             font-family: var(--main-font);
+            /* iOSが勝手に太字を合成してフォント適用に失敗するのを防ぐため、400(Regular)を強制 */
+            font-weight: 400 !important;
         }
         
         html, body {
@@ -64,7 +66,6 @@
         .setting-btn:active { background: #eee; }
         .setting-hint { font-size: 9px; color: #aaa; margin-top: -5px; letter-spacing: -0.5px;}
 
-        /* タブのサイズと余白を縮小 */
         .tabs { display: flex; justify-content: center; padding-top: 5px; margin-bottom: 5px; flex-shrink: 0; }
         .tab-btn { 
             padding: 6px clamp(10px, 3vw, 25px); 
@@ -99,7 +100,6 @@
         .key-btn:active { background: #e0e0e0; transform: scale(0.95); }
         .key-btn.empty { visibility: hidden; pointer-events: none; }
 
-        /* 下部UIの無駄なサイズと余白を徹底的に削る */
         .bottom-bar { 
             padding: 8px 15px calc(8px + env(safe-area-inset-bottom)) 15px; 
             background: #f8f8f8; border-top: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; gap: 8px; 
@@ -112,7 +112,7 @@
         .start-btn:disabled { background: #ccc; box-shadow: none; pointer-events: none;}
 
         /* =========================================
-           保存画像一覧 & プレビューモーダル
+           履歴画像 (セッション中のみの一時保持)
         ========================================= */
         .saved-images-container { padding: 5px 15px calc(5px + env(safe-area-inset-bottom)); background: #eaeaea; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid #ccc; flex-shrink: 0;}
         .saved-images-list { display: flex; gap: 8px; align-items: center; }
@@ -131,8 +131,8 @@
         .done-btn { font-size: clamp(20px, 5vw, 28px); padding: 6px 20px; border-radius: 30px; border: 3px solid #ccc; background: #fff; color: #ccc; transition: 0.3s; }
         .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #e8f5e9; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
 
-        /* メインの文字サイズをより大きく表示 */
-        .main-letter { font-size: clamp(80px, 20vh, 250px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
+        /* お手本文字を大きく表示 */
+        .main-letter { font-size: clamp(100px, 25vh, 320px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
         
         .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 5px 15px calc(15px + env(safe-area-inset-bottom)); width: 100%; height: 100%; overflow: hidden; touch-action: none; }
         
@@ -153,8 +153,8 @@
             border: none; 
             border-radius: 0; 
         }
-        /* 枠の中の文字サイズも大きく調整（枠のサイズによりフィットするように） */
-        .cell-text { position: absolute; font-size: calc(95vmin / var(--max-dim, 5)); color: #aaa; pointer-events: none; transition: opacity 0.3s ease; }
+        /* 枠の中の文字サイズを最大化（98vmin） */
+        .cell-text { position: absolute; font-size: calc(98vmin / var(--max-dim, 5)); color: #aaa; pointer-events: none; transition: opacity 0.3s ease; line-height: 1;}
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0; cursor: crosshair;}
 
         /* =========================================
@@ -191,7 +191,6 @@
 
     <!-- 1. ホーム画面 -->
     <div id="screen-home" class="screen active">
-        <!-- 上詰め＆トリプルタップ表示のオーバーレイ -->
         <div class="setting-wrapper">
             <div id="setting-trigger" class="setting-btn">⚙️</div>
             <span class="setting-hint">トリプルタップ</span>
@@ -268,34 +267,24 @@
     </div>
 
 <script>
-/* ===================================================================
-   【共通要件1】確実な画面高さの取得（JavaScript + CSS）
-=================================================================== */
+/* 画面高さ計算 (100vhバグ対策) */
 function setVh() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
-// 初期実行
 setVh();
-// 横画面（デバイス回転時）などでも確実に再計算させる
 window.addEventListener('resize', setVh);
 window.addEventListener('orientationchange', () => {
     setTimeout(setVh, 100);
-    setTimeout(setVh, 300); // Safariのアドレスバー変化に完全対応するため遅延実行
+    setTimeout(setVh, 300);
 });
 
-/* ===================================================================
-   データ定義（左：清音、右：濁音等で分割）
-=================================================================== */
 const hiraLeft = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","","ゆ","","よ","ら","り","る","れ","ろ","わ","","を","","ん"];
 const hiraRight = ["ゃ","ゅ","ょ","っ","","が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
-const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
-const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","ダ","ヂ","ヅ","デ","ド","バ","び","ぶ","べ","ぼ","パ","ピ","ぷ","ぺ","ポ"];
+const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","さ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
+const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ぎ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
 const numsLeft = ["1","2","3","4","5","6","7","8","9","0"];
 
-/* ===================================================================
-   状態管理・永続化
-=================================================================== */
 let state = {
     settings: { rows: 2, cols: 5, fade: 3, practice: 2 },
     selectedText: [],
@@ -303,12 +292,10 @@ let state = {
     currentTool: 'pen',
     cellsStatus: [], 
     strokes: [],      
-    // 書き終わった画像はLocalStorageに保存せず、アプリを開いている間のみ一時的に保持します
     savedImages: [], 
     currentImageIndex: -1
 };
 
-// 練習の設定のみLocalStorageから読み込み・保存する
 const savedSettings = localStorage.getItem('nazoriSettingsPro');
 if (savedSettings) state.settings = JSON.parse(savedSettings);
 
@@ -316,9 +303,7 @@ function saveSettings() {
     localStorage.setItem('nazoriSettingsPro', JSON.stringify(state.settings));
 }
 
-/* ===================================================================
-   トリプルタップ検知 (600ms以内)
-=================================================================== */
+/* トリプルタップ判定 */
 let tapTimes = [];
 document.getElementById('setting-trigger').addEventListener('pointerdown', () => {
     const now = Date.now();
@@ -331,9 +316,7 @@ document.getElementById('setting-trigger').addEventListener('pointerdown', () =>
     }
 });
 
-/* ===================================================================
-   音声と効果音 (排他制御)
-=================================================================== */
+/* 音声読み上げ */
 const synth = window.speechSynthesis;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
@@ -347,19 +330,16 @@ function speak(text) {
     if (synth.speaking) synth.cancel();
     isSpeaking = true;
     const ut = new SpeechSynthesisUtterance(text);
-    ut.lang = 'ja-JP'; ut.pitch = 1.2; ut.rate = 0.8;
+    ut.lang = 'ja-JP'; ut.pitch = 1.1; ut.rate = 0.8;
     ut.onend = () => { isSpeaking = false; };
     synth.speak(ut);
 }
 
-/* ===================================================================
-   ホーム画面ロジック
-=================================================================== */
+/* タブ・キーボード表示 */
 function switchTab(index) {
     document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
     const leftArr = index === 0 ? hiraLeft : index === 1 ? kataLeft : numsLeft;
     const rightArr = index === 0 ? hiraRight : index === 1 ? kataRight : [];
-    
     renderKeyboard('keyboard-left', leftArr);
     renderKeyboard('keyboard-right', rightArr);
 }
@@ -398,24 +378,21 @@ function removeLastLetter() {
 
 function startPractice() {
     state.currentTextIndex = 0;
+    state.savedImages = []; 
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-practice').classList.add('active');
     initPracticeScreen();
 }
 
-/* ===================================================================
-   保存画像一覧・プレビュー ロジック (一時保持)
-=================================================================== */
+/* 履歴画像 (メモリ保持) */
 function renderSavedImages() {
     const container = document.getElementById('saved-images-container');
     const list = document.getElementById('saved-images-list');
     list.innerHTML = '';
-    
     if (state.savedImages.length === 0) {
         container.style.display = 'none';
         return;
     }
-    
     container.style.display = 'block';
     state.savedImages.forEach((imgData, index) => {
         const img = document.createElement('img');
@@ -434,7 +411,6 @@ function openImageView(index) {
 
 function closeImageView() {
     document.getElementById('modal-image-view').style.display = 'none';
-    state.currentImageIndex = -1;
 }
 
 function deleteCurrentImage() {
@@ -445,9 +421,7 @@ function deleteCurrentImage() {
     }
 }
 
-/* ===================================================================
-   設定画面ロジック
-=================================================================== */
+/* 設定・サンプルプレビュー */
 function renderSettingValues() {
     document.getElementById('val-rows').textContent = state.settings.rows;
     document.getElementById('val-cols').textContent = state.settings.cols;
@@ -460,16 +434,12 @@ function updateSetting(key, delta) {
     let val = state.settings[key] + delta;
     if (key === 'rows' && (val < 1 || val > 5)) return;
     if (key === 'cols' && (val < 1 || val > 10)) return;
-    
     const total = (key === 'rows' ? val : state.settings.rows) * (key === 'cols' ? val : state.settings.cols);
-    
     if (key === 'fade' || key === 'practice') {
         if (val < 0) return;
         if (val > total) val = total;
     }
-
     state.settings[key] = val;
-    
     if (state.settings.fade + state.settings.practice > total) {
         const excess = (state.settings.fade + state.settings.practice) - total;
         if (state.settings.practice >= excess) {
@@ -480,7 +450,6 @@ function updateSetting(key, delta) {
             state.settings.fade = Math.max(0, state.settings.fade - rest);
         }
     }
-    
     saveSettings();
     renderSettingValues();
 }
@@ -489,22 +458,18 @@ function renderSampleGrid() {
     const grid = document.getElementById('sample-grid');
     const { rows, cols, fade, practice } = state.settings;
     const total = rows * cols;
-    
     grid.innerHTML = '';
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     grid.style.aspectRatio = `${cols} / ${rows}`;
-
     for (let i = 0; i < total; i++) {
         const isPractice = i >= total - practice;
         const isFade = (total - fade - practice <= i) && (i < total - practice);
-        
         const cell = document.createElement('div');
         cell.className = 'sample-cell';
         const txt = document.createElement('span');
         txt.textContent = 'あ';
         txt.style.opacity = isPractice ? '0' : (isFade ? '0.4' : '1');
-        
         cell.appendChild(txt);
         grid.appendChild(cell);
     }
@@ -517,9 +482,7 @@ function closeSetting() {
     }
 }
 
-/* ===================================================================
-   練習画面・キャンバスロジック
-=================================================================== */
+/* 描画ロジック */
 function setTool(tool) {
     state.currentTool = tool;
     document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
@@ -534,47 +497,37 @@ function initPracticeScreen() {
     const letter = state.selectedText[state.currentTextIndex];
     document.getElementById('main-letter').textContent = letter;
     speak(letter); 
-
     const grid = document.getElementById('canvas-grid');
     grid.innerHTML = '';
-    
     const { rows, cols, fade, practice } = state.settings;
     const total = rows * cols;
-    
     grid.style.setProperty('--cols', cols);
     grid.style.setProperty('--rows', rows);
     grid.style.setProperty('--max-dim', Math.max(cols, rows));
     grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
     grid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
     grid.style.aspectRatio = `${cols} / ${rows}`;
-
     state.cellsStatus = Array(total).fill(false);
     state.strokes = Array.from({length: total}, () => []); 
     checkDone();
-
     for (let i = 0; i < total; i++) {
         const isPractice = i >= total - practice;
         const isFade = (total - fade - practice <= i) && (i < total - practice);
-
         const cell = document.createElement('div');
         cell.className = 'cell';
-        
         const textSpan = document.createElement('span');
         textSpan.className = 'cell-text';
         textSpan.textContent = letter;
         textSpan.style.opacity = isPractice ? "0" : (isFade ? "0.4" : "1");
         textSpan.id = `cell-text-${i}`;
-
         const canvas = document.createElement('canvas');
         setupCanvas(canvas, i, isFade);
-
         cell.appendChild(textSpan);
         cell.appendChild(canvas);
         grid.appendChild(cell);
     }
 }
 
-// デバウンス付きリサイズ・画面回転検知（キャンバス用）
 let canvasResizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(canvasResizeTimer);
@@ -613,7 +566,6 @@ function applyToolSettings(ctx, tool) {
 function redrawCanvas(canvas, index) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
     state.strokes[index].forEach(stroke => {
         applyToolSettings(ctx, stroke.tool);
         if (stroke.points.length === 0) return;
@@ -629,52 +581,40 @@ function redrawCanvas(canvas, index) {
 function setupCanvas(canvas, index, isFade) {
     setTimeout(() => setCanvasSize(canvas), 0);
     const ctx = canvas.getContext('2d');
-    
     let isDrawing = false;
     let hasMoved = false;
     let startX = 0, startY = 0;
     let currentStroke = null;
-
     const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
         return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
-
     canvas.addEventListener('pointerdown', (e) => {
         isDrawing = true;
         hasMoved = false;
         canvas.setPointerCapture(e.pointerId);
-
         const pos = getPos(e);
         startX = pos.x; startY = pos.y;
-        
         currentStroke = { tool: state.currentTool, points: [{x: pos.x, y: pos.y}] };
-
         applyToolSettings(ctx, state.currentTool);
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
-
         if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0';
     });
-
     canvas.addEventListener('pointermove', (e) => {
         if (!isDrawing) return;
         const pos = getPos(e);
-        
         if (!hasMoved && Math.hypot(pos.x - startX, pos.y - startY) > 5) {
             hasMoved = true;
         }
-
         currentStroke.points.push({x: pos.x, y: pos.y});
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
     });
-
     const finishDrawing = (e) => {
         if (!isDrawing) return;
         isDrawing = false;
         canvas.releasePointerCapture(e.pointerId);
-
         if (hasMoved) {
             state.strokes[index].push(currentStroke);
         } else if (e.type === 'pointerup') {
@@ -682,16 +622,11 @@ function setupCanvas(canvas, index, isFade) {
                 state.strokes[index].pop(); 
             }
             redrawCanvas(canvas, index);
-        } else {
-             redrawCanvas(canvas, index);
         }
-
         state.cellsStatus[index] = state.strokes[index].some(s => s.tool === 'pen');
         checkDone();
-
         if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0.4';
     };
-
     canvas.addEventListener('pointerup', finishDrawing);
     canvas.addEventListener('pointercancel', finishDrawing);
 }
@@ -709,17 +644,14 @@ function checkDone() {
 function captureGrid() {
     const grid = document.getElementById('canvas-grid');
     const rect = grid.getBoundingClientRect();
-    
     const canvas = document.createElement('canvas');
     const scale = 2; 
     canvas.width = rect.width * scale;
     canvas.height = rect.height * scale;
     const ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
-    
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, rect.width, rect.height);
-    
     const cells = grid.querySelectorAll('.cell');
     cells.forEach((cell) => {
         const cellRect = cell.getBoundingClientRect();
@@ -727,44 +659,34 @@ function captureGrid() {
         const y = cellRect.top - rect.top;
         const w = cellRect.width;
         const h = cellRect.height;
-        
         ctx.fillStyle = '#fff';
         ctx.fillRect(x, y, w, h);
-        
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 4;
         ctx.strokeRect(x, y, w, h);
-        
         const textSpan = cell.querySelector('.cell-text');
         const opacity = parseFloat(textSpan.style.opacity || 1);
         if (opacity > 0) {
              ctx.fillStyle = `rgba(170, 170, 170, ${opacity})`;
-             const fontSize = window.getComputedStyle(textSpan).fontSize;
-             const fontFamily = window.getComputedStyle(textSpan).fontFamily;
-             const fontWeight = window.getComputedStyle(textSpan).fontWeight;
-             ctx.font = `${fontWeight} ${fontSize} ${fontFamily}`;
+             const style = window.getComputedStyle(textSpan);
+             ctx.font = `400 ${style.fontSize} ${style.fontFamily}`; 
              ctx.textAlign = 'center';
              ctx.textBaseline = 'middle';
-             ctx.fillText(textSpan.textContent, x + w/2, y + h/2 + (parseFloat(fontSize) * 0.05)); 
+             ctx.fillText(textSpan.textContent, x + w/2, y + h/2 + (parseFloat(style.fontSize) * 0.05)); 
         }
-        
         const cellCanvas = cell.querySelector('canvas');
         if (cellCanvas) {
             ctx.drawImage(cellCanvas, x, y, w, h);
         }
     });
-    
     return canvas.toDataURL('image/jpeg', 0.8);
 }
 
 function nextLetter() {
     const isAllDrawn = state.cellsStatus.every(s => s === true);
     if (!isAllDrawn) return;
-
-    // キャプチャした画像をメモリ上(state.savedImages)にのみ保存
     const imgData = captureGrid();
     state.savedImages.push(imgData);
-
     state.currentTextIndex++;
     if (state.currentTextIndex < state.selectedText.length) {
         initPracticeScreen();
@@ -778,10 +700,8 @@ function nextLetter() {
     }
 }
 
-// 初期化実行
 switchTab(0);
 renderSavedImages();
-// 右クリック禁止などの誤操作防止
 document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
 </body>
