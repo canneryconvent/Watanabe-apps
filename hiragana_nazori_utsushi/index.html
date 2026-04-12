@@ -2,21 +2,20 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>平仮名なぞり・写し書き</title>
     
     <style>
         /* =========================================
-           0. ローカルフォントの読み込み (セルフホスティング)
-           ※ index.htmlと同じフォルダに KleeOne-Regular.ttf を置いてください
+           0. ローカルフォントの読み込み (iOS対策強化版)
         ========================================= */
         @font-face {
-            font-family: 'KleeOneOnly';
-            /* 明示的に現在のディレクトリを指定 */
+            /* システムフォントと混同されないユニークな名前に変更 */
+            font-family: 'AppCustomFont';
             src: url('./KleeOne-Regular.ttf') format('truetype');
             font-weight: 400;
             font-style: normal;
-            /* block: フォントの準備ができるまで表示をブロックし、チラつきを完全に防ぐ */
+            /* 読み込みが完了するまでテキストを表示しないことで、チラつきと差し戻しを防ぐ */
             font-display: block;
         }
 
@@ -24,9 +23,7 @@
            1. 確実な画面高さの取得＆誤操作防止
         ========================================= */
         :root {
-            /* 読み込みに成功した KleeOneOnly を最優先に。
-               UDデジタル教科書体はインストールされている場合のみ適用されます。 */
-            --main-font: 'KleeOneOnly', 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', 'Hiragino Maru Gothic ProN', sans-serif;
+            --main-font: 'AppCustomFont', 'UD Digi Kyokasho N-R', 'Hiragino Maru Gothic ProN', sans-serif;
         }
 
         * {
@@ -35,8 +32,9 @@
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             font-family: var(--main-font);
-            /* iOSが勝手に太字を合成してフォント適用に失敗するのを防ぐため、400(Regular)を強制 */
+            /* iOSの自動太字によるフォント解除を徹底的に防ぐ */
             font-weight: 400 !important;
+            -webkit-font-smoothing: antialiased;
         }
         
         html, body {
@@ -63,7 +61,6 @@
             z-index: 10;
         }
         .setting-btn { font-size: clamp(20px, 4vh, 28px); padding: 5px; cursor: pointer; color: #666; border-radius: 50%; transition: background 0.2s;}
-        .setting-btn:active { background: #eee; }
         .setting-hint { font-size: 9px; color: #aaa; margin-top: -5px; letter-spacing: -0.5px;}
 
         .tabs { display: flex; justify-content: center; padding-top: 5px; margin-bottom: 5px; flex-shrink: 0; }
@@ -111,9 +108,6 @@
         .start-btn { font-size: clamp(16px, 4vw, 24px); padding: 8px 40px; border-radius: 30px; background: #4CAF50; color: white; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer;}
         .start-btn:disabled { background: #ccc; box-shadow: none; pointer-events: none;}
 
-        /* =========================================
-           履歴画像 (セッション中のみの一時保持)
-        ========================================= */
         .saved-images-container { padding: 5px 15px calc(5px + env(safe-area-inset-bottom)); background: #eaeaea; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid #ccc; flex-shrink: 0;}
         .saved-images-list { display: flex; gap: 8px; align-items: center; }
         .saved-image-item { height: 45px; width: auto; border: 1px solid #999; background: #fff; object-fit: contain; cursor: pointer; transition: transform 0.2s;}
@@ -131,8 +125,8 @@
         .done-btn { font-size: clamp(20px, 5vw, 28px); padding: 6px 20px; border-radius: 30px; border: 3px solid #ccc; background: #fff; color: #ccc; transition: 0.3s; }
         .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #e8f5e9; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
 
-        /* お手本文字を大きく表示 */
-        .main-letter { font-size: clamp(100px, 25vh, 320px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
+        /* お手本文字をさらに大きく表示 */
+        .main-letter { font-size: clamp(120px, 28vh, 350px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
         
         .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 5px 15px calc(15px + env(safe-area-inset-bottom)); width: 100%; height: 100%; overflow: hidden; touch-action: none; }
         
@@ -153,8 +147,8 @@
             border: none; 
             border-radius: 0; 
         }
-        /* 枠の中の文字サイズを最大化（98vmin） */
-        .cell-text { position: absolute; font-size: calc(98vmin / var(--max-dim, 5)); color: #aaa; pointer-events: none; transition: opacity 0.3s ease; line-height: 1;}
+        /* 枠内文字サイズをさらに大きく調整 (99vmin) */
+        .cell-text { position: absolute; font-size: calc(99vmin / var(--max-dim, 5)); color: #bbb; pointer-events: none; transition: opacity 0.3s ease; line-height: 1;}
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0; cursor: crosshair;}
 
         /* =========================================
@@ -207,6 +201,7 @@
             <div id="keyboard-right" class="keyboard"></div>
         </div>
 
+        <!-- 履歴画像表示欄 (セッション中のみ) -->
         <div class="saved-images-container" id="saved-images-container" style="display: none;">
             <div class="saved-images-title">かきおわったもじ</div>
             <div class="saved-images-list" id="saved-images-list"></div>
@@ -267,7 +262,7 @@
     </div>
 
 <script>
-/* 画面高さ計算 (100vhバグ対策) */
+/* 画面高さ計算 */
 function setVh() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -279,10 +274,18 @@ window.addEventListener('orientationchange', () => {
     setTimeout(setVh, 300);
 });
 
+/* フォント読み込み監視: 読み込み完了後に強制的に再描画させる */
+if (document.fonts) {
+    document.fonts.ready.then(() => {
+        setVh(); // フォントの高さ変化に備えて再計算
+        if (state.selectedText.length === 0) switchTab(0);
+    });
+}
+
 const hiraLeft = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","","ゆ","","よ","ら","り","る","れ","ろ","わ","","を","","ん"];
 const hiraRight = ["ゃ","ゅ","ょ","っ","","が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
-const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","さ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
-const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ぎ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
+const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","わ","","ヲ","","ン"];
+const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ぎ","グ","ゲ","ゴ","ザ","ジ","ズ","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","パ","ピ","ぷ","ぺ","ポ"];
 const numsLeft = ["1","2","3","4","5","6","7","8","9","0"];
 
 let state = {
@@ -384,7 +387,7 @@ function startPractice() {
     initPracticeScreen();
 }
 
-/* 履歴画像 (メモリ保持) */
+/* 履歴画像 (セッション中保持) */
 function renderSavedImages() {
     const container = document.getElementById('saved-images-container');
     const list = document.getElementById('saved-images-list');
@@ -421,7 +424,7 @@ function deleteCurrentImage() {
     }
 }
 
-/* 設定・サンプルプレビュー */
+/* 設定 */
 function renderSettingValues() {
     document.getElementById('val-rows').textContent = state.settings.rows;
     document.getElementById('val-cols').textContent = state.settings.cols;
@@ -622,6 +625,8 @@ function setupCanvas(canvas, index, isFade) {
                 state.strokes[index].pop(); 
             }
             redrawCanvas(canvas, index);
+        } else {
+             redrawCanvas(canvas, index);
         }
         state.cellsStatus[index] = state.strokes[index].some(s => s.tool === 'pen');
         checkDone();
