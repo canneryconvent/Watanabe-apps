@@ -4,18 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>平仮名なぞり・写し書き</title>
-    <!-- Klee Oneフォントの読み込み (Regularのみ) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Klee+One&display=swap" rel="stylesheet">
     
     <style>
+        /* =========================================
+           0. ローカルフォントの読み込み (セルフホスティング)
+           ※ index.htmlと同じフォルダに KleeOne-Regular.ttf を置いてください
+        ========================================= */
+        @font-face {
+            font-family: 'KleeOneLocal';
+            src: url('KleeOne-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         /* =========================================
            1. 確実な画面高さの取得＆誤操作防止
         ========================================= */
         :root {
-            /* MacローカルのKleeを外し、全環境で確実にWebフォントのKlee Oneを読むようにします */
-            --main-font: 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', 'Klee One', 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', sans-serif;
+            /* ローカルから読み込んだ KleeOneLocal を指定します */
+            --main-font: 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', 'KleeOneLocal', 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', sans-serif;
         }
 
         * {
@@ -748,7 +756,8 @@ function captureGrid() {
              ctx.fillStyle = `rgba(170, 170, 170, ${opacity})`;
              const fontSize = window.getComputedStyle(textSpan).fontSize;
              const fontFamily = window.getComputedStyle(textSpan).fontFamily;
-             ctx.font = `${fontSize} ${fontFamily}`; // fontWeightの設定を削除
+             const fontWeight = window.getComputedStyle(textSpan).fontWeight;
+             ctx.font = `${fontWeight} ${fontSize} ${fontFamily}`;
              ctx.textAlign = 'center';
              ctx.textBaseline = 'middle';
              ctx.fillText(textSpan.textContent, x + w/2, y + h/2 + (parseFloat(fontSize) * 0.05)); 
