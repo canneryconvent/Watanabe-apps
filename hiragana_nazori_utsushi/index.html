@@ -128,7 +128,8 @@
         .done-btn { font-size: clamp(20px, 5vw, 28px); padding: 6px 20px; border-radius: 30px; border: 3px solid #ccc; background: #fff; color: #ccc; transition: 0.3s; }
         .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #e8f5e9; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
 
-        .main-letter { font-size: clamp(60px, 15vh, 150px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
+        /* メインの文字サイズをより大きく表示 */
+        .main-letter { font-size: clamp(80px, 20vh, 250px); text-align: center; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
         
         .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 5px 15px calc(15px + env(safe-area-inset-bottom)); width: 100%; height: 100%; overflow: hidden; touch-action: none; }
         
@@ -149,7 +150,8 @@
             border: none; 
             border-radius: 0; 
         }
-        .cell-text { position: absolute; font-size: calc(80vmin / var(--max-dim, 5)); color: #aaa; pointer-events: none; transition: opacity 0.3s ease; }
+        /* 枠の中の文字サイズも大きく調整（枠のサイズによりフィットするように） */
+        .cell-text { position: absolute; font-size: calc(95vmin / var(--max-dim, 5)); color: #aaa; pointer-events: none; transition: opacity 0.3s ease; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0; cursor: crosshair;}
 
         /* =========================================
@@ -285,7 +287,7 @@ window.addEventListener('orientationchange', () => {
 const hiraLeft = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","","ゆ","","よ","ら","り","る","れ","ろ","わ","","を","","ん"];
 const hiraRight = ["ゃ","ゅ","ょ","っ","","が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
 const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
-const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","ダ","ヂ","ヅ","デ","ド","バ","ビ","ブ","ベ","ボ","パ","ピ","プ","ぺ","ポ"];
+const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","ダ","ヂ","ヅ","デ","ド","バ","ビ","ブ","ベ","ボ","パ","ピ","ぷ","ぺ","ポ"];
 const numsLeft = ["1","2","3","4","5","6","7","8","9","0"];
 
 /* ===================================================================
@@ -298,36 +300,17 @@ let state = {
     currentTool: 'pen',
     cellsStatus: [], 
     strokes: [],      
+    // 書き終わった画像はLocalStorageに保存せず、アプリを開いている間のみ一時的に保持します
     savedImages: [], 
     currentImageIndex: -1
 };
 
+// 練習の設定のみLocalStorageから読み込み・保存する
 const savedSettings = localStorage.getItem('nazoriSettingsPro');
 if (savedSettings) state.settings = JSON.parse(savedSettings);
 
-const savedImagesData = localStorage.getItem('nazoriImagesPro');
-if (savedImagesData) {
-    try {
-        state.savedImages = JSON.parse(savedImagesData);
-    } catch(e) {
-        state.savedImages = [];
-    }
-}
-
 function saveSettings() {
     localStorage.setItem('nazoriSettingsPro', JSON.stringify(state.settings));
-}
-
-function saveImages() {
-    try {
-        localStorage.setItem('nazoriImagesPro', JSON.stringify(state.savedImages));
-    } catch (e) {
-        console.warn('LocalStorage limit exceeded, removing oldest image');
-        if (state.savedImages.length > 0) {
-            state.savedImages.shift();
-            saveImages();
-        }
-    }
 }
 
 /* ===================================================================
@@ -418,7 +401,7 @@ function startPractice() {
 }
 
 /* ===================================================================
-   保存画像一覧・プレビュー ロジック
+   保存画像一覧・プレビュー ロジック (一時保持)
 =================================================================== */
 function renderSavedImages() {
     const container = document.getElementById('saved-images-container');
@@ -454,7 +437,6 @@ function closeImageView() {
 function deleteCurrentImage() {
     if (state.currentImageIndex >= 0) {
         state.savedImages.splice(state.currentImageIndex, 1);
-        saveImages();
         renderSavedImages();
         closeImageView();
     }
@@ -776,9 +758,9 @@ function nextLetter() {
     const isAllDrawn = state.cellsStatus.every(s => s === true);
     if (!isAllDrawn) return;
 
+    // キャプチャした画像をメモリ上(state.savedImages)にのみ保存
     const imgData = captureGrid();
     state.savedImages.push(imgData);
-    saveImages();
 
     state.currentTextIndex++;
     if (state.currentTextIndex < state.selectedText.length) {
