@@ -2,26 +2,29 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <!-- viewport-fit=cover でiOSのセーフエリア（ノッチ等）に対応 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>平仮名なぞり・写し書き</title>
     
     <style>
         /* =========================================
-           0. ローカルフォントの読み込み (iOS対策最終版)
+           0. ローカルフォントの読み込み
         ========================================= */
         @font-face {
-            font-family: 'klee';
+            font-family: 'KleeCustom';
             src: url('./KleeOne-Regular.ttf') format('truetype');
-            font-weight: 400;
-            font-style: normal;
+            /* iOSの「フォント差し戻し」を防ぐため、font-weight や font-style はあえて記述しません。
+               また、表示されるまで待機する block を指定します。
+            */
             font-display: block;
         }
 
         /* =========================================
-           1. 確実な画面高さの取得＆誤操作防止
+           1. 共通設定＆誤操作防止
         ========================================= */
         :root {
-            --main-font: 'klee', 'UD Digi Kyokasho N-R', sans-serif;
+            /* KleeCustomが読み込めた場合は最優先で適用 */
+            --main-font: 'KleeCustom', 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', sans-serif;
         }
 
         * {
@@ -30,15 +33,15 @@
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             font-family: var(--main-font);
-            font-weight: 400 !important;
             -webkit-font-smoothing: antialiased;
-            /* iOSによる勝手な太字・斜体合成を禁止（フォント解除の主要因） */
-            font-synthesis: none;
+            /* OSによる勝手な太字の合成を禁止 */
+            font-synthesis: none !important;
         }
         
         html, body {
             margin: 0; padding: 0; 
             width: 100vw; 
+            /* JSで計算した--vhを使用して実際の画面高さに合わせる */
             height: calc(var(--vh, 1vh) * 100); 
             background-color: #fff; color: #333; 
             overflow: hidden; 
@@ -48,164 +51,144 @@
         .screen.active { display: flex; }
 
         /* =========================================
-           ホーム画面
+           ホーム画面 (文字選択)
         ========================================= */
         .setting-wrapper {
-            position: absolute;
-            right: 10px;
-            top: 5px; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 10;
+            position: absolute; right: 10px; top: 5px; 
+            display: flex; flex-direction: column; align-items: center; z-index: 100;
         }
-        .setting-btn { font-size: clamp(20px, 4vh, 28px); padding: 5px; cursor: pointer; color: #666; border-radius: 50%; transition: background 0.2s;}
-        .setting-hint { font-size: 8px; color: #aaa; margin-top: -5px; letter-spacing: -0.5px;}
+        .setting-btn { font-size: 26px; color: #aaa; padding: 5px; cursor: pointer; }
+        .setting-hint { font-size: 9px; color: #ccc; margin-top: -5px; }
 
-        .tabs { display: flex; justify-content: center; padding-top: 5px; margin-bottom: 5px; flex-shrink: 0; }
+        .tabs { display: flex; justify-content: center; padding-top: 10px; margin-bottom: 5px; flex-shrink: 0; }
         .tab-btn { 
-            padding: 6px clamp(10px, 3vw, 25px); 
-            font-size: clamp(14px, 3vh, 20px); 
-            background: #eee; border: 2px solid #ccc; border-radius: 12px 12px 0 0; margin: 0 3px; 
-            cursor: pointer; white-space: nowrap; 
+            padding: 8px 25px; font-size: 18px; background: #eee; border: 2px solid #ccc; 
+            border-radius: 12px 12px 0 0; margin: 0 4px; cursor: pointer; white-space: nowrap; 
         }
-        .tab-btn.active { background: #fff; border-bottom-color: #fff; }
+        .tab-btn.active { background: #fff; border-bottom: none; }
         
         .keyboard-wrapper {
-            display: flex; flex-direction: row; gap: clamp(10px, 3vw, 40px); padding: 5px 15px; 
-            flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            display: flex; flex-direction: row; gap: 15px; padding: 5px 15px; 
+            flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
             justify-content: center;
         }
-        @media (max-width: 768px) {
-            .keyboard-wrapper { flex-direction: column; gap: 8px; align-items: center; }
-        }
+        @media (max-width: 768px) { .keyboard-wrapper { flex-direction: column; } }
         
-        .keyboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: clamp(3px, 1.5vw, 8px); align-content: start; }
+        .keyboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-content: start; }
         .key-btn { 
-            padding: 2px; 
-            font-size: clamp(20px, 6vw, 36px); 
-            border: 2px solid #ddd; 
-            border-radius: 10px; 
-            background: #fafafa; 
-            text-align: center; 
-            cursor: pointer; 
-            width: clamp(40px, 14vw, 70px);
-            aspect-ratio: 1; 
-            display: flex; justify-content: center; align-items: center;
+            font-size: clamp(24px, 6vw, 36px); border: 2px solid #ddd; border-radius: 10px; 
+            background: #fafafa; width: clamp(45px, 15vw, 65px); aspect-ratio: 1; 
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
         }
         .key-btn:active { background: #e0e0e0; transform: scale(0.95); }
         .key-btn.empty { visibility: hidden; pointer-events: none; }
 
         .bottom-bar { 
-            padding: 8px 15px calc(8px + env(safe-area-inset-bottom)) 15px; 
-            background: #f8f8f8; border-top: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; gap: 8px; 
-            flex-shrink: 0; 
+            padding: 10px 15px calc(10px + env(safe-area-inset-bottom)) 15px; 
+            background: #f8f8f8; border-top: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0;
         }
-        .selected-text-container { display: flex; align-items: center; gap: 10px; font-size: clamp(16px, 4vw, 24px); min-height: 30px; flex-wrap: wrap; justify-content: center;}
-        .selected-letters { display: flex; gap: 5px; color: #666; }
-        .del-btn { font-size: clamp(16px, 4vw, 24px); color: #ff5252; padding: 4px 15px; border: 2px solid #ff5252; border-radius: 8px; background: #fff; cursor: pointer;}
-        .start-btn { font-size: clamp(16px, 4vw, 24px); padding: 8px 40px; border-radius: 30px; background: #4CAF50; color: white; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer;}
+        .selected-text-container { display: flex; align-items: center; gap: 10px; min-height: 35px; font-size: 24px;}
+        .del-btn { font-size: 24px; color: #ff5252; padding: 5px 15px; border: 2px solid #ff5252; border-radius: 8px; background: #fff; cursor: pointer;}
+        .start-btn { font-size: 20px; padding: 10px 50px; border-radius: 30px; background: #4CAF50; color: white; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);}
         .start-btn:disabled { background: #ccc; box-shadow: none; pointer-events: none;}
 
-        .saved-images-container { padding: 5px 15px calc(5px + env(safe-area-inset-bottom)); background: #eaeaea; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid #ccc; flex-shrink: 0;}
-        .saved-images-list { display: flex; gap: 8px; align-items: center; }
-        .saved-image-item { height: 45px; width: auto; border: 1px solid #999; background: #fff; object-fit: contain; cursor: pointer; transition: transform 0.2s;}
-        .saved-images-title { font-size: 11px; color: #666; margin-bottom: 2px; }
+        /* かきおわったもじ履歴（一時表示） */
+        .saved-images-container { padding: 5px 15px; background: #eaeaea; overflow-x: auto; border-top: 1px solid #ccc; width: 100%; flex-shrink: 0; -webkit-overflow-scrolling: touch;}
+        .saved-images-list { display: flex; gap: 8px; }
+        .saved-image-item { height: 45px; width: auto; border: 1px solid #999; background: #fff; object-fit: contain; cursor: pointer;}
 
         /* =========================================
-           練習画面 (上詰めレイアウト)
+           練習画面 (完全上詰め ＆ 重ね配置)
         ========================================= */
-        .toolbar { display: flex; justify-content: space-between; padding: 2px 15px; align-items: center; flex-shrink: 0; }
-        .tools { display: flex; gap: 10px; }
-        .tool-btn { font-size: clamp(24px, 5vw, 32px); padding: 5px; border-radius: 10px; border: 3px solid transparent; background: #f0f0f0; opacity: 0.5; cursor: pointer;}
-        .tool-btn.active { border-color: #ff5252; opacity: 1; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-        
-        .done-btn { font-size: clamp(20px, 5vw, 28px); padding: 5px 20px; border-radius: 30px; border: 3px solid #ccc; background: #fff; color: #ccc; transition: 0.3s; }
-        .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #e8f5e9; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
+        .practice-header {
+            position: relative;
+            width: 100%;
+            display: flex; justify-content: center; align-items: flex-start;
+            background: #fff;
+            padding-top: 15px; /* 最上部の余白 */
+            flex-shrink: 0;
+        }
 
-        /* お手本文字の上部スペースを詰める */
-        .main-letter { font-size: clamp(100px, 25vh, 320px); text-align: center; margin-top: -10px; margin-bottom: 0; line-height: 1; cursor: pointer; flex-shrink: 0;}
+        /* お手本文字。line-heightを詰めることで上下の見えない無駄な余白を消滅させる */
+        .main-letter { 
+            font-size: clamp(120px, 25vh, 350px); 
+            line-height: 0.8; 
+            margin: 0; padding: 0;
+            color: #333; z-index: 1; cursor: pointer;
+        }
+
+        /* ツールバーを前面に重ねる(絶対配置) */
+        .practice-toolbar {
+            position: absolute; top: 10px; left: 0; width: 100%;
+            padding: 0 15px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 10; pointer-events: none; /* 下の文字のクリックを邪魔しない */
+        }
+        .practice-toolbar button { pointer-events: auto; } /* ボタン自体は押せるように */
+
+        .tool-btn { font-size: 28px; padding: 6px 12px; border-radius: 12px; border: 2px solid transparent; background: rgba(240,240,240,0.8); opacity: 0.6; cursor: pointer;}
+        .tool-btn.active { border-color: #ff5252; opacity: 1; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
         
-        /* 表を上に詰めるため、align-items: flex-start に変更 */
+        .done-btn { font-size: 20px; padding: 8px 25px; border-radius: 30px; border: 2px solid #ccc; background: rgba(255,255,255,0.9); color: #888; cursor: pointer; transition: 0.3s;}
+        .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #fff; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
+
+        /* 練習エリア */
         .canvas-container { 
-            flex-grow: 1; display: flex; justify-content: center; align-items: flex-start; 
-            padding: 5px 15px calc(30px + env(safe-area-inset-bottom)); width: 100%; height: 100%; overflow: hidden; touch-action: none; 
+            flex-grow: 1; display: flex; flex-direction: column; 
+            justify-content: flex-start; /* 表を上に詰める。余白は下側に寄る */
+            align-items: center; 
+            padding: 10px 10px calc(20px + env(safe-area-inset-bottom)); 
+            width: 100%; overflow: hidden; touch-action: none; 
         }
         
-        /* グリッドの潰れ防止策 */
+        /* 罫線のデザイン */
         .grid { 
-            display: grid; 
-            gap: 2px; 
-            background-color: #333; 
-            border: 4px solid #333; 
-            grid-template-columns: repeat(var(--cols, 5), 1fr); 
-            grid-template-rows: repeat(var(--rows, 2), 1fr);
-            aspect-ratio: var(--cols, 5) / var(--rows, 2); 
-            max-width: 100%; 
-            max-height: 100%; 
-            width: 100%;
-            height: auto;
+            display: grid; gap: 2px; background-color: #333; border: 3px solid #333; 
+            margin: 0 auto; 
+            /* 幅や高さ、grid-template設定はJavaScriptで動的にピクセル指定します */
         }
         .cell { 
-            position: relative; 
-            background: #fff; 
-            display: flex; justify-content: center; align-items: center; 
-            border: none; 
-            border-radius: 0; 
-            overflow: hidden;
+            position: relative; background: #fff; display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
-        /* 枠内の文字。line-height: 1 と position を厳密に */
+        /* 枠内の薄い文字 */
         .cell-text { 
-            position: absolute; 
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: calc(98vmin / var(--max-dim, 5)); 
-            color: #ccc; pointer-events: none; transition: opacity 0.3s ease; 
-            line-height: 1;
-            margin: 0; padding: 0;
-            display: block;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ddd; pointer-events: none; transition: opacity 0.3s ease; 
+            line-height: 1; display: block; margin: 0; padding: 0;
         }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 0; cursor: crosshair;}
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair;}
 
         /* =========================================
-           設定＆プレビュー画面
+           設定画面・プレビューモーダル
         ========================================= */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 100; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;}
-        .modal { 
-            background: #fff; padding: 25px; border-radius: 20px; width: 90%; max-width: 600px; 
-            display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
-            max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; 
-        }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: clamp(16px, 3vh, 24px); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: #fff; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 20px; }
         .stepper { display: flex; align-items: center; gap: 10px; }
-        .step-btn { width: clamp(40px, 6vh, 50px); height: clamp(40px, 6vh, 50px); font-size: clamp(24px, 4vh, 30px); border-radius: 50%; border: none; background: #e0e0e0; cursor: pointer; display: flex; justify-content: center; align-items: center;}
-        .step-btn:active { background: #ccc; }
-        .step-val { font-size: clamp(24px, 4vh, 30px); width: 40px; text-align: center; }
-        
-        .sample-preview-title { font-size: 16px; text-align: center; margin-top: 5px; color: #666; }
-        .sample-grid-wrapper { display: flex; justify-content: center; background: #f5f5f5; padding: 10px; border-radius: 8px; border: 2px solid #ddd; max-height: 20vh;}
-        
-        .sample-grid { display: grid; gap: 2px; background: #666; border: 2px solid #666; height: 100%; max-width: 100%; }
-        .sample-cell { background: #fff; border: none; border-radius: 0; display: flex; justify-content: center; align-items: center; }
-        .sample-cell span { font-size: 24px; color: #aaa; }
+        .step-btn { width: 45px; height: 45px; font-size: 24px; border-radius: 50%; border: none; background: #e0e0e0; cursor: pointer; display: flex; justify-content: center; align-items: center;}
+        .step-val { font-size: 24px; width: 40px; text-align: center; }
+
+        .sample-grid-wrapper { display: flex; justify-content: center; background: #f5f5f5; padding: 10px; border-radius: 8px; height: 120px;}
+        .sample-grid { display: grid; gap: 1px; background: #666; border: 1px solid #666; height: 100%; }
+        .sample-cell { background: #fff; display: flex; justify-content: center; align-items: center; }
+        .sample-cell span { font-size: 16px; color: #aaa; }
 
         .close-modal-btn { font-size: 20px; padding: 12px; margin-top: 10px; background: #333; color: #fff; border-radius: 10px; border: none; cursor: pointer;}
-        
-        #modal-image-view .modal { width: auto; max-width: 95vw; padding: 20px; align-items: center; justify-content: center;}
-        #large-image { max-width: 100%; max-height: 60vh; border: 2px solid #ccc; }
-        .modal-actions { display: flex; gap: 15px; margin-top: 15px; width: 100%; justify-content: center; flex-wrap: wrap;}
-        .del-image-btn { font-size: 18px; padding: 12px 25px; background: #ff5252; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        #large-image { max-width: 100%; max-height: 60vh; border: 1px solid #ccc; object-fit: contain;}
     </style>
 </head>
 <body>
 
-    <!-- 1. ホーム画面 -->
+    <!-- =====================================
+         1. ホーム画面
+    ====================================== -->
     <div id="screen-home" class="screen active">
         <div class="setting-wrapper">
             <div id="setting-trigger" class="setting-btn">⚙️</div>
             <span class="setting-hint">トリプルタップ</span>
         </div>
-
+        
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab(0)">ひらがな</div>
             <div class="tab-btn" onclick="switchTab(1)">カタカナ</div>
@@ -216,93 +199,151 @@
             <div id="keyboard-left" class="keyboard"></div>
             <div id="keyboard-right" class="keyboard"></div>
         </div>
-
+        
         <div class="saved-images-container" id="saved-images-container" style="display: none;">
-            <div class="saved-images-title">かきおわったもじ</div>
+            <div style="font-size: 11px; color: #666; margin-bottom: 2px;">かきおわったもじ</div>
             <div class="saved-images-list" id="saved-images-list"></div>
         </div>
-
+        
         <div class="bottom-bar">
             <div class="selected-text-container">
-                <span>れんしゅう：</span>
-                <div id="selected-letters" class="selected-letters"></div>
+                <div id="selected-letters" style="color:#666;"></div>
                 <button class="del-btn" onclick="removeLastLetter()">⌫</button>
             </div>
             <button id="start-btn" class="start-btn" disabled onclick="startPractice()">スタート</button>
         </div>
     </div>
 
-    <!-- 2. 練習画面 -->
+    <!-- =====================================
+         2. 練習画面
+    ====================================== -->
     <div id="screen-practice" class="screen">
-        <div class="toolbar">
-            <div class="tools">
-                <button id="tool-pen" class="tool-btn active" onclick="setTool('pen')">✏️</button>
-                <button id="tool-eraser" class="tool-btn" onclick="setTool('eraser')">🧽</button>
+        <!-- お手本とボタンを重ねて配置するヘッダー -->
+        <div class="practice-header">
+            <div id="main-letter" class="main-letter" onclick="speakCurrentLetter()">あ</div>
+            
+            <div class="practice-toolbar">
+                <div style="display:flex; gap:10px;">
+                    <button id="tool-pen" class="tool-btn active" onclick="setTool('pen')">✏️</button>
+                    <button id="tool-eraser" class="tool-btn" onclick="setTool('eraser')">🧽</button>
+                </div>
+                <button id="done-btn" class="done-btn" onclick="nextLetter()">できた</button>
             </div>
-            <button id="done-btn" class="done-btn" onclick="nextLetter()">できた</button>
         </div>
-        <div id="main-letter" class="main-letter" onclick="speakCurrentLetter()">あ</div>
+        
         <div class="canvas-container" id="canvas-container">
+            <!-- JavaScriptで完全にサイズ固定されるグリッド -->
             <div id="canvas-grid" class="grid"></div>
         </div>
     </div>
 
-    <!-- 3. 設定画面 -->
+    <!-- =====================================
+         3. 設定モーダル
+    ====================================== -->
     <div id="modal-setting" class="modal-overlay">
         <div class="modal">
             <h2 style="margin:0; text-align:center;">設定</h2>
-            <div class="setting-row">行の数 <div class="stepper"><button class="step-btn" onclick="updateSetting('rows', -1)">-</button><span id="val-rows" class="step-val">2</span><button class="step-btn" onclick="updateSetting('rows', 1)">+</button></div></div>
-            <div class="setting-row">列の数 <div class="stepper"><button class="step-btn" onclick="updateSetting('cols', -1)">-</button><span id="val-cols" class="step-val">5</span><button class="step-btn" onclick="updateSetting('cols', 1)">+</button></div></div>
-            <div class="setting-row">フェードなぞり <div class="stepper"><button class="step-btn" onclick="updateSetting('fade', -1)">-</button><span id="val-fade" class="step-val">3</span><button class="step-btn" onclick="updateSetting('fade', 1)">+</button></div></div>
-            <div class="setting-row">見本なし <div class="stepper"><button class="step-btn" onclick="updateSetting('practice', -1)">-</button><span id="val-practice" class="step-val">2</span><button class="step-btn" onclick="updateSetting('practice', 1)">+</button></div></div>
-            
-            <div class="sample-preview-title">サンプルビュー</div>
-            <div class="sample-grid-wrapper">
-                <div id="sample-grid" class="sample-grid"></div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div class="setting-row">行の数 <div class="stepper"><button class="step-btn" onclick="updateSetting('rows', -1)">-</button><span id="val-rows" class="step-val">2</span><button class="step-btn" onclick="updateSetting('rows', 1)">+</button></div></div>
+                <div class="setting-row">列の数 <div class="stepper"><button class="step-btn" onclick="updateSetting('cols', -1)">-</button><span id="val-cols" class="step-val">5</span><button class="step-btn" onclick="updateSetting('cols', 1)">+</button></div></div>
+                <div class="setting-row">フェードなぞり <div class="stepper"><button class="step-btn" onclick="updateSetting('fade', -1)">-</button><span id="val-fade" class="step-val">3</span><button class="step-btn" onclick="updateSetting('fade', 1)">+</button></div></div>
+                <div class="setting-row">見本なし <div class="stepper"><button class="step-btn" onclick="updateSetting('practice', -1)">-</button><span id="val-practice" class="step-val">2</span><button class="step-btn" onclick="updateSetting('practice', 1)">+</button></div></div>
             </div>
-
+            <div style="font-size: 14px; text-align: center; color: #666; margin-top: 10px;">サンプルビュー</div>
+            <div class="sample-grid-wrapper"><div id="sample-grid" class="sample-grid"></div></div>
             <button class="close-modal-btn" onclick="closeSetting()">閉じる</button>
         </div>
     </div>
 
-    <!-- 4. 画像プレビュー画面 (モーダル) -->
+    <!-- =====================================
+         4. 画像プレビューモーダル
+    ====================================== -->
     <div id="modal-image-view" class="modal-overlay">
-        <div class="modal">
+        <div class="modal" style="background:transparent; box-shadow:none;">
             <img id="large-image" src="" alt="保存画像">
-            <div class="modal-actions">
-                <button class="del-image-btn" onclick="deleteCurrentImage()">🗑️ さくじょ</button>
-                <button class="close-modal-btn" style="margin-top:0;" onclick="closeImageView()">閉じる</button>
+            <div style="display:flex; gap:15px; margin-top:10px;">
+                <button class="close-modal-btn" style="flex:1; background:#ff5252;" onclick="deleteCurrentImage()">さくじょ</button>
+                <button class="close-modal-btn" style="flex:1;" onclick="closeImageView()">閉じる</button>
             </div>
         </div>
     </div>
 
 <script>
-/* 画面高さ計算 */
+/* ===================================================================
+   iOS 100vh対策 (画面の高さ計算)
+=================================================================== */
 function setVh() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
 setVh();
-window.addEventListener('resize', setVh);
+window.addEventListener('resize', () => { 
+    setVh(); 
+    if (document.getElementById('screen-practice').classList.contains('active')) fixGridSize(); 
+});
 window.addEventListener('orientationchange', () => {
-    setTimeout(setVh, 100);
-    setTimeout(setVh, 300);
+    setTimeout(() => { setVh(); fixGridSize(); }, 100);
+    setTimeout(() => { setVh(); fixGridSize(); }, 300); // Safariのアドレスバー変化対応
 });
 
-/* フォント読み込み監視 */
-if (document.fonts) {
-    document.fonts.ready.then(() => {
-        setVh();
-        if (state.selectedText.length === 0) switchTab(0);
+/* ===================================================================
+   グリッドサイズを「1:1の正方形」かつピクセル単位で絶対固定する関数
+=================================================================== */
+function fixGridSize() {
+    const grid = document.getElementById('canvas-grid');
+    if (!grid) return;
+    
+    const { rows, cols } = state.settings;
+    
+    // 画面の利用可能領域を計算
+    const headerH = document.querySelector('.practice-header').offsetHeight;
+    const availW = window.innerWidth - 20; // 左右の余白計20px
+    const availH = window.innerHeight - headerH - 30; // 下部の余白計30px
+    
+    if (availW <= 0 || availH <= 0) return;
+
+    const gap = 2; // グリッドの隙間(px)
+    
+    // 画面からはみ出さない最大のセル(マス)の一辺の長さを計算
+    const maxCellW = Math.floor((availW - (cols - 1) * gap) / cols);
+    const maxCellH = Math.floor((availH - (rows - 1) * gap) / rows);
+    
+    // 正方形(1:1)を維持するため、小さい方を採用する
+    const cellSize = Math.min(maxCellW, maxCellH);
+    
+    // 全体の幅と高さを計算 (セルの合計 ＋ 隙間の合計 ＋ 外枠のボーダー分6px)
+    const gridW = (cellSize * cols) + (gap * (cols - 1)) + 6;
+    const gridH = (cellSize * rows) + (gap * (rows - 1)) + 6;
+    
+    // 計算した値をCSSに直接書き込んで完全固定
+    grid.style.width = `${gridW}px`;
+    grid.style.height = `${gridH}px`;
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+    
+    // 枠内の薄い文字のサイズをセルの90%に設定
+    const fontSize = Math.floor(cellSize * 0.9);
+    document.querySelectorAll('.cell-text').forEach(t => t.style.fontSize = `${fontSize}px`);
+
+    // キャンバスの解像度を再設定して再描画
+    grid.querySelectorAll('canvas').forEach((canvas, index) => {
+        setCanvasSize(canvas);
+        redrawCanvas(canvas, index);
     });
 }
 
+/* ===================================================================
+   データ定義
+=================================================================== */
 const hiraLeft = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","","ゆ","","よ","ら","り","る","れ","ろ","わ","","を","","ん"];
 const hiraRight = ["ゃ","ゅ","ょ","っ","","が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
-const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","む","め","も","や","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
-const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","パ","ピ","ぷ","ぺ","ポ"];
+const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
+const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","ダ","ヂ","ヅ","デ","ド","バ","ビ","ブ","ベ","ボ","パ","ピ","プ","ペ","ポ"];
 const numsLeft = ["1","2","3","4","5","6","7","8","9","0"];
 
+/* ===================================================================
+   状態管理
+=================================================================== */
 let state = {
     settings: { rows: 2, cols: 5, fade: 3, practice: 2 },
     selectedText: [],
@@ -310,17 +351,21 @@ let state = {
     currentTool: 'pen',
     cellsStatus: [], 
     strokes: [],      
-    savedImages: [], 
+    savedImages: [], // メモリ内のみに保持。アプリを閉じると消えます
     currentImageIndex: -1
 };
 
-const savedSettings = localStorage.getItem('nazoriSettingsPro');
+// 練習設定のみLocalStorageから読み込み・保存する
+const savedSettings = localStorage.getItem('nazoriSettingsFinal');
 if (savedSettings) state.settings = JSON.parse(savedSettings);
 
 function saveSettings() {
-    localStorage.setItem('nazoriSettingsPro', JSON.stringify(state.settings));
+    localStorage.setItem('nazoriSettingsFinal', JSON.stringify(state.settings));
 }
 
+/* ===================================================================
+   トリプルタップ判定
+=================================================================== */
 let tapTimes = [];
 document.getElementById('setting-trigger').addEventListener('pointerdown', () => {
     const now = Date.now();
@@ -333,24 +378,26 @@ document.getElementById('setting-trigger').addEventListener('pointerdown', () =>
     }
 });
 
+/* ===================================================================
+   音声読み上げ機能
+=================================================================== */
 const synth = window.speechSynthesis;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
-let isSpeaking = false;
-
 document.body.addEventListener('pointerdown', () => {
     if (!audioCtx) audioCtx = new AudioContext();
 }, { once: true });
 
 function speak(text) {
     if (synth.speaking) synth.cancel();
-    isSpeaking = true;
     const ut = new SpeechSynthesisUtterance(text);
     ut.lang = 'ja-JP'; ut.pitch = 1.1; ut.rate = 0.8;
-    ut.onend = () => { isSpeaking = false; };
     synth.speak(ut);
 }
 
+/* ===================================================================
+   ホーム画面 UI ロジック
+=================================================================== */
 function switchTab(index) {
     document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
     const leftArr = index === 0 ? hiraLeft : index === 1 ? kataLeft : numsLeft;
@@ -362,21 +409,13 @@ function switchTab(index) {
 function renderKeyboard(id, arr) {
     const kb = document.getElementById(id);
     kb.innerHTML = '';
-    if (arr.length === 0) {
-        kb.style.display = 'none';
-        return;
-    }
+    if (arr.length === 0) { kb.style.display = 'none'; return; }
     kb.style.display = 'grid';
     arr.forEach(char => {
         const btn = document.createElement('div');
         btn.className = 'key-btn' + (char === "" ? ' empty' : '');
         btn.textContent = char;
-        if (char !== "") {
-            btn.onclick = () => {
-                state.selectedText.push(char);
-                renderSelectedText();
-            };
-        }
+        if (char !== "") btn.onclick = () => { state.selectedText.push(char); renderSelectedText(); };
         kb.appendChild(btn);
     });
 }
@@ -393,20 +432,18 @@ function removeLastLetter() {
 
 function startPractice() {
     state.currentTextIndex = 0;
-    state.savedImages = []; 
+    state.savedImages = []; // 新しいセッションが始まるので履歴をクリア
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-practice').classList.add('active');
     initPracticeScreen();
 }
 
+/* 一時履歴画像の表示 */
 function renderSavedImages() {
     const container = document.getElementById('saved-images-container');
     const list = document.getElementById('saved-images-list');
     list.innerHTML = '';
-    if (state.savedImages.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
+    if (state.savedImages.length === 0) { container.style.display = 'none'; return; }
     container.style.display = 'block';
     state.savedImages.forEach((imgData, index) => {
         const img = document.createElement('img');
@@ -435,6 +472,9 @@ function deleteCurrentImage() {
     }
 }
 
+/* ===================================================================
+   設定画面ロジック
+=================================================================== */
 function renderSettingValues() {
     document.getElementById('val-rows').textContent = state.settings.rows;
     document.getElementById('val-cols').textContent = state.settings.cols;
@@ -448,19 +488,18 @@ function updateSetting(key, delta) {
     if (key === 'rows' && (val < 1 || val > 5)) return;
     if (key === 'cols' && (val < 1 || val > 10)) return;
     const total = (key === 'rows' ? val : state.settings.rows) * (key === 'cols' ? val : state.settings.cols);
-    if (key === 'fade' || key === 'practice') {
-        if (val < 0) return;
-        if (val > total) val = total;
-    }
+    if (key === 'fade' || key === 'practice') { if (val < 0) return; if (val > total) val = total; }
+    
     state.settings[key] = val;
+    
+    // 整合性調整（フェードと見本なしの合計が総数を超えないように）
     if (state.settings.fade + state.settings.practice > total) {
         const excess = (state.settings.fade + state.settings.practice) - total;
         if (state.settings.practice >= excess) {
             state.settings.practice -= excess;
         } else {
-            const rest = excess - state.settings.practice;
             state.settings.practice = 0;
-            state.settings.fade = Math.max(0, state.settings.fade - rest);
+            state.settings.fade = Math.max(0, state.settings.fade - excess);
         }
     }
     saveSettings();
@@ -474,7 +513,6 @@ function renderSampleGrid() {
     grid.innerHTML = '';
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-    grid.style.aspectRatio = `${cols} / ${rows}`;
     for (let i = 0; i < total; i++) {
         const isPractice = i >= total - practice;
         const isFade = (total - fade - practice <= i) && (i < total - practice);
@@ -495,6 +533,9 @@ function closeSetting() {
     }
 }
 
+/* ===================================================================
+   練習画面ロジック (キャンバス描画)
+=================================================================== */
 function setTool(tool) {
     state.currentTool = tool;
     document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
@@ -509,50 +550,40 @@ function initPracticeScreen() {
     const letter = state.selectedText[state.currentTextIndex];
     document.getElementById('main-letter').textContent = letter;
     speak(letter); 
+    
     const grid = document.getElementById('canvas-grid');
     grid.innerHTML = '';
+    
     const { rows, cols, fade, practice } = state.settings;
     const total = rows * cols;
-    grid.style.setProperty('--cols', cols);
-    grid.style.setProperty('--rows', rows);
-    grid.style.setProperty('--max-dim', Math.max(cols, rows));
-    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-    grid.style.aspectRatio = `${cols} / ${rows}`;
+    
     state.cellsStatus = Array(total).fill(false);
     state.strokes = Array.from({length: total}, () => []); 
     checkDone();
+    
     for (let i = 0; i < total; i++) {
         const isPractice = i >= total - practice;
         const isFade = (total - fade - practice <= i) && (i < total - practice);
+        
         const cell = document.createElement('div');
         cell.className = 'cell';
+        
         const textSpan = document.createElement('span');
         textSpan.className = 'cell-text';
         textSpan.textContent = letter;
-        textSpan.style.opacity = isPractice ? "0" : (isFade ? "0.4" : "1");
+        textSpan.style.opacity = isPractice ? "0" : (isFade ? "0.3" : "1");
         textSpan.id = `cell-text-${i}`;
+        
         const canvas = document.createElement('canvas');
         setupCanvas(canvas, i, isFade);
+        
         cell.appendChild(textSpan);
         cell.appendChild(canvas);
         grid.appendChild(cell);
     }
+    // DOM構築直後にサイズ固定計算を走らせる
+    setTimeout(fixGridSize, 10);
 }
-
-let canvasResizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(canvasResizeTimer);
-    canvasResizeTimer = setTimeout(() => {
-        if (document.getElementById('screen-practice').classList.contains('active')) {
-            const canvases = document.querySelectorAll('canvas');
-            canvases.forEach((canvas, index) => {
-                setCanvasSize(canvas);
-                redrawCanvas(canvas, index);
-            });
-        }
-    }, 200);
-});
 
 function setCanvasSize(canvas) {
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -560,26 +591,21 @@ function setCanvasSize(canvas) {
     canvas.height = rect.height * window.devicePixelRatio;
     const ctx = canvas.getContext('2d');
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-}
-
-function applyToolSettings(ctx, tool) {
-    if (tool === 'pen') {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 15;
-    } else {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = 40;
-    }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 }
 
 function redrawCanvas(canvas, index) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     state.strokes[index].forEach(stroke => {
-        applyToolSettings(ctx, stroke.tool);
+        if (stroke.tool === 'pen') {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 12;
+        } else {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 30;
+        }
         if (stroke.points.length === 0) return;
         ctx.beginPath();
         ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
@@ -593,56 +619,68 @@ function redrawCanvas(canvas, index) {
 function setupCanvas(canvas, index, isFade) {
     setTimeout(() => setCanvasSize(canvas), 0);
     const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    let hasMoved = false;
-    let startX = 0, startY = 0;
-    let currentStroke = null;
+    let isDrawing = false, hasMoved = false, startX = 0, startY = 0, currentStroke = null;
+    
     const getPos = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        const r = canvas.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
     };
+
     canvas.addEventListener('pointerdown', (e) => {
-        isDrawing = true;
-        hasMoved = false;
-        canvas.setPointerCapture(e.pointerId);
-        const pos = getPos(e);
-        startX = pos.x; startY = pos.y;
+        isDrawing = true; hasMoved = false; canvas.setPointerCapture(e.pointerId);
+        const pos = getPos(e); startX = pos.x; startY = pos.y;
         currentStroke = { tool: state.currentTool, points: [{x: pos.x, y: pos.y}] };
-        applyToolSettings(ctx, state.currentTool);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
+        
+        if (state.currentTool === 'pen') {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 12;
+        } else {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 30;
+        }
+        ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
+        
+        // フェードなぞりの場合、書き始めると文字が消える
         if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0';
     });
+
     canvas.addEventListener('pointermove', (e) => {
         if (!isDrawing) return;
         const pos = getPos(e);
-        if (!hasMoved && Math.hypot(pos.x - startX, pos.y - startY) > 5) {
-            hasMoved = true;
-        }
+        // 5px以上の移動でドラッグ(線を描く)と判定
+        if (!hasMoved && Math.hypot(pos.x - startX, pos.y - startY) > 5) hasMoved = true;
         currentStroke.points.push({x: pos.x, y: pos.y});
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
+        ctx.lineTo(pos.x, pos.y); ctx.stroke();
     });
-    const finishDrawing = (e) => {
+
+    canvas.addEventListener('pointerup', (e) => {
         if (!isDrawing) return;
-        isDrawing = false;
-        canvas.releasePointerCapture(e.pointerId);
+        isDrawing = false; canvas.releasePointerCapture(e.pointerId);
+        
         if (hasMoved) {
+            // ドラッグした場合は線を記録
             state.strokes[index].push(currentStroke);
-        } else if (e.type === 'pointerup') {
-            if (state.strokes[index].length > 0) {
-                state.strokes[index].pop(); 
-            }
-            redrawCanvas(canvas, index);
-        } else {
-             redrawCanvas(canvas, index);
+        } else if (e.type === 'pointerup' && state.strokes[index].length > 0) {
+            // タップのみの場合は直前の1画を消去(Undo機能)
+            state.strokes[index].pop(); 
         }
+        
+        redrawCanvas(canvas, index);
+        
+        // ペンの線が1つでもあれば完了状態にする
         state.cellsStatus[index] = state.strokes[index].some(s => s.tool === 'pen');
         checkDone();
-        if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0.4';
-    };
-    canvas.addEventListener('pointerup', finishDrawing);
-    canvas.addEventListener('pointercancel', finishDrawing);
+        
+        // フェードなぞりの場合、指を離すと文字が再び現れる
+        if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0.3';
+    });
+    
+    canvas.addEventListener('pointercancel', () => {
+        if (isDrawing) {
+            isDrawing = false;
+            redrawCanvas(canvas, index);
+        }
+    });
 }
 
 function checkDone() {
@@ -659,54 +697,50 @@ function captureGrid() {
     const grid = document.getElementById('canvas-grid');
     const rect = grid.getBoundingClientRect();
     const canvas = document.createElement('canvas');
-    const scale = 2; 
-    canvas.width = rect.width * scale;
-    canvas.height = rect.height * scale;
+    const scale = 2; // 高解像度保存
+    canvas.width = rect.width * scale; canvas.height = rect.height * scale;
     const ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, rect.width, rect.height);
-    const cells = grid.querySelectorAll('.cell');
-    cells.forEach((cell) => {
-        const cellRect = cell.getBoundingClientRect();
-        const x = cellRect.left - rect.left;
-        const y = cellRect.top - rect.top;
-        const w = cellRect.width;
-        const h = cellRect.height;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(x, y, w, h);
+    
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, rect.width, rect.height);
+    
+    grid.querySelectorAll('.cell').forEach((cell) => {
+        const r = cell.getBoundingClientRect();
+        const x = r.left - rect.left, y = r.top - rect.top, w = r.width, h = r.height;
+        ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+        
         const textSpan = cell.querySelector('.cell-text');
-        const opacity = parseFloat(textSpan.style.opacity || 1);
-        if (opacity > 0) {
-             ctx.fillStyle = `rgba(170, 170, 170, ${opacity})`;
+        if (parseFloat(textSpan.style.opacity || 1) > 0) {
+             ctx.fillStyle = `rgba(170, 170, 170, ${textSpan.style.opacity})`;
              const style = window.getComputedStyle(textSpan);
-             ctx.font = `400 ${style.fontSize} ${style.fontFamily}`; 
-             ctx.textAlign = 'center';
-             ctx.textBaseline = 'middle';
-             ctx.fillText(textSpan.textContent, x + w/2, y + h/2 + (parseFloat(style.fontSize) * 0.01)); 
+             ctx.font = `normal ${style.fontSize} ${style.fontFamily}`;
+             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+             // 文字をセルの中央に描画
+             ctx.fillText(textSpan.textContent, x + w/2, y + h/2); 
         }
+        
         const cellCanvas = cell.querySelector('canvas');
-        if (cellCanvas) {
-            ctx.drawImage(cellCanvas, x, y, w, h);
-        }
+        if (cellCanvas) ctx.drawImage(cellCanvas, x, y, w, h);
     });
+    
+    // 軽量なJPEGで一時保存
     return canvas.toDataURL('image/jpeg', 0.8);
 }
 
 function nextLetter() {
-    const isAllDrawn = state.cellsStatus.every(s => s === true);
-    if (!isAllDrawn) return;
-    const imgData = captureGrid();
-    state.savedImages.push(imgData);
+    if (!state.cellsStatus.every(s => s === true)) return;
+    
+    // 書いた画像をメモリに保存
+    state.savedImages.push(captureGrid());
+    
     state.currentTextIndex++;
     if (state.currentTextIndex < state.selectedText.length) {
         initPracticeScreen();
     } else {
-        state.selectedText = [];
-        renderSelectedText();
+        // すべて完了したらホームへ
+        state.selectedText = []; 
+        renderSelectedText(); 
         renderSavedImages();
         document.getElementById('screen-practice').classList.remove('active');
         document.getElementById('screen-home').classList.add('active');
@@ -714,8 +748,8 @@ function nextLetter() {
     }
 }
 
+// アプリの初期化
 switchTab(0);
-renderSavedImages();
 document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
 </body>
