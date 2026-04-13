@@ -1,20 +1,73 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-</head>
-<body>
-    <p><a href="keitou_map/index.html">系統マップ</a></p>
-    国語
-    <p><a href="hiragana_nazori_utsushi/index.html">平仮名なぞり・写し書き</a></p>
-    <p><a href="keyboard/index.html">平仮名キーボード</a></p>
-    算数
-    <p><a href="1tai1/index.html">一つずつ配ろう</a></p>
-    <p><a href="kazoeyou_kiso/index.html">かぞえよう基礎</a></p>
-    その他
-    <p><a href="katachi_sagashi/index.html">形探し
-        <img src="katachi_sagashi/img.png" height="100"></a></p>
-    <p><a href="ten_tsunagi/index.html">点つなぎ</a></p>
-    <p><a href="maze/index.html">迷路</a></p>
-</body>
-</html>
+<style>
+  body { font-family: sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+  .category-title { border-left: 5px solid #4A90E2; padding-left: 10px; margin: 30px 0 15px; font-size: 1.2em; }
+  .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+  .item-card { border: 1px solid #eee; border-radius: 8px; transition: transform 0.2s; background: #fff; }
+  .item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .item-card a { text-decoration: none; color: inherit; display: block; padding: 12px; text-align: center; }
+  .item-card img { display: block; margin: 0 auto 10px; height: 100px; object-fit: contain; border-radius: 4px; }
+  .item-name { font-size: 14px; font-weight: bold; line-height: 1.4; }
+</style>
+
+<div class="grid-container">
+    <div class="item-card">
+        <a href="keitou_map/index.html">
+            <img src="keitou_map/img.png">
+            <span class="item-name">系統マップ</span>
+        </a>
+    </div>
+</div>
+
+<h2 class="category-title">国語</h2>
+<div class="grid-container">
+    <div class="item-card">
+        <a href="hiragana_nazori_utsushi/index.html">
+            <img src="hiragana_nazori_utsushi/img.png">
+            <span class="item-name">平仮名なぞり・写し書き</span>
+        </a>
+    </div>
+    <div class="item-card">
+        <a href="keyboard/index.html">
+            <img src="keyboard/img.png">
+            <span class="item-name">平仮名キーボード</span>
+        </a>
+    </div>
+</div>
+
+<h2 class="category-title">算数</h2>
+<div class="grid-container">
+    <div class="item-card">
+        <a href="1tai1/index.html">
+            <img src="1tai1/img.png">
+            <span class="item-name">一つずつ配ろう</span>
+        </a>
+    </div>
+    <div class="item-card">
+        <a href="kazoeyou_kiso/index.html">
+            <img src="kazoeyou_kiso/img.png">
+            <span class="item-name">かぞえよう基礎</span>
+        </a>
+    </div>
+</div>
+
+<h2 class="category-title">その他</h2>
+<div class="grid-container">
+    <div class="item-card">
+        <a href="katachi_sagashi/index.html">
+            <img src="katachi_sagashi/img.png">
+            <span class="item-name">形探し</span>
+        </a>
+    </div>
+    <div class="item-card">
+        <a href="ten_tsunagi/index.html">
+            <img src="ten_tsunagi/img.png">
+            <span class="item-name">点つなぎ</span>
+        </a>
+    </div>
+    <div class="item-card">
+        <a href="maze/index.html">
+            <img src="maze/img.png">
+            <span class="item-name">迷路</span>
+        </a>
+    </div>
+</div>
