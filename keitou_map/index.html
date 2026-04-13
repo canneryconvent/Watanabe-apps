@@ -57,6 +57,7 @@
     </div>
 
     <script>
+        // 背景ノード定義
         const bgData = [
             { id: 'bg1', name: '聞くこと・話すこと', color: '#fef2f2' },
             { id: 'bg2', name: '書くこと', color: '#fffbeb' },
@@ -79,6 +80,7 @@
             grabbable: false
         }));
 
+        // アプリノードの定義
         const appNodes = [
             { id: 'm_dist', name: 'くばろう', stage: 1, type: 'math', goal: '1対1対応の基礎' },
             { id: 'm_dist_one', name: '一つずつ配ろう', stage: 1, type: 'math', goal: '1対1対応の実践', url: 'https://watanabe-apps.github.io/apps/1tai1/index.html' },
@@ -89,7 +91,7 @@
             { id: 'm_puz1', name: '絵あわせパズル', stage: 1.5, type: 'math', goal: '分割した絵カードを組み合わせる' },
             { id: 'm_dish', name: '皿に○個ずつ', stage: 1.5, type: 'math', goal: '1対1対応の繰り返しによって同じ数ずつ配る' },
             { id: 'm_puz2', name: '分割パズル', stage: 1.5, type: 'math', goal: '分割した絵カードを組み合わせる（基本）' },
-            { id: 's_shape', name: '形探し', stage: 1.5, type: 'support', goal: '図地弁別。複雑な背景から特定の形を探す' },
+            { id: 's_shape', name: '形探し', stage: 1.5, type: 'support', goal: '図地弁別。複雑な背景から特定の形を探す', url: 'https://watanabe-apps.github.io/apps/katachi_sagashi/index.html' },
             { id: 'm_cat', name: 'カテゴリー分類', stage: 2, type: 'math', goal: 'イラストを機能、色、形等で分類' },
             { id: 'm_flag', name: 'はたをつくろう', stage: 2, type: 'math', goal: '縦線、横線、四角等をかく' },
             { id: 'm_shape', name: '図形組み合わせ', stage: 2, type: 'math', goal: '図形を楽しく扱う' },
@@ -116,6 +118,7 @@
             { id: 'j_quiz', name: '平仮名単語クイズ', stage: 3, type: 'jp', goal: '平仮名の単語の読みの定着' }
         ];
 
+        // 最新の座標・エッジデータ
         const importedData = [
           { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1060.9142358120218, "y": 105.74710064945151 } },
           { "group": "nodes", "data": { "id": "m_dist_one" }, "position": { "x": 1060.9142358120218, "y": 18.411111111111104 } },
