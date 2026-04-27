@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover でiOSのセーフエリア（ノッチ等）に対応 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>平仮名なぞり・写し書き</title>
     
@@ -13,9 +12,6 @@
         @font-face {
             font-family: 'KleeCustom';
             src: url('./KleeOne-Regular.ttf') format('truetype');
-            /* iOSの「フォント差し戻し」を防ぐため、font-weight や font-style はあえて記述しません。
-               また、表示されるまで待機する block を指定します。
-            */
             font-display: block;
         }
 
@@ -23,7 +19,6 @@
            1. 共通設定＆誤操作防止
         ========================================= */
         :root {
-            /* KleeCustomが読み込めた場合は最優先で適用 */
             --main-font: 'KleeCustom', 'UD Digi Kyokasho N-R', 'UD デジタル 教科書体 N-R', sans-serif;
         }
 
@@ -34,14 +29,12 @@
             -webkit-touch-callout: none;
             font-family: var(--main-font);
             -webkit-font-smoothing: antialiased;
-            /* OSによる勝手な太字の合成を禁止 */
             font-synthesis: none !important;
         }
         
         html, body {
             margin: 0; padding: 0; 
             width: 100vw; 
-            /* JSで計算した--vhを使用して実際の画面高さに合わせる */
             height: calc(var(--vh, 1vh) * 100); 
             background-color: #fff; color: #333; 
             overflow: hidden; 
@@ -103,28 +96,31 @@
         .practice-header {
             position: relative;
             width: 100%;
+            height: auto; /* 文字サイズに合わせて自動で高さが確保される（被り防止） */
+            min-height: 60px;
             display: flex; justify-content: center; align-items: flex-start;
             background: #fff;
-            padding-top: 15px; /* 最上部の余白 */
+            padding-top: 5px; /* 上詰め */
+            padding-bottom: 5px;
             flex-shrink: 0;
         }
 
-        /* お手本文字。line-heightを詰めることで上下の見えない無駄な余白を消滅させる */
+        /* 背面のお手本文字 */
         .main-letter { 
-            font-size: clamp(120px, 25vh, 350px); 
-            line-height: 0.8; 
+            font-size: clamp(80px, 20vh, 250px); 
+            line-height: 1; 
             margin: 0; padding: 0;
             color: #333; z-index: 1; cursor: pointer;
         }
 
-        /* ツールバーを前面に重ねる(絶対配置) */
+        /* 前面のツールバー (絶対配置で上に被せる) */
         .practice-toolbar {
-            position: absolute; top: 10px; left: 0; width: 100%;
-            padding: 0 15px;
+            position: absolute; top: 5px; left: 0; width: 100%;
+            padding: 0 10px;
             display: flex; justify-content: space-between; align-items: flex-start;
-            z-index: 10; pointer-events: none; /* 下の文字のクリックを邪魔しない */
+            z-index: 10; pointer-events: none; 
         }
-        .practice-toolbar button { pointer-events: auto; } /* ボタン自体は押せるように */
+        .practice-toolbar button { pointer-events: auto; } 
 
         .tool-btn { font-size: 28px; padding: 6px 12px; border-radius: 12px; border: 2px solid transparent; background: rgba(240,240,240,0.8); opacity: 0.6; cursor: pointer;}
         .tool-btn.active { border-color: #ff5252; opacity: 1; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
@@ -135,7 +131,7 @@
         /* 練習エリア */
         .canvas-container { 
             flex-grow: 1; display: flex; flex-direction: column; 
-            justify-content: flex-start; /* 表を上に詰める。余白は下側に寄る */
+            justify-content: flex-start; /* 表を上に詰める */
             align-items: center; 
             padding: 10px 10px calc(20px + env(safe-area-inset-bottom)); 
             width: 100%; overflow: hidden; touch-action: none; 
@@ -175,6 +171,8 @@
         .sample-cell span { font-size: 16px; color: #aaa; }
 
         .close-modal-btn { font-size: 20px; padding: 12px; margin-top: 10px; background: #333; color: #fff; border-radius: 10px; border: none; cursor: pointer;}
+        
+        #modal-image-view .modal { width: auto; max-width: 95vw; padding: 15px; align-items: center; }
         #large-image { max-width: 100%; max-height: 60vh; border: 1px solid #ccc; object-fit: contain;}
     </style>
 </head>
@@ -207,8 +205,8 @@
         
         <div class="bottom-bar">
             <div class="selected-text-container">
-                <div id="selected-letters" style="color:#666;"></div>
-                <button class="del-btn" onclick="removeLastLetter()">⌫</button>
+                <div id="selected-letters" style="color:#666; font-weight:bold;"></div>
+                <button class="del-btn" style="color:red; background:none; border:none; font-size:24px;" onclick="removeLastLetter()">⌫</button>
             </div>
             <button id="start-btn" class="start-btn" disabled onclick="startPractice()">スタート</button>
         </div>
@@ -218,7 +216,6 @@
          2. 練習画面
     ====================================== -->
     <div id="screen-practice" class="screen">
-        <!-- お手本とボタンを重ねて配置するヘッダー -->
         <div class="practice-header">
             <div id="main-letter" class="main-letter" onclick="speakCurrentLetter()">あ</div>
             
@@ -232,7 +229,6 @@
         </div>
         
         <div class="canvas-container" id="canvas-container">
-            <!-- JavaScriptで完全にサイズ固定されるグリッド -->
             <div id="canvas-grid" class="grid"></div>
         </div>
     </div>
@@ -244,10 +240,10 @@
         <div class="modal">
             <h2 style="margin:0; text-align:center;">設定</h2>
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <div class="setting-row">行の数 <div class="stepper"><button class="step-btn" onclick="updateSetting('rows', -1)">-</button><span id="val-rows" class="step-val">2</span><button class="step-btn" onclick="updateSetting('rows', 1)">+</button></div></div>
-                <div class="setting-row">列の数 <div class="stepper"><button class="step-btn" onclick="updateSetting('cols', -1)">-</button><span id="val-cols" class="step-val">5</span><button class="step-btn" onclick="updateSetting('cols', 1)">+</button></div></div>
-                <div class="setting-row">フェードなぞり <div class="stepper"><button class="step-btn" onclick="updateSetting('fade', -1)">-</button><span id="val-fade" class="step-val">3</span><button class="step-btn" onclick="updateSetting('fade', 1)">+</button></div></div>
-                <div class="setting-row">見本なし <div class="stepper"><button class="step-btn" onclick="updateSetting('practice', -1)">-</button><span id="val-practice" class="step-val">2</span><button class="step-btn" onclick="updateSetting('practice', 1)">+</button></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">行の数 <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('rows', -1)">-</button><span id="val-rows">2</span><button onclick="updateSetting('rows', 1)">+</button></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">列の数 <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('cols', -1)">-</button><span id="val-cols">5</span><button onclick="updateSetting('cols', 1)">+</button></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">フェードなぞり <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('fade', -1)">-</button><span id="val-fade">3</span><button onclick="updateSetting('fade', 1)">+</button></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">見本なし <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('practice', -1)">-</button><span id="val-practice">2</span><button onclick="updateSetting('practice', 1)">+</button></div></div>
             </div>
             <div style="font-size: 14px; text-align: center; color: #666; margin-top: 10px;">サンプルビュー</div>
             <div class="sample-grid-wrapper"><div id="sample-grid" class="sample-grid"></div></div>
@@ -283,7 +279,7 @@ window.addEventListener('resize', () => {
 });
 window.addEventListener('orientationchange', () => {
     setTimeout(() => { setVh(); fixGridSize(); }, 100);
-    setTimeout(() => { setVh(); fixGridSize(); }, 300); // Safariのアドレスバー変化対応
+    setTimeout(() => { setVh(); fixGridSize(); }, 300); 
 });
 
 /* ===================================================================
@@ -295,20 +291,23 @@ function fixGridSize() {
     
     const { rows, cols } = state.settings;
     
-    // 画面の利用可能領域を計算
-    const headerH = document.querySelector('.practice-header').offsetHeight;
-    const availW = window.innerWidth - 20; // 左右の余白計20px
-    const availH = window.innerHeight - headerH - 30; // 下部の余白計30px
+    // ヘッダーの実際の高さを取得 (これで被りを100%防ぐ)
+    const header = document.querySelector('.practice-header');
+    const headerH = header ? header.offsetHeight : 0;
+    
+    // 利用可能領域を計算 (余白分を引く)
+    const availW = window.innerWidth - 20; 
+    const availH = window.innerHeight - headerH - 50; 
     
     if (availW <= 0 || availH <= 0) return;
 
     const gap = 2; // グリッドの隙間(px)
     
-    // 画面からはみ出さない最大のセル(マス)の一辺の長さを計算
+    // 画面からはみ出さない最大のセルの一辺の長さを計算
     const maxCellW = Math.floor((availW - (cols - 1) * gap) / cols);
     const maxCellH = Math.floor((availH - (rows - 1) * gap) / rows);
     
-    // 正方形(1:1)を維持するため、小さい方を採用する
+    // 正方形(1:1)を維持するため、小さい方を採用
     const cellSize = Math.min(maxCellW, maxCellH);
     
     // 全体の幅と高さを計算 (セルの合計 ＋ 隙間の合計 ＋ 外枠のボーダー分6px)
@@ -351,7 +350,7 @@ let state = {
     currentTool: 'pen',
     cellsStatus: [], 
     strokes: [],      
-    savedImages: [], // メモリ内のみに保持。アプリを閉じると消えます
+    savedImages: [], 
     currentImageIndex: -1
 };
 
@@ -432,7 +431,7 @@ function removeLastLetter() {
 
 function startPractice() {
     state.currentTextIndex = 0;
-    state.savedImages = []; // 新しいセッションが始まるので履歴をクリア
+    state.savedImages = []; 
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-practice').classList.add('active');
     initPracticeScreen();
@@ -492,7 +491,6 @@ function updateSetting(key, delta) {
     
     state.settings[key] = val;
     
-    // 整合性調整（フェードと見本なしの合計が総数を超えないように）
     if (state.settings.fade + state.settings.practice > total) {
         const excess = (state.settings.fade + state.settings.practice) - total;
         if (state.settings.practice >= excess) {
@@ -640,14 +638,12 @@ function setupCanvas(canvas, index, isFade) {
         }
         ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
         
-        // フェードなぞりの場合、書き始めると文字が消える
         if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0';
     });
 
     canvas.addEventListener('pointermove', (e) => {
         if (!isDrawing) return;
         const pos = getPos(e);
-        // 5px以上の移動でドラッグ(線を描く)と判定
         if (!hasMoved && Math.hypot(pos.x - startX, pos.y - startY) > 5) hasMoved = true;
         currentStroke.points.push({x: pos.x, y: pos.y});
         ctx.lineTo(pos.x, pos.y); ctx.stroke();
@@ -658,20 +654,16 @@ function setupCanvas(canvas, index, isFade) {
         isDrawing = false; canvas.releasePointerCapture(e.pointerId);
         
         if (hasMoved) {
-            // ドラッグした場合は線を記録
             state.strokes[index].push(currentStroke);
         } else if (e.type === 'pointerup' && state.strokes[index].length > 0) {
-            // タップのみの場合は直前の1画を消去(Undo機能)
             state.strokes[index].pop(); 
         }
         
         redrawCanvas(canvas, index);
         
-        // ペンの線が1つでもあれば完了状態にする
         state.cellsStatus[index] = state.strokes[index].some(s => s.tool === 'pen');
         checkDone();
         
-        // フェードなぞりの場合、指を離すと文字が再び現れる
         if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0.3';
     });
     
@@ -697,7 +689,7 @@ function captureGrid() {
     const grid = document.getElementById('canvas-grid');
     const rect = grid.getBoundingClientRect();
     const canvas = document.createElement('canvas');
-    const scale = 2; // 高解像度保存
+    const scale = 2; 
     canvas.width = rect.width * scale; canvas.height = rect.height * scale;
     const ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
@@ -716,7 +708,6 @@ function captureGrid() {
              const style = window.getComputedStyle(textSpan);
              ctx.font = `normal ${style.fontSize} ${style.fontFamily}`;
              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-             // 文字をセルの中央に描画
              ctx.fillText(textSpan.textContent, x + w/2, y + h/2); 
         }
         
@@ -724,21 +715,18 @@ function captureGrid() {
         if (cellCanvas) ctx.drawImage(cellCanvas, x, y, w, h);
     });
     
-    // 軽量なJPEGで一時保存
     return canvas.toDataURL('image/jpeg', 0.8);
 }
 
 function nextLetter() {
     if (!state.cellsStatus.every(s => s === true)) return;
     
-    // 書いた画像をメモリに保存
     state.savedImages.push(captureGrid());
     
     state.currentTextIndex++;
     if (state.currentTextIndex < state.selectedText.length) {
         initPracticeScreen();
     } else {
-        // すべて完了したらホームへ
         state.selectedText = []; 
         renderSelectedText(); 
         renderSavedImages();
@@ -748,7 +736,6 @@ function nextLetter() {
     }
 }
 
-// アプリの初期化
 switchTab(0);
 document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
