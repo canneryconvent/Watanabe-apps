@@ -1,440 +1,394 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>段階別教育アプリ系統マップ（エディタ）</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@4.0.1/cytoscape-edgehandles.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@2.0.0/cytoscape-popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy-bundle.umd.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/animations/shift-away.css">
-    <style>
-        body { background-color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; margin: 0; }
-        #cy { flex-grow: 1; width: 100%; height: 100%; }
-        .eh-handle { background-color: #ef4444; width: 12px; height: 12px; shape: ellipse; overlay-opacity: 0; border-width: 12px; border-opacity: 0; }
-        .eh-source, .eh-target { border-width: 4px; border-color: #ef4444; }
-        .eh-preview, .eh-ghost-edge { background-color: #ef4444; line-color: #ef4444; target-arrow-color: #ef4444; source-arrow-color: #ef4444; }
-        .eh-ghost-edge.eh-preview-active { opacity: 0; }
-        .tippy-box[data-theme~='edu-dark'] { background-color: #1e293b; color: #f8fafc; font-size: 0.8rem; border-radius: 6px; padding: 4px; max-width: 260px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); pointer-events: auto; }
-        #export-modal { display: none; position: absolute; top: 80px; right: 20px; width: 320px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 50; }
-        #export-text { width: 100%; height: 200px; font-family: monospace; font-size: 10px; margin-top: 8px; resize: none; border: 1px solid #cbd5e1; padding: 4px; border-radius: 4px; }
-        
-        .tooltip-content { display: flex; flex-direction: column; gap: 4px; }
-        .app-link { color: #60a5fa; text-decoration: none; font-size: 0.75rem; background: #334155; padding: 4px 8px; border-radius: 4px; display: inline-block; align-self: flex-start; margin-top: 4px; transition: background 0.2s; pointer-events: auto; }
-        .app-link:hover { background: #475569; text-decoration: underline; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>形探し</title>
+
+<!-- 🌟 共通CSS・JSの読み込み（パスは環境に合わせて調整してください） -->
+<link rel="stylesheet" href="../common/style.css">
+<script src="../common/core.js"></script>
+
+<style>
+    /* ========== 形探し固有のスタイル ========== */
+    #play-area {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        touch-action: none; /* ドラッグするプレイ領域のみスワイプ無効化 */
+        overflow: hidden;
+    }
+
+    #score-display {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        color: #888;
+        z-index: 100;
+        pointer-events: none;
+    }
+
+    .shape-container {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* 枠線とノイズの設定 */
+    .shape-line svg {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: #000;
+        stroke-width: 5;
+        overflow: visible;
+    }
+
+    /* ドラッグするピース */
+    .piece {
+        cursor: grab;
+    }
+    .piece:active {
+        cursor: grabbing;
+    }
+    .piece svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+    .piece.fitted {
+        pointer-events: none;
+        transition: left 0.1s, top 0.1s;
+    }
+
+    /* クリア画面固有 */
+    #clear-text {
+        font-size: 48px;
+        font-weight: bold;
+        color: #ff5722;
+        margin-bottom: 40px;
+    }
+</style>
 </head>
 <body>
 
-    <header class="bg-slate-900 text-slate-100 p-4 shadow-xl z-10 flex justify-between items-center border-b border-slate-700">
-        <div>
-            <h1 class="text-xl font-bold tracking-tight">段階別教育アプリ系統マップ（エディタ）</h1>
-            <p id="mode-desc" class="text-xs text-rose-400 font-bold">移動中：ノードをドラッグして配置を調整できます</p>
-        </div>
-        <div class="flex gap-4 text-sm font-bold items-center">
-            <div class="flex items-center gap-2 mr-4">
-                <div class="bg-rose-900/40 px-3 py-1 rounded border border-rose-500/50 text-rose-200 text-xs">国語</div>
-                <div class="bg-emerald-900/40 px-3 py-1 rounded border border-emerald-500/50 text-emerald-200 text-xs">自立活動</div>
-                <div class="bg-blue-900/40 px-3 py-1 rounded border border-blue-500/50 text-blue-200 text-xs">算数</div>
-            </div>
-            <button id="btn-toggle-draw" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-white transition-colors">線引きモードにする</button>
-            <button id="btn-edit" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white hidden transition-colors">編集モードに戻る</button>
-            <button id="btn-view" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-white transition-colors">出力＆閲覧モードにする</button>
-        </div>
-    </header>
-
-    <div id="cy"></div>
-
-    <div id="export-modal">
-        <h3 class="font-bold text-slate-800 text-sm">現在の状態データ (JSON)</h3>
-        <p class="text-xs text-slate-500 mt-1">このデータを保存して次回読み込むことで状態を復元できます。</p>
-        <textarea id="export-text" readonly></textarea>
-        <button onclick="document.getElementById('export-modal').style.display='none'" class="mt-2 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold py-2 rounded">閉じる</button>
+<!-- ホーム（スタート）画面 -->
+<div id="start-screen" class="overlay-screen" style="display: flex;">
+    <button id="start-btn" class="btn-primary">スタート</button>
+    
+    <div>
+        <button id="open-settings-btn" class="btn-secondary">⚙️ 設定</button>
+        <div class="triple-tap-hint">トリプルタップ</div>
     </div>
+</div>
 
-    <script>
-        // 背景ノード定義
-        const bgData = [
-            { id: 'bg1', name: '聞くこと・話すこと', color: '#fef2f2' },
-            { id: 'bg2', name: '書くこと', color: '#fffbeb' },
-            { id: 'bg3', name: '読むこと', color: '#f0fdf4' },
-            { id: 'bg4', name: '数量・数と計算', color: '#eff6ff' },
-            { id: 'bg5', name: '図形', color: '#f5f3ff' },
-            { id: 'bg6', name: '測定', color: '#fdf4ff' },
-            { id: 'bg7', name: 'データの活用', color: '#f8fafc' }
-        ];
+<!-- プレイ領域 -->
+<div id="score-display">0 / 0</div>
+<div id="play-area"></div>
+
+<!-- ゲームクリア画面 -->
+<div id="clear-screen" class="overlay-screen">
+    <div id="clear-text">よくできました！</div>
+    <button id="home-btn" class="btn-primary">ホームにもどる</button>
+</div>
+
+<!-- 設定画面 -->
+<div id="settings-modal" class="overlay-screen">
+    <div class="settings-content">
+        <h2>設定</h2>
+        <div class="setting-row">
+            <span>サウンド (音)</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="set-sound">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <span>問題数（何問で終わるか）</span>
+            <div><input type="number" id="set-maxq" class="setting-input" min="1" max="50"> 問</div>
+        </div>
+        <div class="setting-row">
+            <span>最初の四角（ノイズ）の数</span>
+            <div><input type="number" id="set-init" class="setting-input" min="0" max="50"> 個</div>
+        </div>
+        <div class="setting-row">
+            <span>１問ごとに増える四角の数</span>
+            <div><input type="number" id="set-step" class="setting-input" min="0" max="20"> 個</div>
+        </div>
+        <div class="close-btn" id="close-settings-btn">とじる (保存)</div>
+    </div>
+</div>
+
+<script>
+/**
+ * 💡 vhの計算、ダブルタップ防止、トリプルタップ判定などは core.js に任せます。
+ * ここには「形探し」固有のゲームロジックと設定保存のみを記述します。
+ */
+
+// 1. 設定の管理 (localStorage)
+const defaultSettings = {
+    sound: true,
+    maxQuestions: 5,
+    initialRects: 10,
+    rectsIncrement: 5
+};
+let settings = { ...defaultSettings };
+
+function loadSettings() {
+    const saved = localStorage.getItem('appSettings_Shape');
+    if (saved) {
+        settings = { ...settings, ...JSON.parse(saved) };
+    }
+    document.getElementById('set-sound').checked = settings.sound;
+    document.getElementById('set-maxq').value = settings.maxQuestions;
+    document.getElementById('set-init').value = settings.initialRects;
+    document.getElementById('set-step').value = settings.rectsIncrement;
+}
+
+function saveSettings() {
+    settings.sound = document.getElementById('set-sound').checked;
+    settings.maxQuestions = parseInt(document.getElementById('set-maxq').value) || 1;
+    settings.initialRects = parseInt(document.getElementById('set-init').value) || 0;
+    settings.rectsIncrement = parseInt(document.getElementById('set-step').value) || 0;
+    localStorage.setItem('appSettings_Shape', JSON.stringify(settings));
+}
+
+// 起動時に設定を読み込む
+loadSettings();
+
+// ※設定画面を「開く」処理は core.js のトリプルタップ判定で行われる想定です。
+// アプリ側では、閉じた時に設定を保存する処理だけ行います。
+document.getElementById('close-settings-btn').addEventListener('click', () => {
+    saveSettings();
+    document.getElementById('settings-modal').style.display = 'none';
+});
+
+
+// 2. Web Audio API (効果音) と iOS無音アンロック処理
+let audioCtx;
+function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // iOS Safariオーディオ制限解除用
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0; 
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(0);
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playChime() {
+    if (!audioCtx || !settings.sound) return;
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
+    
+    osc1.type = 'sine'; osc2.type = 'sine';
+    osc1.frequency.setValueAtTime(783.99, audioCtx.currentTime); 
+    osc2.frequency.setValueAtTime(987.77, audioCtx.currentTime); 
+    
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+    
+    osc1.start(audioCtx.currentTime); osc2.start(audioCtx.currentTime);
+    osc1.stop(audioCtx.currentTime + 0.6); osc2.stop(audioCtx.currentTime + 0.6);
+}
+
+// 3. 画面遷移
+document.getElementById('start-btn').addEventListener('pointerdown', () => {
+    initAudio();
+    document.getElementById('start-screen').style.display = 'none';
+    numOfClear = 0;
+    currentRectCount = settings.initialRects;
+    startGame();
+});
+
+document.getElementById('home-btn').addEventListener('click', () => {
+    document.getElementById('clear-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'flex';
+});
+
+// 4. ゲームロジック固有処理
+const playArea = document.getElementById('play-area');
+const scoreDisplay = document.getElementById('score-display');
+let numOfClear = 0;
+let currentRectCount = 0;
+let zIndexCounter = 20;
+
+const sizeMap = { circle: 300, triangle: 300, star: 350, rect: 300 };
+const colorMap = { circle: 'red', triangle: 'green', star: 'yellow' };
+
+function getStarPoints(size) {
+    let points = [];
+    const center = size / 2;
+    const outerRadius = size / 2;
+    const innerRadius = outerRadius * 0.5;
+    for (let i = 0; i < 10; i++) {
+        const angle = (i * 36 - 90) * Math.PI / 180;
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const x = center + Math.cos(angle) * radius;
+        const y = center + Math.sin(angle) * radius;
+        points.push(`${x},${y}`);
+    }
+    return points.join(' ');
+}
+
+const shapes = {
+    circle: `<svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="147.5"/></svg>`,
+    triangle: `<svg viewBox="0 0 300 300"><polygon points="150,2.5 297.5,297.5 2.5,297.5" stroke-linejoin="round"/></svg>`,
+    star: `<svg viewBox="0 0 350 350"><polygon points="${getStarPoints(350)}" stroke-linejoin="round"/></svg>`,
+    rect: `<svg viewBox="0 0 300 300"><rect x="2.5" y="2.5" width="295" height="295"/></svg>`
+};
+
+function createEl(className, html, x, y, type, color = null, initialZIndex = 1) {
+    const el = document.createElement('div');
+    el.className = `shape-container ${className}`;
+    el.innerHTML = html;
+    
+    const size = sizeMap[type];
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.zIndex = initialZIndex;
+
+    if (color) {
+        const svgElement = el.querySelector('svg *');
+        svgElement.style.fill = color;
+        svgElement.style.stroke = 'none';
+    }
+
+    playArea.appendChild(el);
+    return el;
+}
+
+function getRandomPos(type) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const half = sizeMap[type] / 2;
+    const minX = half;
+    const maxX = Math.max(half, w - half);
+    const minY = half;
+    const maxY = Math.max(half, h - half - 250); 
+    return {
+        x: minX + Math.random() * (maxX - minX),
+        y: minY + Math.random() * (maxY - minY)
+    };
+}
+
+let piecesState = {};
+
+function startGame() {
+    playArea.innerHTML = '';
+    scoreDisplay.innerText = `${numOfClear} / ${settings.maxQuestions}`;
+    piecesState = {};
+
+    // 背景ノイズ (Z-index: 1)
+    for (let i = 0; i < currentRectCount; i++) {
+        const pos = getRandomPos('rect');
+        createEl('shape-line distraction', shapes.rect, pos.x, pos.y, 'rect', null, 1);
+    }
+
+    const shapeTypes = ['circle', 'triangle', 'star'];
+    const startY = window.innerHeight - 200; 
+    const stepX = window.innerWidth / 4;     
+
+    shapeTypes.forEach((type, index) => {
+        // 正解の枠線ターゲット (Z-index: 5)
+        const targetPos = getRandomPos(type);
+        createEl('shape-line target-shape', shapes[type], targetPos.x, targetPos.y, type, null, 5);
+
+        // 動かすピース (Z-index: 20〜)
+        const startX = stepX * (index + 1);
+        const pieceEl = createEl('piece', shapes[type], startX, startY, type, colorMap[type], zIndexCounter++);
+
+        piecesState[type] = {
+            el: pieceEl,
+            targetPos: targetPos,
+            isFit: false
+        };
+
+        attachDrag(pieceEl, type);
+    });
+}
+
+function attachDrag(el, type) {
+    let isDragging = false;
+    let offset = { x: 0, y: 0 };
+
+    el.addEventListener('pointerdown', (e) => {
+        if (piecesState[type].isFit) return;
+        isDragging = true;
+        el.setPointerCapture(e.pointerId);
         
-        const bgWidth = 350;
-        const bgHeight = 1200;
+        const rect = el.getBoundingClientRect();
+        offset.x = e.clientX - (rect.left + rect.width / 2);
+        offset.y = e.clientY - (rect.top + rect.height / 2);
+        
+        el.style.zIndex = zIndexCounter++;
+    });
 
-        const bgElements = bgData.map((bg, index) => ({
-            group: 'nodes',
-            data: { id: bg.id, name: bg.name, type: 'bg', bgColor: bg.color },
-            position: { x: (index * bgWidth) + (bgWidth / 2) - 50, y: bgHeight / 2 - 100 },
-            locked: true,
-            selectable: false,
-            grabbable: false
-        }));
+    el.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const newX = e.clientX - offset.x;
+        const marginY = e.clientY - offset.y;
+        el.style.left = `${newX}px`;
+        el.style.top = `${marginY}px`;
+    });
 
-        // アプリノードの定義
-        const appNodes = [
-            { id: 's_listen_mem', name: '聞いて覚えよう', type: 'support', goal: '聴覚的ワーキングメモリの向上、聴覚の図地弁別（雑音下での聞き取り）', url: 'https://watanabe-apps.github.io/apps/kiite_oboeyou/index.html' },
-            { id: 'm_dist', name: 'くばろう', type: 'math', goal: '1対1対応の基礎' },
-            { id: 'm_dist_one', name: '一つずつ配ろう', type: 'math', goal: '1対1対応の実践', url: 'https://watanabe-apps.github.io/apps/1tai1/index.html' },
-            { id: 'm_match', name: 'マッチング', type: 'math', goal: '同じの理解' },
-            { id: 'm_count_s', name: '数唱', type: 'math', goal: '数唱への意欲付け' },
-            { id: 's_tap', name: '点タップ', type: 'support', goal: '具体物に気づく、タッチする' },
-            { id: 'm_base', name: 'かぞえよう基礎', type: 'math', goal: '数を数える基礎。1対1対応。左から並べる', url: 'https://watanabe-apps.github.io/apps/kazoeyou_kiso/' },
-            { id: 'm_puz1', name: '絵あわせパズル', type: 'math', goal: '分割した絵カードを組み合わせる' },
-            { id: 'm_dish', name: '皿に○個ずつ', type: 'math', goal: '1対1対応の繰り返しによって同じ数ずつ配る' },
-            { id: 'm_puz2', name: '分割パズル', type: 'math', goal: '分割した絵カードを組み合わせる（基本）' },
-            { id: 's_shape', name: '形探し', type: 'support', goal: '図地弁別。複雑な背景から特定の形を探す', url: 'https://watanabe-apps.github.io/apps/katachi_sagashi/index.html' },
-            { id: 'm_cat', name: 'カテゴリー分類', type: 'math', goal: 'イラストを機能、色、形等で分類' },
-            { id: 'm_flag', name: 'はたをつくろう', type: 'math', goal: '縦線、横線、四角等をかく' },
-            { id: 'm_shape', name: '図形組み合わせ', type: 'math', goal: '図形を楽しく扱う' },
-            { id: 'j_find', name: '平仮名さがし', type: 'jp', goal: '文字の識別。似た文字を見分ける' },
-            { id: 'j_one', name: '一文字の平仮名', type: 'jp', goal: '平仮名と音が結びついていることの理解' },
-            { id: 's_pos', name: '位置マッチング', type: 'support', goal: '緩やかな空間概念(上下、左右?)', url: 'https://watanabe-apps.github.io/apps/ichi_matching/index.html' },
-            { id: 's_dot', name: '点', type: 'support', goal: '空間概念。鏡文字に関連' },
-            { id: 's_ice', name: 'アイスならべ', type: 'support', goal: '空間概念(上下)。見比べる', url: 'https://scratch.mit.edu/projects/846717854/fullscreen/' },
-            { id: 's_maze', name: '迷路', type: 'support', goal: '運筆。複雑な線を見分ける。目と手の高度な協応', url: 'https://watanabe-apps.github.io/apps/maze/index.html' },
-            { id: 'm_count2', name: 'かずをかぞえよう', type: 'math', goal: '数を数える。数字→具体物。15程度まで' },
-            { id: 'm_which', name: 'なんばんめ？', type: 'math', goal: '順序数の理解' },
-            { id: 'm_t_tap', name: '数字タッチ', type: 'math', goal: '数字の順の理解。視認知向上' },
-            { id: 'm_t_arr', name: '数字ならべ', type: 'math', goal: '数字の系列・順序の理解', url: 'https://watanabe-apps.github.io/apps/suuji_narabe/index.html' },
-            { id: 'j_karuta', name: 'カルタ', type: 'jp', goal: '平仮名の読み。視覚性語彙の増大' },
-            { id: 'j_kbd', name: '平仮名キーボード', type: 'jp', goal: '平仮名の読み。音韻意識（分解、語頭音等）', url: 'https://watanabe-apps.github.io/apps/keyboard/index.html' },
-            { id: 'j_kbd_quiz', name: 'ひらがなキーボードクイズ', type: 'jp', goal: '平仮名キーボードを使った単語入力クイズ。音韻意識の定着。', url: 'https://watanabe-apps.github.io/apps/keyboard_quiz/index.html' },
-            { id: 'j_pict', name: '平仮名図鑑', type: 'jp', goal: '平仮名への興味。なぞり書き。読みのきっかけ' },
-            { id: 'j_trace', name: '平仮名なぞり・写し書き', type: 'jp', goal: '平仮名の書き。なぞり書き、写書き', url: 'https://watanabe-apps.github.io/apps/hiragana_nazori_utsushi/index.html' },
-            { id: 's_lines', name: '点つなぎ', type: 'support', goal: '図地弁別', url: 'https://watanabe-apps.github.io/apps/ten_tsunagi/index.html' },
-            { id: 's_memory', name: '神経衰弱', type: 'support', goal: '視覚的短期記憶' },
-            { id: 'm_math1', name: 'いくつといくつ', type: 'math', goal: '数の合成・分解。足し算、引き算の前段階' },
-            { id: 'm_clock', name: '時計（時・分）', type: 'math', goal: '時計の読みの習得' },
-            { id: 'j_50', name: '50音表', type: 'jp', goal: '平仮名の読み・書き。語頭音と結びつけた読み' },
-            { id: 'j_write', name: '平仮名書き', type: 'jp', goal: '平仮名の単語の書き' },
-            { id: 'j_quiz', name: '平仮名単語クイズ', type: 'jp', goal: '平仮名の単語の読みの定着' }
-        ];
+    el.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        el.releasePointerCapture(e.pointerId);
 
-        // 座標とエッジ（線の繋がり）のデータ
-        const importedData = [
-          { "group": "nodes", "data": { "id": "s_listen_mem" }, "position": { "x": 125, "y": 367 } },
-          { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1060.9142358120218, "y": 105.74710064945151 } },
-          { "group": "nodes", "data": { "id": "m_dist_one" }, "position": { "x": 1060.9142358120218, "y": 18.411111111111104 } },
-          { "group": "nodes", "data": { "id": "m_match" }, "position": { "x": 1510.7251982847026, "y": 21.195603057704858 } },
-          { "group": "nodes", "data": { "id": "m_count_s" }, "position": { "x": 1255.004673627296, "y": 105.55833709331593 } },
-          { "group": "nodes", "data": { "id": "s_tap" }, "position": { "x": 610.6307448494453, "y": 34.152773375594286 } },
-          { "group": "nodes", "data": { "id": "m_base" }, "position": { "x": 1262.1369458376064, "y": 211.32119567446637 } },
-          { "group": "nodes", "data": { "id": "m_puz1" }, "position": { "x": 1426.8162727696467, "y": 119.16521226810852 } },
-          { "group": "nodes", "data": { "id": "m_dish" }, "position": { "x": 1053.096624778596, "y": 217.89736319567447 } },
-          { "group": "nodes", "data": { "id": "m_puz2" }, "position": { "x": 1616.5207606973058, "y": 128.76770746713896 } },
-          { "group": "nodes", "data": { "id": "s_shape" }, "position": { "x": 633.5571296727884, "y": 234.0575885149622 } },
-          { "group": "nodes", "data": { "id": "m_cat" }, "position": { "x": 1693.492181038501, "y": 214.0465117926728 } },
-          { "group": "nodes", "data": { "id": "m_flag" }, "position": { "x": 1610.8260511792678, "y": 332.38320126782884 } },
-          { "group": "nodes", "data": { "id": "m_shape" }, "position": { "x": 1443.1169572107765, "y": 331.26497622820926 } },
-          { "group": "nodes", "data": { "id": "j_find" }, "position": { "x": 911.7932033187286, "y": 297.6562430316025 } },
-          { "group": "nodes", "data": { "id": "j_one" }, "position": { "x": 765.4502282091918, "y": 300.08785783536865 } },
-          { "group": "nodes", "data": { "id": "s_pos" }, "position": { "x": 470.0502881513933, "y": 249.23500018644532 } },
-          { "group": "nodes", "data": { "id": "s_dot" }, "position": { "x": 514.0944935210217, "y": 308.6960920108138 } },
-          { "group": "nodes", "data": { "id": "s_ice" }, "position": { "x": 380.88031826232833, "y": 188.34577328237157 } },
-          { "group": "nodes", "data": { "id": "s_maze" }, "position": { "x": 330.7892368789035, "y": 367.7668543861286 } },
-          { "group": "nodes", "data": { "id": "m_count2" }, "position": { "x": 1265.5192770578913, "y": 317.61646490165 } },
-          { "group": "nodes", "data": { "id": "m_which" }, "position": { "x": 1085.435958049781, "y": 539.3692586930175 } },
-          { "group": "nodes", "data": { "id": "m_t_tap" }, "position": { "x": 1180.8657519343708, "y": 467.69732954227635 } },
-          { "group": "nodes", "data": { "id": "m_t_arr" }, "position": { "x": 1089.019233336441, "y": 364.1731497156707 } },
-          { "group": "nodes", "data": { "id": "j_karuta" }, "position": { "x": 833.6787345949473, "y": 585.6529082688543 } },
-          { "group": "nodes", "data": { "id": "j_kbd" }, "position": { "x": 650.310369161928, "y": 451.7942509555328 } },
-          { "group": "nodes", "data": { "id": "j_kbd_quiz" }, "position": { "x": 650.310369161928, "y": 540.0 } },
-          { "group": "nodes", "data": { "id": "j_pict" }, "position": { "x": 568.0094615456326, "y": 631.2865327677822 } },
-          { "group": "nodes", "data": { "id": "j_trace" }, "position": { "x": 413.96032627948154, "y": 456.92384599608465 } },
-          { "group": "nodes", "data": { "id": "s_lines" }, "position": { "x": 514.5216977719772, "y": 367.0043126689661 } },
-          { "group": "nodes", "data": { "id": "s_memory" }, "position": { "x": 199.12393026941365, "y": 168.95451664025353 } },
-          { "group": "nodes", "data": { "id": "m_math1" }, "position": { "x": 1267.6287689941273, "y": 616.6253230166868 } },
-          { "group": "nodes", "data": { "id": "m_clock" }, "position": { "x": 1410.6095087163233, "y": 496.42662440570524 } },
-          { "group": "nodes", "data": { "id": "j_50" }, "position": { "x": 655.2175886081851, "y": 365.78945949473297 } },
-          { "group": "nodes", "data": { "id": "j_write" }, "position": { "x": 395.1988738696746, "y": 630.0004788850564 } },
-          { "group": "nodes", "data": { "id": "j_quiz" }, "position": { "x": 890.949706162021, "y": 440.5153724247226 } },
-          { "group": "edges", "data": { "id": "07ed4e46-09ba-4579-acaa-dabfd535aaad", "source": "s_maze", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "68db12c3-41fb-472c-a96b-e25ab24945ab", "source": "j_trace", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "95b2ace3-be5e-4c7f-a235-d9155e4a22c8", "source": "j_find", "target": "j_kbd" } },
-          { "group": "edges", "data": { "id": "3f945dec-c163-446d-8fe6-a8480b4f68e5", "source": "s_ice", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "c3eca546-228d-4b74-a8ed-1a7bb3fd2156", "source": "j_trace", "target": "j_pict" } },
-          { "group": "edges", "data": { "id": "39d13ea8-5313-41ec-9c99-47b8f9cc377f", "source": "j_one", "target": "j_kbd" } },
-          { "group": "edges", "data": { "id": "d82876bc-5b80-4b29-9c4a-9f29cfcc6bbc", "source": "j_50", "target": "j_kbd" } },
-          { "group": "edges", "data": { "id": "610bd118-48ef-4e3d-b4e6-fb28675e8e00", "source": "j_kbd", "target": "j_karuta" } },
-          { "group": "edges", "data": { "id": "b22f3782-cfc0-4357-95fc-6df3cbe40ca2", "source": "j_kbd", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "edge_kbd_to_quiz", "source": "j_kbd", "target": "j_kbd_quiz" } },
-          { "group": "edges", "data": { "id": "9feb0d6f-769a-4975-ba88-6647c96c19c6", "source": "s_lines", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "8ed7ff85-b9a5-49c5-8551-c648a712f910", "source": "s_pos", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "ecabc485-2420-4a4e-9d2f-2667ba61e1cf", "source": "j_write", "target": "j_pict" } },
-          { "group": "edges", "data": { "id": "da5e9273-1641-452f-9c58-70bdf9b0e36d", "source": "s_shape", "target": "s_lines" } },
-          { "group": "edges", "data": { "id": "a05bda42-4622-45e2-9c0a-78feaafab762", "source": "s_shape", "target": "s_dot" } },
-          { "group": "edges", "data": { "id": "68926cea-db53-4225-bf47-5161f22ae8c1", "source": "m_count_s", "target": "m_base" } },
-          { "group": "edges", "data": { "id": "ccc12f4c-8269-489a-8f79-6be4db487e9b", "source": "m_dish", "target": "m_base" } },
-          { "group": "edges", "data": { "id": "4233e79b-9e3b-42d9-9fd8-0766c34129b9", "source": "m_base", "target": "m_dish" } },
-          { "group": "edges", "data": { "id": "bf747eaa-cf46-4118-9bd1-089574faa952", "source": "m_base", "target": "m_count2" } },
-          { "group": "edges", "data": { "id": "6d86b823-f62f-4448-b3b2-d7850912bbae", "source": "m_base", "target": "m_t_arr" } },
-          { "group": "edges", "data": { "id": "bbd87b31-97f7-40d2-bb05-d6507dccdfc9", "source": "m_t_arr", "target": "m_which" } },
-          { "group": "edges", "data": { "id": "3dec0ebe-75f6-48d5-8195-2b64938dd9ed", "source": "m_t_arr", "target": "m_t_tap" } },
-          { "group": "edges", "data": { "id": "8793bba5-ea3b-4aae-916c-148f4c246af5", "source": "m_count2", "target": "m_math1" } },
-          { "group": "edges", "data": { "id": "5a79b32a-9967-4af0-9792-369e22d8bd79", "source": "m_dist", "target": "m_dish" } },
-          { "group": "edges", "data": { "id": "23bd1170-baaa-49ae-ae44-a8891918505a", "source": "j_quiz", "target": "j_karuta" } },
-          { "group": "edges", "data": { "id": "60b1286b-9a33-415a-91a8-438216f82166", "source": "m_match", "target": "m_puz1" } },
-          { "group": "edges", "data": { "id": "d7224c0a-20d2-48e6-9ac0-92f98b20b9d2", "source": "m_match", "target": "m_puz2" } },
-          { "group": "edges", "data": { "id": "fd73e110-43fb-4fff-bf8c-d25d273010b6", "source": "m_puz1", "target": "m_puz2" } },
-          { "group": "edges", "data": { "id": "7a356379-c9c4-4a11-bcaf-7b927fd5d538", "source": "m_puz2", "target": "m_puz1" } },
-          { "group": "edges", "data": { "id": "ea939353-c1cd-4905-b10f-d16c9907dce4", "source": "m_cat", "target": "m_count2" } },
-          { "group": "edges", "data": { "id": "5e205d24-c5d2-47d6-8f9d-853b139d140d", "source": "j_pict", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "5f08a98b-59d2-46f5-b93b-bd96e85602e9", "source": "m_dist_one", "target": "m_dist" } }
-        ];
+        const currentX = parseFloat(el.style.left);
+        const currentY = parseFloat(el.style.top);
+        const target = piecesState[type].targetPos;
 
-        // データ結合
-        const initialElements = [...bgElements];
-        appNodes.forEach(n => {
-            const importedNode = importedData.find(item => item.group === 'nodes' && item.data.id === n.id);
-            const position = importedNode && importedNode.position ? importedNode.position : { x: 0, y: 0 };
-            initialElements.push({
-                group: 'nodes',
-                data: { 
-                    id: n.id, 
-                    name: n.name, 
-                    goal: n.goal, 
-                    type: n.type,
-                    url: n.url,
-                    color: n.type === 'jp' ? '#f43f5e' : (n.type === 'support' ? '#10b981' : '#3b82f6')
-                },
-                position: position
-            });
-        });
-        importedData.forEach(item => {
-            if (item.group === 'edges') {
-                if(!item.data.source.startsWith('bg') && !item.data.target.startsWith('bg')){
-                    initialElements.push({
-                        group: 'edges',
-                        data: { id: item.data.id, source: item.data.source, target: item.data.target }
-                    });
-                }
-            }
-        });
+        const dx = currentX - target.x;
+        const dy = currentY - target.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const cy = cytoscape({
-                container: document.getElementById('cy'),
-                elements: initialElements,
-                style: [
-                    {
-                        selector: 'node',
-                        style: {
-                            'label': function(ele) { return ele.data('url') ? ele.data('name') + ' 🔗' : ele.data('name'); },
-                            'width': '140px',
-                            'height': '36px',
-                            'background-color': 'data(color)',
-                            'color': '#fff',
-                            'font-size': '11px',
-                            'font-weight': 'bold',
-                            'text-valign': 'center',
-                            'text-halign': 'center',
-                            'shape': 'round-rectangle',
-                            'border-width': 2,
-                            'border-color': '#fff',
-                            'z-index-compare': 'manual',
-                            'z-index': 10
-                        }
-                    },
-                    {
-                        selector: 'node[type="bg"]',
-                        style: {
-                            'shape': 'rectangle',
-                            'width': bgWidth,
-                            'height': bgHeight,
-                            'background-color': 'data(bgColor)',
-                            'label': 'data(name)',
-                            'text-valign': 'top',
-                            'text-halign': 'center',
-                            'text-margin-y': 20,
-                            'font-size': '20px',
-                            'font-weight': 'bold',
-                            'color': '#94a3b8',
-                            'border-width': 1,
-                            'border-color': '#e2e8f0',
-                            'z-index-compare': 'manual',
-                            'z-index': 1,
-                            'events': 'no' 
-                        }
-                    },
-                    {
-                        selector: 'edge',
-                        style: {
-                            'width': 2,
-                            'line-color': '#94a3b8',
-                            'target-arrow-color': '#94a3b8',
-                            'target-arrow-shape': 'triangle',
-                            'curve-style': 'bezier',
-                            'z-index-compare': 'manual',
-                            'z-index': 5
-                        }
-                    },
-                    { selector: '.eh-handle', style: { 'background-color': '#ef4444', 'width': 10, 'height': 10, 'shape': 'ellipse', 'overlay-opacity': 0, 'border-width': 8, 'border-opacity': 0, 'z-index-compare': 'manual', 'z-index': 20 } },
-                    { selector: '.eh-source', style: { 'border-width': 4, 'border-color': '#ef4444', 'z-index-compare': 'manual', 'z-index': 15 } },
-                    { selector: '.eh-target', style: { 'border-width': 4, 'border-color': '#ef4444', 'z-index-compare': 'manual', 'z-index': 15 } },
-                    { selector: '.eh-preview, .eh-ghost-edge', style: { 'background-color': '#ef4444', 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'source-arrow-color': '#ef4444', 'z-index-compare': 'manual', 'z-index': 15 } },
-                    { selector: '.eh-ghost-edge.eh-preview-active', style: { 'opacity': 0 } }
-                ],
-                layout: { name: 'preset' }
-            });
-
-            cy.fit(null, 50);
-
-            let eh = null;
-            if (typeof cy.edgehandles === 'function') {
-                eh = cy.edgehandles({ 
-                    snap: false, 
-                    noEdgeEventsInDraw: true, 
-                    disableBrowserGestures: true,
-                    handleNodes: 'node[type != "bg"]',
-                    edgeType: function( sourceNode, targetNode ) {
-                        if (targetNode.data('type') === 'bg') return undefined;
-                        return 'flat';
-                    }
-                });
-
-                cy.on('ehcomplete', (event, sourceNode, targetNode, addedEdge) => {
-                    if (targetNode.data('type') === 'bg' || sourceNode.data('type') === 'bg') {
-                        if (addedEdge) addedEdge.remove();
-                    }
-                });
-            }
-
-            const activeTippies = [];
-
-            cy.nodes().forEach(node => {
-                if(node.data('type') === 'bg') return;
-                
-                const dummyDom = document.createElement('div');
-                const urlHtml = node.data('url') ? `<a href="${node.data('url')}" target="_blank" class="app-link">🔗 アプリを開く</a>` : '';
-                
-                // 教科名マッピング
-                const typeMap = { 'jp': '国語', 'math': '算数', 'support': '自立活動' };
-                const category = typeMap[node.data('type')] || '';
-
-                const tippyInstance = tippy(dummyDom, {
-                    getReferenceClientRect: node.popperRef().getBoundingClientRect,
-                    content: `
-                        <div class="tooltip-content">
-                            <div class="font-bold text-[10px] border-b border-slate-600 pb-1">区分: ${category}</div>
-                            <div class="text-xs mb-1 pt-1">🎯 ${node.data('goal')}</div>
-                            ${urlHtml}
-                        </div>
-                    `,
-                    allowHTML: true,
-                    theme: 'edu-dark',
-                    placement: 'top',
-                    trigger: 'manual', 
-                    animation: 'shift-away',
-                    interactive: true,
-                    hideOnClick: false,
-                    appendTo: document.body
-                });
-                
-                activeTippies.push(tippyInstance);
-
-                const showTippy = (e) => {
-                    if (isDrawMode) return; 
-                    if (tippyInstance.state.isVisible) {
-                        tippyInstance.hide();
-                        return;
-                    }
-                    activeTippies.forEach(t => { if(t !== tippyInstance) t.hide(); });
-                    tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
-                    tippyInstance.show();
-                    if (e && (e.type === 'tap' || e.type === 'click')) {
-                        setTimeout(() => {
-                            document.addEventListener('click', hideTippyOnClickOutside);
-                        }, 10);
-                    }
-                };
-
-                const hideTippyOnClickOutside = (event) => {
-                    const isClickInsideTippy = event.target.closest('.tippy-box');
-                    const isClickOnNode = event.target.closest('canvas');
-                    if (!isClickInsideTippy && !isClickOnNode) {
-                         tippyInstance.hide();
-                         document.removeEventListener('click', hideTippyOnClickOutside);
-                    }
-                };
-
-                node.on('tap', showTippy);
-                node.on('mouseover', () => { if(node.data('url')) node.style('cursor', 'pointer'); });
-                node.on('position drag zoom pan', () => {
-                   if (tippyInstance.state.isVisible) {
-                       tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
-                   }
-                });
-            });
-
-            const btnEdit = document.getElementById('btn-edit');
-            const btnView = document.getElementById('btn-view');
-            const btnToggleDraw = document.getElementById('btn-toggle-draw');
-            const modeDesc = document.getElementById('mode-desc');
-            const exportModal = document.getElementById('export-modal');
-            const exportText = document.getElementById('export-text');
-
-            let isDrawMode = false;
-
-            btnToggleDraw.addEventListener('click', () => {
-                isDrawMode = !isDrawMode;
-                if (isDrawMode) {
-                    eh.enableDrawMode();
-                    activeTippies.forEach(t => t.hide());
-                    btnToggleDraw.innerText = "移動モードにする";
-                    btnToggleDraw.classList.replace('bg-indigo-600', 'bg-amber-600');
-                    btnToggleDraw.classList.replace('hover:bg-indigo-500', 'hover:bg-amber-500');
-                    modeDesc.innerText = "線引き中：ノードからノードへドラッグして線を結びます";
-                    modeDesc.className = "text-xs text-indigo-400 font-bold";
-                } else {
-                    eh.disableDrawMode();
-                    btnToggleDraw.innerText = "線引きモードにする";
-                    btnToggleDraw.classList.replace('bg-amber-600', 'bg-indigo-600');
-                    btnToggleDraw.classList.replace('hover:bg-amber-500', 'hover:bg-indigo-500');
-                    modeDesc.innerText = "移動中：ノードをドラッグして配置を調整できます";
-                    modeDesc.className = "text-xs text-rose-400 font-bold";
-                }
-            });
-
-            btnView.addEventListener('click', () => {
-                if (eh) { eh.disableDrawMode(); eh.disable(); }
-                cy.autolock(true);
-                btnView.classList.add('hidden');
-                btnToggleDraw.classList.add('hidden');
-                btnEdit.classList.remove('hidden');
-                modeDesc.innerText = "閲覧モード：配置と線は固定されています";
-                modeDesc.className = "text-xs text-emerald-400 font-bold";
-                const exportData = cy.elements().filter(ele => ele.data('type') !== 'bg').map(ele => ({
-                    group: ele.group(),
-                    data: { id: ele.data('id'), source: ele.data('source'), target: ele.data('target') },
-                    position: ele.isNode() ? ele.position() : undefined
-                }));
-                exportText.value = JSON.stringify(exportData, null, 2);
-                exportModal.style.display = 'block';
-            });
-
-            btnEdit.addEventListener('click', () => {
-                if (eh) eh.enable();
-                cy.autolock(false);
-                btnEdit.classList.add('hidden');
-                btnView.classList.remove('hidden');
-                btnToggleDraw.classList.remove('hidden');
-                exportModal.style.display = 'none';
-            });
+        if (dist <= 50) {
+            el.style.left = `${target.x}px`;
+            el.style.top = `${target.y}px`;
+            el.classList.add('fitted');
+            piecesState[type].isFit = true;
             
-            cy.on('cxttap', 'edge', function(evt){
-                if (!cy.autolock()) evt.target.remove();
-            });
-        });
-    </script>
+            // ★最背面に送る（ノイズの z-index:1 よりも後ろの 0 に設定）
+            el.style.zIndex = 0; 
+
+            checkClear();
+        }
+    });
+}
+
+function checkClear() {
+    const allFit = Object.values(piecesState).every(p => p.isFit);
+    if (allFit) {
+        playChime(); 
+        setTimeout(() => {
+            numOfClear++;
+            if (numOfClear >= settings.maxQuestions) {
+                scoreDisplay.innerText = `${numOfClear} / ${settings.maxQuestions}`;
+                document.getElementById('clear-screen').style.display = 'flex';
+            } else {
+                currentRectCount += settings.rectsIncrement;
+                startGame();
+            }
+        }, 1000); 
+    }
+}
+</script>
 </body>
 </html>
