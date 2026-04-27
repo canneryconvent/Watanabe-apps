@@ -264,14 +264,6 @@
         padding-top: 1vh;
     }
 
-    #instruction {
-        text-align: center;
-        font-size: min(2vw, 2vh);
-        color: #888;
-        font-weight: bold;
-        margin: 0 0 1vh 0;
-    }
-
     #keyboard { 
         display: flex; 
         flex-direction: row-reverse; 
@@ -473,7 +465,6 @@
         </div>
     </div>
     <div id="keyboard-wrapper">
-        <div id="instruction">※列の上の四角をダブルタップで表示を切り替え</div>
         <div id="keyboard"></div>
     </div>
 </div>
@@ -1083,18 +1074,16 @@
             
             const cb = document.createElement('div');
             cb.className = 'col-checkbox active';
-            let lastTap = 0;
-            cb.addEventListener('pointerup', (e) => {
-                let now = Date.now();
-                if (now - lastTap < 300) {
-                    cb.classList.toggle('active');
-                    colDiv.querySelectorAll('.key').forEach(k => {
-                        if (!k.classList.contains('empty')) k.classList.toggle('disabled-key', !cb.classList.contains('active'));
-                    });
-                    e.preventDefault();
-                }
-                lastTap = now;
+            
+            // ポインターダウンでシングルタップ切り替えに変更
+            cb.addEventListener('pointerdown', (e) => {
+                e.preventDefault(); // タップ遅延や他の挙動を防止
+                cb.classList.toggle('active');
+                colDiv.querySelectorAll('.key').forEach(k => {
+                    if (!k.classList.contains('empty')) k.classList.toggle('disabled-key', !cb.classList.contains('active'));
+                });
             });
+            
             colDiv.appendChild(cb);
             
             colArr.forEach(char => {

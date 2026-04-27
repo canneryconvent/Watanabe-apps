@@ -13,7 +13,7 @@
         body, html {
             margin: 0; padding: 0;
             height: calc(var(--vh, 1vh) * 100);
-            background-color: #ffffff; /* 背景を全て白に */
+            background-color: #ffffff;
             font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
             overflow: hidden; touch-action: none;
             user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
@@ -58,7 +58,7 @@
         }
         .box.active { border-color: #FF9800; background-color: #fff3e0; }
 
-        /* キーパッド（ボタンを大きく） */
+        /* キーパッド */
         .keypad-container { 
             display: flex; flex-direction: column; gap: 15px; margin-top: 10px; width: 95%; max-width: 550px;
         }
@@ -79,18 +79,18 @@
         #mark-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             font-size: 250px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.3s;
-            z-index: 5; /* ボタン(10)より手前にならないように調整 */
+            z-index: 5;
         }
 
-        /* --- 設定画面（SwiftUIのForm風） --- */
+        /* --- 設定画面（余白を詰めたコンパクト版） --- */
         #setting-screen { 
             touch-action: pan-y; -webkit-overflow-scrolling: touch; 
-            justify-content: flex-start; padding: 20px; 
+            justify-content: flex-start; padding: 15px; 
             padding-bottom: calc(80px + env(safe-area-inset-bottom)); overflow-y: auto; 
-            display: none; /* 初期状態は非表示 */
+            display: none;
         }
         #setting-screen.active {
-            display: block; /* scrollを有効にするためflexではなくblockにする */
+            display: block; 
         }
         
         .form-container {
@@ -99,22 +99,21 @@
 
         .form-group {
             width: 100%; max-width: 450px;
-            border: 2px solid #e5e5ea; border-radius: 12px;
-            margin-bottom: 25px; overflow: hidden;
+            border: 2px solid #e5e5ea; border-radius: 10px;
+            margin-bottom: 15px; overflow: hidden; /* 25pxから15pxへ縮小 */
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             background-color: white;
         }
         .form-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 16px 20px; border-bottom: 2px solid #e5e5ea; gap: 10px;
+            padding: 10px 15px; border-bottom: 2px solid #e5e5ea; gap: 8px; /* 余白を縮小 */
         }
         .form-row:last-child { border-bottom: none; }
-        .form-row label { font-size: 16px; font-weight: bold; color: #333; flex: 1; }
+        .form-row label { font-size: 15px; font-weight: bold; color: #333; flex: 1; }
         .form-row select, .form-row input[type="number"] { 
-            padding: 8px; font-size: 16px; border: 2px solid #ccc; border-radius: 8px; width: 140px; text-align: center;
+            padding: 6px; font-size: 15px; border: 2px solid #ccc; border-radius: 6px; width: 130px; text-align: center;
         }
         .form-row input[type="range"] { flex: 1; cursor: pointer; }
-
     </style>
 </head>
 <body>
@@ -145,7 +144,6 @@
             <!-- JSでマスを生成 -->
         </div>
 
-        <!-- キーパッド（2行横並び） -->
         <div class="keypad-container" id="keypad" style="opacity: 0.3; pointer-events: none;">
             <div class="keypad-row" id="keypad-row1"></div>
             <div class="keypad-row" id="keypad-row2"></div>
@@ -158,12 +156,12 @@
     <!-- 設定画面 -->
     <div id="setting-screen" class="screen">
         <div class="form-container">
-            <h2 style="color: #333; margin-top: 20px; margin-bottom: 20px;">設定</h2>
+            <h2 style="color: #333; margin-top: 10px; margin-bottom: 15px;">設定</h2>
             
             <!-- 基本設定グループ -->
             <div class="form-group">
                 <div class="form-row">
-                    <label>もんだいの種類</label>
+                    <label>もんだい</label>
                     <select id="set-mode">
                         <option value="number">数字 (0〜9)</option>
                         <option value="shape">図形 (〇△☐...)</option>
@@ -171,11 +169,11 @@
                     </select>
                 </div>
                 <div class="form-row">
-                    <label>おぼえる数 (1〜10)</label>
+                    <label>おぼえる数</label>
                     <input type="number" id="set-digits" min="1" max="10" value="3" style="width: 80px;">
                 </div>
                 <div class="form-row">
-                    <label>問題数 (1〜20)</label>
+                    <label>問題数</label>
                     <input type="number" id="set-totalQuestions" min="1" max="20" value="5" style="width: 80px;">
                 </div>
             </div>
@@ -183,17 +181,24 @@
             <!-- 読み上げ設定グループ -->
             <div class="form-group">
                 <div class="form-row">
-                    <label style="flex: 0.8;">読み上げスピード</label>
+                    <label style="flex: 0.8;">スピード</label>
                     <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
                         <input type="range" id="set-speed" min="0.5" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('speed-val').innerText=Number(this.value).toFixed(1)">
                         <span id="speed-val" style="width:30px; text-align:right;">1.0</span>
                     </div>
                 </div>
                 <div class="form-row">
-                    <label style="flex: 0.8;">読み上げの間</label>
+                    <label style="flex: 0.8;">間隔</label>
                     <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                        <input type="range" id="set-interval" min="0.0" max="2.0" step="0.1" value="0.8" oninput="document.getElementById('interval-val').innerText=Number(this.value).toFixed(1)">
-                        <span id="interval-val" style="width:30px; text-align:right;">0.8</span>秒
+                        <input type="range" id="set-interval" min="0.0" max="2.0" step="0.1" value="0.0" oninput="document.getElementById('interval-val').innerText=Number(this.value).toFixed(1)">
+                        <span id="interval-val" style="width:30px; text-align:right;">0.0</span>秒
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label style="flex: 0.8;">読み上げ音量</label>
+                    <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
+                        <input type="range" id="set-speechVolume" min="0.0" max="1.0" step="0.1" value="1.0" oninput="document.getElementById('speech-vol-val').innerText=Number(this.value).toFixed(1)">
+                        <span id="speech-vol-val" style="width:30px; text-align:right;">1.0</span>
                     </div>
                 </div>
             </div>
@@ -201,16 +206,23 @@
             <!-- 妨害音設定グループ -->
             <div class="form-group" style="border-left: 6px solid #FF9800;">
                 <div class="form-row" style="flex-direction: column; align-items: flex-start;">
-                    <label style="margin-bottom: 10px;">妨害音（図地弁別）</label>
+                    <label style="margin-bottom: 5px;">妨害音（図地弁別）</label>
                     <select id="set-noiseType" style="width: 100%;">
                         <option value="none" selected>なし</option>
                         <option value="noise">ノイズ（完全に同時に鳴る）</option>
                         <option value="electronic">電子音（完全に同時に鳴る）</option>
                     </select>
                 </div>
+                <div class="form-row">
+                    <label style="flex: 0.8;">妨害音の音量</label>
+                    <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
+                        <input type="range" id="set-noiseVolume" min="0.0" max="1.0" step="0.1" value="1.0" oninput="document.getElementById('noise-vol-val').innerText=Number(this.value).toFixed(1)">
+                        <span id="noise-vol-val" style="width:30px; text-align:right;">1.0</span>
+                    </div>
+                </div>
             </div>
 
-            <button class="btn" style="margin-top: 20px; background-color: #333; font-size: 20px;" onpointerdown="saveSettingsAndClose()">保存して戻る</button>
+            <button class="btn" style="margin-top: 10px; background-color: #333; font-size: 20px;" onpointerdown="saveSettingsAndClose()">保存して戻る</button>
         </div>
     </div>
 
@@ -231,7 +243,6 @@
         });
 
         // --- 3. 出題データ ---
-        // ※図形は7種類に変更。それに合わせてキーパッド生成や出題ロジックが自動適応します
         const ITEMS = {
             number: [
                 { id: 0, label: "0", yomi: "ゼロ" }, { id: 1, label: "1", yomi: "いち" },
@@ -256,9 +267,10 @@
         };
 
         // --- 4. 設定管理 ---
-        let config = { mode: 'number', digits: 3, totalQuestions: 5, speed: 1.0, interval: 0.8, noiseType: 'none' };
+        let config = { mode: 'number', digits: 3, totalQuestions: 5, speed: 1.0, interval: 0.0, noiseType: 'none', speechVolume: 1.0, noiseVolume: 1.0 };
         function loadSettings() {
-            const saved = localStorage.getItem('memAppConfig_v5');
+            // バージョンをv6に更新し初期値を確実に反映
+            const saved = localStorage.getItem('memAppConfig_v6');
             if (saved) { config = JSON.parse(saved); }
             updateSettingUI();
         }
@@ -273,7 +285,13 @@
             document.getElementById('set-interval').value = config.interval;
             document.getElementById('interval-val').innerText = Number(config.interval).toFixed(1);
             
+            document.getElementById('set-speechVolume').value = config.speechVolume !== undefined ? config.speechVolume : 1.0;
+            document.getElementById('speech-vol-val').innerText = Number(config.speechVolume !== undefined ? config.speechVolume : 1.0).toFixed(1);
+            
             document.getElementById('set-noiseType').value = config.noiseType;
+            
+            document.getElementById('set-noiseVolume').value = config.noiseVolume !== undefined ? config.noiseVolume : 1.0;
+            document.getElementById('noise-vol-val').innerText = Number(config.noiseVolume !== undefined ? config.noiseVolume : 1.0).toFixed(1);
         }
         function saveSettingsAndClose() {
             config.mode = document.getElementById('set-mode').value;
@@ -281,8 +299,10 @@
             config.totalQuestions = parseInt(document.getElementById('set-totalQuestions').value);
             config.speed = parseFloat(document.getElementById('set-speed').value);
             config.interval = parseFloat(document.getElementById('set-interval').value);
+            config.speechVolume = parseFloat(document.getElementById('set-speechVolume').value);
             config.noiseType = document.getElementById('set-noiseType').value;
-            localStorage.setItem('memAppConfig_v5', JSON.stringify(config));
+            config.noiseVolume = parseFloat(document.getElementById('set-noiseVolume').value);
+            localStorage.setItem('memAppConfig_v6', JSON.stringify(config));
             showHome();
         }
 
@@ -312,7 +332,7 @@
             }
         }
 
-        function playWhiteNoise(durationSeconds) {
+        function playWhiteNoise(durationSeconds, volume) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * durationSeconds));
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -321,12 +341,13 @@
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.05; 
+            // 音量設定を反映
+            gain.gain.value = 0.05 * volume; 
             noise.connect(gain); gain.connect(audioCtx.destination);
             noise.start();
         }
 
-        function playElectronicNoise(durationSeconds) {
+        function playElectronicNoise(durationSeconds, volume) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -335,7 +356,8 @@
             osc.type = 'square';
             let time = now;
             while(time < end) { osc.frequency.setValueAtTime(Math.random() * 1000 + 400, time); time += 0.1; }
-            gain.gain.value = 0.03;
+            // 音量設定を反映
+            gain.gain.value = 0.03 * volume;
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(now); osc.stop(end);
         }
@@ -348,12 +370,15 @@
             });
         }
 
-        function speakWord(text, rate) {
+        function speakWord(text, rate, volume) {
             return new Promise(async resolve => {
                 const voices = await getVoices();
                 const jpVoices = voices.filter(v => v.lang.includes('ja'));
                 let u = new SpeechSynthesisUtterance(text);
-                u.rate = rate; u.pitch = 1.0;
+                u.rate = rate; 
+                u.pitch = 1.0;
+                // 音量設定を反映
+                u.volume = volume;
                 if(jpVoices.length > 0) u.voice = jpVoices[0];
                 
                 let isResolved = false;
@@ -361,7 +386,7 @@
                 u.onend = finish; u.onerror = finish;
                 speechSynthesis.speak(u);
                 
-                // 安全装置：SpeechSynthesisが終わらないバグへのフォールバック
+                // 安全装置
                 setTimeout(finish, (text.length * 500) / rate + 300);
             });
         }
@@ -372,10 +397,12 @@
             for (let i = 0; i < questions.length; i++) {
                 if (!isReading) break; // 中断された場合
                 let item = currentItems[questions[i]]; 
-                if (config.noiseType === 'noise') playWhiteNoise(1.5 / config.speed);
-                else if (config.noiseType === 'electronic') playElectronicNoise(1.5 / config.speed);
                 
-                await speakWord(item.yomi, config.speed);
+                if (config.noiseType === 'noise') playWhiteNoise(1.5 / config.speed, config.noiseVolume);
+                else if (config.noiseType === 'electronic') playElectronicNoise(1.5 / config.speed, config.noiseVolume);
+                
+                await speakWord(item.yomi, config.speed, config.speechVolume);
+                
                 if (i < questions.length - 1 && isReading) {
                     await new Promise(r => setTimeout(r, config.interval * 1000));
                 }
@@ -401,14 +428,13 @@
         }
         function showSetting() { loadSettings(); switchScreen('setting-screen'); }
 
-        // アイテム数に応じてキーパッドを動的に生成（10個未満でもバランスよく配置）
         function renderKeypad() {
             const row1 = document.getElementById('keypad-row1');
             const row2 = document.getElementById('keypad-row2');
             row1.innerHTML = ''; row2.innerHTML = '';
             
             const currentItems = ITEMS[config.mode];
-            const half = Math.ceil(currentItems.length / 2); // 上段と下段で均等に分ける
+            const half = Math.ceil(currentItems.length / 2); 
             
             for(let i = 0; i < currentItems.length; i++) {
                 let btn = document.createElement('div');
@@ -448,7 +474,7 @@
             replayBtn.style.opacity = "0.3";
             replayBtn.style.pointerEvents = "none";
             
-            // 問題生成（選んだモードのアイテム数に応じてランダム抽出）
+            // 問題生成
             questionIds = []; userInputIds = []; activeIndex = 0;
             const maxId = ITEMS[config.mode].length;
             
@@ -472,7 +498,7 @@
         // 再度読み上げ機能
         async function replayAudio() {
             if (isReading) return;
-            speechSynthesis.cancel(); // 念のためキャンセル
+            speechSynthesis.cancel(); 
             
             const msg = document.getElementById('message');
             const keypad = document.getElementById('keypad');
@@ -520,13 +546,13 @@
                 activeIndex = nextEmpty !== -1 ? nextEmpty : config.digits - 1;
                 renderBoxes();
                 
-                // 自動採点（全て入力されたら）
+                // 自動採点
                 if (userInputIds.every(v => v !== null)) {
                     document.getElementById('keypad').style.pointerEvents = "none";
                     document.getElementById('keypad').style.opacity = "0.5";
                     document.getElementById('replay-btn').style.pointerEvents = "none";
                     document.getElementById('action-btn').onpointerdown = checkAnswer;
-                    setTimeout(checkAnswer, 400); // 少し待ってから判定
+                    setTimeout(checkAnswer, 400); 
                 }
             }
         }
@@ -544,9 +570,9 @@
 
             if (isCorrectAll) {
                 playTone('correct');
-                msg.innerText = ""; // テキストは消す
+                msg.innerText = ""; 
                 mark.innerText = "⭕️";
-                mark.style.color = "#FF3B30"; // 赤丸
+                mark.style.color = "#FF3B30"; 
                 mark.style.opacity = "1";
                 
                 currentQuestionCount++;
@@ -565,7 +591,7 @@
                 msg.innerText = "ざんねん！";
                 msg.style.color = "#F44336";
                 mark.innerText = "❌";
-                mark.style.color = "#007AFF"; // 青バツ
+                mark.style.color = "#007AFF"; 
                 mark.style.opacity = "1";
                 
                 setTimeout(() => {
