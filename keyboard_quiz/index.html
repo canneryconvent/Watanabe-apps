@@ -11,7 +11,7 @@
     @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
     
     :root {
-        --key-size: min(4.2vw, 11vh);
+        --key-size: min(4.2vw, 8.5vh); /* はみ出し防止のためvhの上限を下げました */
     }
 
     /* === 基本レイアウト・誤操作防止 === */
@@ -117,10 +117,10 @@
         justify-content: space-between;
         padding: 0 3vw;
         z-index: 20;
-        pointer-events: none; /* 下の要素の邪魔にならないように */
+        pointer-events: none;
     }
     #play-header > button {
-        pointer-events: auto; /* ボタン自体は押せるように */
+        pointer-events: auto;
     }
     .btn-header {
         background: #fff;
@@ -150,6 +150,7 @@
         z-index: 10;
         background: #fff;
         border-bottom: 2px solid #eee;
+        overflow: hidden; /* コンテンツが伸びてキーボードを押し出すのを防ぐ */
     }
 
     #question-area {
@@ -162,7 +163,7 @@
     }
 
     #emoji-display {
-        font-size: min(20vw, 15vh);
+        font-size: min(20vw, 12vh); /* 上下の余裕を持たせるため微縮小 */
         line-height: 1;
         filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
     }
@@ -175,8 +176,8 @@
     }
 
     .char-box {
-        width: min(13vw, 11vh);
-        height: min(13vw, 11vh);
+        width: min(13vw, 10vh); /* 上下の余裕を持たせるため微縮小 */
+        height: min(13vw, 10vh);
         border: 2px solid #333;
         border-right: none;
         border-radius: 0;
@@ -446,7 +447,7 @@
 
 <!-- プレイ画面 -->
 <div id="play-screen" class="hidden">
-    <!-- 追加: プレイ画面ヘッダー -->
+    <!-- プレイ画面ヘッダー -->
     <div id="play-header">
         <button id="btn-back-home" class="btn-header" onclick="backToHome()">🏠</button>
         <button id="btn-play-settings" class="btn-header" style="margin-left: auto; font-size: min(3vw, 2vh); padding: 0.5vh 2vw; border-color: transparent; background: transparent; color: #ccc;" onpointerdown="handlePlaySettingsTripleTap(event)">
@@ -523,6 +524,9 @@
                 <div class="setting-item">
                     <label><input type="checkbox" id="opt-show-home"> プレイ画面に「🏠」ボタンを表示</label>
                 </div>
+                <div class="setting-item">
+                    <label><input type="checkbox" id="opt-show-hint"> 答えの文字をうすく表示する（ヒント）</label>
+                </div>
             </div>
 
             <div class="setting-group">
@@ -552,7 +556,7 @@
     </div>
 </div>
 
-<!-- 追加: プレイ画面用設定モーダル -->
+<!-- プレイ画面用設定モーダル -->
 <div id="play-settings-modal" class="modal-overlay hidden">
     <div class="settings-content" style="height: auto; width: 80vw; max-width: 400px; padding-top: 2vh;">
         <h2 style="text-align: center; margin-top: 0; font-size: 2.5vh; color: #333;">キーボード表示</h2>
@@ -738,7 +742,7 @@
 
     let appSettings = {
         questionOrder: 'random', questionCount: '5', instantLock: false, autoReadWord: true,
-        showDakuon: true, showYoon: true, showHomeBtn: true,
+        showDakuon: true, showYoon: true, showHomeBtn: true, showHint: false,
         allowedTypes: { seion: true, dakuon: true, yoon: true, sokuon: true } 
     };
     let wordSettings = {};
@@ -868,12 +872,23 @@
             if (!box) continue;
             
             box.className = 'char-box';
-            box.innerText = currentInput[i]?.char || "";
             
             if (currentInput[i]?.locked) {
                 box.classList.add('locked');
-            } else if (i === cursorIndex) {
-                box.classList.add('active');
+                box.innerText = currentInput[i].char;
+            } else {
+                if (i === cursorIndex) box.classList.add('active');
+                
+                if (currentInput[i] && currentInput[i].char) {
+                    box.innerText = currentInput[i].char;
+                } else {
+                    // ヒント表示ロジック
+                    if (appSettings.showHint) {
+                        box.innerHTML = `<span style="color: #ccc; opacity: 0.6; font-weight: normal;">${currentWordObj.word[i]}</span>`;
+                    } else {
+                        box.innerText = "";
+                    }
+                }
             }
         }
         checkDekita();
@@ -1043,7 +1058,9 @@
         let blockStartCount = colsToRender.filter(c => c.isBlockStart).length;
         const availableVw = 98 - ((colCount - 1) * 0.5) - (blockStartCount * 2);
         const vwPerKey = availableVw / colCount;
-        document.documentElement.style.setProperty('--key-size', `min(${vwPerKey}vw, 11vh)`);
+        
+        // 縦長の画面（iPad縦など）ではみ出さないよう、vhの上限をさらに下げて固定します
+        document.documentElement.style.setProperty('--key-size', `min(${vwPerKey}vw, 8.5vh)`);
 
         colsToRender.forEach(colArr => {
             const colDiv = document.createElement('div');
@@ -1098,6 +1115,7 @@
         document.getElementById('opt-timing').value = appSettings.instantLock ? 'B' : 'A';
         document.getElementById('opt-autoread').checked = appSettings.autoReadWord;
         document.getElementById('opt-show-home').checked = appSettings.showHomeBtn;
+        document.getElementById('opt-show-hint').checked = appSettings.showHint; // ヒント設定
         document.getElementById('chk-dakuon').checked = appSettings.showDakuon;
         document.getElementById('chk-yoon').checked = appSettings.showYoon;
         
@@ -1116,6 +1134,7 @@
         appSettings.instantLock = document.getElementById('opt-timing').value === 'B';
         appSettings.autoReadWord = document.getElementById('opt-autoread').checked;
         appSettings.showHomeBtn = document.getElementById('opt-show-home').checked;
+        appSettings.showHint = document.getElementById('opt-show-hint').checked; // ヒント設定
         appSettings.showDakuon = document.getElementById('chk-dakuon').checked;
         appSettings.showYoon = document.getElementById('chk-yoon').checked;
         

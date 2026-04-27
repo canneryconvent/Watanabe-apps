@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>聞いて覚えよう</title>
+    <!-- アプリアイコンの設定 -->
+    <link rel="apple-touch-icon" href="img.png">
+    <link rel="icon" href="img.png">
     <style>
         /* --- 共通要件：レイアウトと誤操作防止 --- */
         :root { --vh: 1vh; }
@@ -76,7 +79,7 @@
         #mark-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             font-size: 250px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.3s;
-            z-index: 100;
+            z-index: 5; /* ボタン(10)より手前にならないように調整 */
         }
 
         /* --- 設定画面（SwiftUIのForm風） --- */
@@ -84,13 +87,22 @@
             touch-action: pan-y; -webkit-overflow-scrolling: touch; 
             justify-content: flex-start; padding: 20px; 
             padding-bottom: calc(80px + env(safe-area-inset-bottom)); overflow-y: auto; 
+            display: none; /* 初期状態は非表示 */
+        }
+        #setting-screen.active {
+            display: block; /* scrollを有効にするためflexではなくblockにする */
         }
         
+        .form-container {
+            display: flex; flex-direction: column; align-items: center;
+        }
+
         .form-group {
             width: 100%; max-width: 450px;
             border: 2px solid #e5e5ea; border-radius: 12px;
             margin-bottom: 25px; overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            background-color: white;
         }
         .form-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -145,59 +157,61 @@
 
     <!-- 設定画面 -->
     <div id="setting-screen" class="screen">
-        <h2 style="color: #333; margin-top: 20px; margin-bottom: 20px;">設定</h2>
-        
-        <!-- 基本設定グループ -->
-        <div class="form-group">
-            <div class="form-row">
-                <label>もんだいの種類</label>
-                <select id="set-mode">
-                    <option value="number">数字 (0〜9)</option>
-                    <option value="shape">図形 (〇△☐...)</option>
-                    <option value="emoji">イラスト (🍎🐶...)</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <label>おぼえる数 (1〜10)</label>
-                <input type="number" id="set-digits" min="1" max="10" value="3" style="width: 80px;">
-            </div>
-            <div class="form-row">
-                <label>問題数 (1〜20)</label>
-                <input type="number" id="set-totalQuestions" min="1" max="20" value="5" style="width: 80px;">
-            </div>
-        </div>
-
-        <!-- 読み上げ設定グループ -->
-        <div class="form-group">
-            <div class="form-row">
-                <label style="flex: 0.8;">読み上げスピード</label>
-                <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                    <input type="range" id="set-speed" min="0.5" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('speed-val').innerText=Number(this.value).toFixed(1)">
-                    <span id="speed-val" style="width:30px; text-align:right;">1.0</span>
+        <div class="form-container">
+            <h2 style="color: #333; margin-top: 20px; margin-bottom: 20px;">設定</h2>
+            
+            <!-- 基本設定グループ -->
+            <div class="form-group">
+                <div class="form-row">
+                    <label>もんだいの種類</label>
+                    <select id="set-mode">
+                        <option value="number">数字 (0〜9)</option>
+                        <option value="shape">図形 (〇△☐...)</option>
+                        <option value="emoji">イラスト (🍎🐶...)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>おぼえる数 (1〜10)</label>
+                    <input type="number" id="set-digits" min="1" max="10" value="3" style="width: 80px;">
+                </div>
+                <div class="form-row">
+                    <label>問題数 (1〜20)</label>
+                    <input type="number" id="set-totalQuestions" min="1" max="20" value="5" style="width: 80px;">
                 </div>
             </div>
-            <div class="form-row">
-                <label style="flex: 0.8;">読み上げの間</label>
-                <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                    <input type="range" id="set-interval" min="0.1" max="2.0" step="0.1" value="0.8" oninput="document.getElementById('interval-val').innerText=Number(this.value).toFixed(1)">
-                    <span id="interval-val" style="width:30px; text-align:right;">0.8</span>秒
+
+            <!-- 読み上げ設定グループ -->
+            <div class="form-group">
+                <div class="form-row">
+                    <label style="flex: 0.8;">読み上げスピード</label>
+                    <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
+                        <input type="range" id="set-speed" min="0.5" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('speed-val').innerText=Number(this.value).toFixed(1)">
+                        <span id="speed-val" style="width:30px; text-align:right;">1.0</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label style="flex: 0.8;">読み上げの間</label>
+                    <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
+                        <input type="range" id="set-interval" min="0.0" max="2.0" step="0.1" value="0.8" oninput="document.getElementById('interval-val').innerText=Number(this.value).toFixed(1)">
+                        <span id="interval-val" style="width:30px; text-align:right;">0.8</span>秒
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- 妨害音設定グループ -->
-        <div class="form-group" style="border-left: 6px solid #FF9800;">
-            <div class="form-row" style="flex-direction: column; align-items: flex-start;">
-                <label style="margin-bottom: 10px;">妨害音（図地弁別）</label>
-                <select id="set-noiseType" style="width: 100%;">
-                    <option value="none" selected>なし</option>
-                    <option value="noise">ノイズ（完全に同時に鳴る）</option>
-                    <option value="electronic">電子音（完全に同時に鳴る）</option>
-                </select>
+            
+            <!-- 妨害音設定グループ -->
+            <div class="form-group" style="border-left: 6px solid #FF9800;">
+                <div class="form-row" style="flex-direction: column; align-items: flex-start;">
+                    <label style="margin-bottom: 10px;">妨害音（図地弁別）</label>
+                    <select id="set-noiseType" style="width: 100%;">
+                        <option value="none" selected>なし</option>
+                        <option value="noise">ノイズ（完全に同時に鳴る）</option>
+                        <option value="electronic">電子音（完全に同時に鳴る）</option>
+                    </select>
+                </div>
             </div>
-        </div>
 
-        <button class="btn" style="margin-top: 40px; background-color: #333; font-size: 20px;" onpointerdown="saveSettingsAndClose()">保存して戻る</button>
+            <button class="btn" style="margin-top: 20px; background-color: #333; font-size: 20px;" onpointerdown="saveSettingsAndClose()">保存して戻る</button>
+        </div>
     </div>
 
     <script>
@@ -217,6 +231,7 @@
         });
 
         // --- 3. 出題データ ---
+        // ※図形は7種類に変更。それに合わせてキーパッド生成や出題ロジックが自動適応します
         const ITEMS = {
             number: [
                 { id: 0, label: "0", yomi: "ゼロ" }, { id: 1, label: "1", yomi: "いち" },
@@ -228,9 +243,8 @@
             shape: [
                 { id: 0, label: "〇", yomi: "まる" }, { id: 1, label: "△", yomi: "さんかく" },
                 { id: 2, label: "☐", yomi: "しかく" }, { id: 3, label: "⭐︎", yomi: "ほし" },
-                { id: 4, label: "♡", yomi: "はーと" }, { id: 5, label: "🌙", yomi: "つき" },
-                { id: 6, label: "☀️", yomi: "たいよう" }, { id: 7, label: "☁️", yomi: "くも" },
-                { id: 8, label: "☂️", yomi: "かさ" }, { id: 9, label: "⛄️", yomi: "ゆきだるま" }
+                { id: 4, label: "♡", yomi: "はーと" }, { id: 5, label: "✖️", yomi: "ばつ" },
+                { id: 6, label: "⬆️", yomi: "やじるし" }
             ],
             emoji: [
                 { id: 0, label: "🍎", yomi: "りんご" }, { id: 1, label: "🍌", yomi: "ばなな" },
@@ -387,21 +401,24 @@
         }
         function showSetting() { loadSettings(); switchScreen('setting-screen'); }
 
+        // アイテム数に応じてキーパッドを動的に生成（10個未満でもバランスよく配置）
         function renderKeypad() {
             const row1 = document.getElementById('keypad-row1');
             const row2 = document.getElementById('keypad-row2');
             row1.innerHTML = ''; row2.innerHTML = '';
+            
             const currentItems = ITEMS[config.mode];
-            for(let i = 0; i < 10; i++) {
+            const half = Math.ceil(currentItems.length / 2); // 上段と下段で均等に分ける
+            
+            for(let i = 0; i < currentItems.length; i++) {
                 let btn = document.createElement('div');
                 btn.className = 'key';
                 btn.innerText = currentItems[i].label;
-                // タップ感度を向上させる onpointerdown を使用
                 btn.onpointerdown = (e) => {
                     e.preventDefault(); 
                     inputNum(i);
                 };
-                if (i < 5) row1.appendChild(btn); else row2.appendChild(btn);
+                if (i < half) row1.appendChild(btn); else row2.appendChild(btn);
             }
         }
 
@@ -431,10 +448,12 @@
             replayBtn.style.opacity = "0.3";
             replayBtn.style.pointerEvents = "none";
             
-            // 問題生成
+            // 問題生成（選んだモードのアイテム数に応じてランダム抽出）
             questionIds = []; userInputIds = []; activeIndex = 0;
+            const maxId = ITEMS[config.mode].length;
+            
             for(let i=0; i<config.digits; i++) {
-                questionIds.push(Math.floor(Math.random() * 10));
+                questionIds.push(Math.floor(Math.random() * maxId));
                 userInputIds.push(null);
             }
             renderBoxes();
