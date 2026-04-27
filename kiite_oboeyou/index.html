@@ -102,10 +102,7 @@
             padding: 8px; font-size: 16px; border: 2px solid #ccc; border-radius: 8px; width: 140px; text-align: center;
         }
         .form-row input[type="range"] { flex: 1; cursor: pointer; }
-        .form-row input[type="number"] { 
-            padding: 8px; font-size: 16px; border: 2px solid #ccc; border-radius: 8px; width: 140px; text-align: center;
-        }
-        .form-row input[type="range"] { flex: 1; cursor: pointer; }
+
     </style>
 </head>
 <body>
@@ -200,7 +197,7 @@
             </div>
         </div>
 
-        <button class="btn" style="margin-top: 40px; background-color: #333; font-size: 20px;" onclick="saveSettingsAndClose()">保存して戻る</button>
+        <button class="btn" style="margin-top: 40px; background-color: #333; font-size: 20px;" onpointerdown="saveSettingsAndClose()">保存して戻る</button>
     </div>
 
     <script>
@@ -247,7 +244,7 @@
         // --- 4. 設定管理 ---
         let config = { mode: 'number', digits: 3, totalQuestions: 5, speed: 1.0, interval: 0.8, noiseType: 'none' };
         function loadSettings() {
-            const saved = localStorage.getItem('memAppConfig_v4');
+            const saved = localStorage.getItem('memAppConfig_v5');
             if (saved) { config = JSON.parse(saved); }
             updateSettingUI();
         }
@@ -271,7 +268,7 @@
             config.speed = parseFloat(document.getElementById('set-speed').value);
             config.interval = parseFloat(document.getElementById('set-interval').value);
             config.noiseType = document.getElementById('set-noiseType').value;
-            localStorage.setItem('memAppConfig_v4', JSON.stringify(config));
+            localStorage.setItem('memAppConfig_v5', JSON.stringify(config));
             showHome();
         }
 
@@ -349,6 +346,8 @@
                 const finish = () => { if (!isResolved) { isResolved = true; resolve(); } };
                 u.onend = finish; u.onerror = finish;
                 speechSynthesis.speak(u);
+                
+                // 安全装置：SpeechSynthesisが終わらないバグへのフォールバック
                 setTimeout(finish, (text.length * 500) / rate + 300);
             });
         }
@@ -397,7 +396,11 @@
                 let btn = document.createElement('div');
                 btn.className = 'key';
                 btn.innerText = currentItems[i].label;
-                btn.onpointerdown = () => inputNum(i);
+                // タップ感度を向上させる onpointerdown を使用
+                btn.onpointerdown = (e) => {
+                    e.preventDefault(); 
+                    inputNum(i);
+                };
                 if (i < 5) row1.appendChild(btn); else row2.appendChild(btn);
             }
         }
@@ -481,12 +484,12 @@
                 div.className = `box ${i === activeIndex ? 'active' : ''}`;
                 div.innerText = userInputIds[i] !== null ? currentItems[userInputIds[i]].label : "";
                 
-                div.addEventListener('pointerdown', () => {
+                div.onpointerdown = () => {
                     if(document.getElementById('keypad').style.pointerEvents === 'auto') {
                         activeIndex = i;
                         renderBoxes();
                     }
-                });
+                };
                 container.appendChild(div);
             }
         }
