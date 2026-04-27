@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>数字ならべ</title>
+<style>
+    /* 共通要件: 確実な画面高さの取得とスクロール制御 */
+    :root {
+        --vh: 1vh;
+        --primary-color: #007AFF;
+        --bg-color: #F2F2F7;
+    }
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: calc(var(--vh, 1vh) * 100);
+        overflow: hidden; /* 画面全体のバウンススクロール防止 */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    /* 画面コンテナ */
+    .screen {
+        display: none;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        flex-direction: column;
+    }
+    .screen.active {
+        display: flex;
+    }
+
+    /* ボタン共通スタイル */
+    .btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 15px 30px;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        touch-action: manipulation;
+    }
+    .btn:active {
+        transform: scale(0.95);
+    }
+
+    /* ホーム画面 */
+    #home-screen {
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+    }
+    #home-screen .btn {
+        width: 200px;
+        text-align: center;
+    }
+
+    /* 設定画面 */
+    #setting-screen {
+        background-color: var(--bg-color);
+        /* スクロールが必要な領域のみ許可 */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .setting-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 20px;
+        background-color: white;
+        border-bottom: 1px solid #ccc;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .setting-header h1 {
+        margin: 0;
+        font-size: 20px;
+    }
+    .setting-group {
+        background-color: white;
+        margin: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        font-size: 18px;
+    }
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+    .setting-item label {
+        flex: 1;
+    }
+    .setting-item input[type="number"], .setting-item select {
+        font-size: 18px;
+        padding: 5px;
+        width: 80px;
+        text-align: right;
+    }
+    .setting-item select {
+        width: auto;
+    }
+
+    /* プレイ画面 */
+    #play-screen {
+        /* ドラッグ操作領域は局所的にスクロール禁止 */
+        touch-action: none; 
+        position: relative;
+    }
+    .play-header {
+        padding: 10px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        background-color: white;
+        border-bottom: 1px solid #ccc;
+        z-index: 5;
+    }
+    .back-btn {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        padding: 5px 15px;
+        font-size: 16px;
+    }
+
+    /* グリッド領域 */
+    #grid-container {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 10px;
+        padding: 0 5px;
+        box-sizing: border-box;
+    }
+    .grid-cell {
+        box-sizing: border-box;
+        border: 1px solid #333;
+        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #000;
+    }
+    .grid-cell.target {
+        background-color: transparent;
+    }
+    .grid-cell.out-of-range {
+        background-color: #e0e0e0;
+        color: #888;
+    }
+
+    /* 初期配置領域（画面下部） */
+    #tray-container {
+        flex: 1;
+        position: relative;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    /* ドラッグする数字ブロック */
+    .number-block {
+        position: absolute;
+        box-sizing: border-box;
+        border: 2px solid #000;
+        background-color: #FFD700; /* yellow */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: #000;
+        border-radius: 4px;
+        cursor: grab;
+        touch-action: none;
+        transition: background-color 0.3s;
+    }
+    .number-block.correct {
+        background-color: #32CD32; /* green */
+    }
+    .number-block.dragging {
+        transition: none; /* ドラッグ中はアニメーションを切る */
+        opacity: 0.9;
+        transform: scale(1.1);
+    }
+    .number-block.animating {
+        transition: left 0.3s ease, top 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* オーバーレイUI（次へ / ホームへ） */
+    #overlay-ui {
+        display: none;
+        position: absolute;
+        bottom: calc(20px + env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+    }
+
+</style>
+</head>
+<body>
+
+    <div id="home-screen" class="screen active">
+        <button class="btn" onclick="startGame()">スタート</button>
+        <button class="btn" style="background-color: #8E8E93;" onclick="showScreen('setting-screen')">設定</button>
+    </div>
+
+    <div id="setting-screen" class="screen">
+        <div class="setting-header">
+            <button class="btn" style="padding: 5px 15px; font-size: 16px;" onclick="showScreen('home-screen')">もどる</button>
+            <h1>設定</h1>
+            <div style="width: 60px;"></div>
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>最小値:</label>
+                <input type="number" id="set-min" min="1" max="99">
+            </div>
+            <div class="setting-item">
+                <label>最大値:</label>
+                <input type="number" id="set-max" min="2" max="100">
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>モード:</label>
+                <select id="set-mode">
+                    <option value="all">全部</option>
+                    <option value="partial">一部空き</option>
+                </select>
+            </div>
+            <div class="setting-item" id="interval-setting" style="display: none;">
+                <label>間隔 (一部空き用):</label>
+                <input type="number" id="set-interval" min="2" max="10">
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>終了までの問題数:</label>
+                <input type="number" id="set-max-questions" min="1" max="20">
+            </div>
+        </div>
+    </div>
+
+    <div id="play-screen" class="screen">
+        <div class="play-header">
+            <button class="btn back-btn" style="background-color: #FF3B30;" onclick="showScreen('home-screen')">やめる</button>
+            <span id="question-label">1 / 3問目</span>
+        </div>
+        <div id="grid-container"></div>
+        <div id="tray-container"></div>
+        
+        <div id="overlay-ui">
+            <button class="btn" id="next-btn" onclick="nextQuestion()">つぎへ</button>
+        </div>
+    </div>
+
+<script>
+    // --- 1. 共通要件: 画面高さの確実な取得 ---
+    function setHeight() {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setHeight();
+    window.addEventListener('resize', setHeight);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(setHeight, 100);
+    });
+
+    // --- 2. 設定の管理 (localStorage) ---
+    const settings = {
+        min: parseInt(localStorage.getItem('num-min')) || 1,
+        max: parseInt(localStorage.getItem('num-max')) || 10,
+        mode: localStorage.getItem('num-mode') || 'all',
+        interval: parseInt(localStorage.getItem('num-interval')) || 3,
+        maxQuestions: parseInt(localStorage.getItem('num-maxQuestions')) || 3
+    };
+
+    function initSettingsUI() {
+        document.getElementById('set-min').value = settings.min;
+        document.getElementById('set-max').value = settings.max;
+        document.getElementById('set-mode').value = settings.mode;
+        document.getElementById('set-interval').value = settings.interval;
+        document.getElementById('set-max-questions').value = settings.maxQuestions;
+        toggleIntervalSetting();
+    }
+
+    function toggleIntervalSetting() {
+        const mode = document.getElementById('set-mode').value;
+        document.getElementById('interval-setting').style.display = mode === 'partial' ? 'flex' : 'none';
+    }
+
+    document.getElementById('set-mode').addEventListener('change', toggleIntervalSetting);
+
+    function saveSettings() {
+        settings.min = parseInt(document.getElementById('set-min').value);
+        settings.max = parseInt(document.getElementById('set-max').value);
+        settings.mode = document.getElementById('set-mode').value;
+        settings.interval = parseInt(document.getElementById('set-interval').value);
+        settings.maxQuestions = parseInt(document.getElementById('set-max-questions').value);
+
+        if(settings.min >= settings.max) {
+            settings.max = settings.min + 1;
+            document.getElementById('set-max').value = settings.max;
+        }
+
+        localStorage.setItem('num-min', settings.min);
+        localStorage.setItem('num-max', settings.max);
+        localStorage.setItem('num-mode', settings.mode);
+        localStorage.setItem('num-interval', settings.interval);
+        localStorage.setItem('num-maxQuestions', settings.maxQuestions);
+    }
+
+    // 設定画面から離れる際に保存
+    document.querySelectorAll('#setting-screen input, #setting-screen select').forEach(el => {
+        el.addEventListener('change', saveSettings);
+    });
+
+    // --- 3. 画面遷移 ---
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        if (screenId === 'setting-screen') {
+            initSettingsUI();
+        }
+    }
+
+    // --- 4. ゲームロジック ---
+    let currentQuestion = 1;
+    let panels = []; // { num, x, y, width, height, answer: null }
+    let blocks = []; // { id, num, el, isPlacedCorrectly, isLocked, startX, startY }
+    let cellSize = 0;
+    let zIndexCounter = 10;
+
+    function startGame() {
+        currentQuestion = 1;
+        saveSettings(); // スタート時にも念のため保存
+        showScreen('play-screen');
+        prepareQuestion();
+    }
+
+    function prepareQuestion() {
+        document.getElementById('question-label').innerText = `${currentQuestion} / ${settings.maxQuestions}問目`;
+        document.getElementById('overlay-ui').style.display = 'none';
+        
+        buildGrid();
+        
+        // レイアウト確定を待ってからブロックを生成
+        setTimeout(() => {
+            buildBlocks();
+        }, 50);
+    }
+
+    function nextQuestion() {
+        if (currentQuestion < settings.maxQuestions) {
+            currentQuestion++;
+            prepareQuestion();
+        } else {
+            showScreen('home-screen');
+        }
+    }
+
+    function buildGrid() {
+        const gridContainer = document.getElementById('grid-container');
+        gridContainer.innerHTML = '';
+        panels = [];
+
+        // 全体の幅から1マスのサイズを計算（10列固定）
+        const containerWidth = gridContainer.clientWidth - 10; // padding 5px * 2
+        cellSize = Math.floor(containerWidth / 10);
+        
+        // yCount: (max - 1) / 10 + 1 (SwiftUIロジックを踏襲)
+        const yCount = Math.floor((settings.max - 1) / 10) + 1;
+        
+        for (let y = 0; y < yCount; y++) {
+            for (let x = 1; x <= 10; x++) {
+                const targetNum = y * 10 + x;
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.style.width = `${cellSize}px`;
+                cell.style.height = `${cellSize}px`;
+                
+                if (targetNum >= settings.min && targetNum <= settings.max) {
+                    // 入力対象のパネル
+                    cell.classList.add('target');
+                    cell.dataset.num = targetNum;
+                    gridContainer.appendChild(cell);
+                    
+                    // パネルの位置情報を保存
+                    const rect = cell.getBoundingClientRect();
+                    panels.push({
+                        num: targetNum,
+                        el: cell,
+                        answer: null
+                    });
+                } else {
+                    // 範囲外の数字は最初から表示
+                    cell.classList.add('out-of-range');
+                    cell.innerText = targetNum;
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+    }
+
+    function buildBlocks() {
+        const tray = document.getElementById('tray-container');
+        tray.innerHTML = '';
+        blocks = [];
+
+        // パネルの最新位置を取得
+        panels.forEach(p => {
+            const rect = p.el.getBoundingClientRect();
+            p.x = rect.left;
+            p.y = rect.top;
+        });
+
+        // 初期配置位置の計算 (トレイ領域に適当に散りばめる)
+        const trayRect = tray.getBoundingClientRect();
+        let startPoints = [];
+        let curX = 10;
+        let curY = 10;
+
+        for (let i = settings.min; i <= settings.max; i++) {
+            startPoints.push({x: curX, y: curY});
+            curX += cellSize + 5;
+            if (curX + cellSize > trayRect.width) {
+                curX = 10;
+                curY += cellSize + 5;
+            }
+        }
+        // 初期位置をシャッフル
+        startPoints.sort(() => Math.random() - 0.5);
+
+        let pointIndex = 0;
+        for (let i = settings.min; i <= settings.max; i++) {
+            const blockNum = i;
+            // 一部空きモードの事前配置判定 (1-indexedで計算)
+            const index = i - settings.min + 1;
+            const isLocked = (settings.mode === 'partial') && (index % settings.interval === 0);
+
+            const blockEl = document.createElement('div');
+            blockEl.className = 'number-block animating';
+            blockEl.innerText = blockNum;
+            blockEl.style.width = `${cellSize}px`;
+            blockEl.style.height = `${cellSize}px`;
+
+            let initialX, initialY;
+            if (isLocked) {
+                // 正解のパネルの位置に配置
+                const targetPanel = panels.find(p => p.num === blockNum);
+                initialX = targetPanel.x;
+                initialY = targetPanel.y;
+                targetPanel.answer = blockNum;
+                blockEl.classList.add('correct');
+            } else {
+                initialX = trayRect.left + startPoints[pointIndex].x;
+                initialY = trayRect.top + startPoints[pointIndex].y;
+                pointIndex++;
+            }
+
+            blockEl.style.left = `${initialX}px`;
+            blockEl.style.top = `${initialY}px`;
+
+            document.body.appendChild(blockEl); // ドラッグしやすいようにbody直下に
+
+            const blockObj = {
+                num: blockNum,
+                el: blockEl,
+                isPlacedCorrectly: isLocked,
+                isLocked: isLocked,
+                startX: initialX,
+                startY: initialY,
+                currentX: initialX,
+                currentY: initialY
+            };
+            blocks.push(blockObj);
+
+            if (!isLocked) {
+                setupDrag(blockObj);
+            }
+
+            // タップで元の位置に戻す機能（置かれている＆ロックされていない場合）
+            blockEl.addEventListener('click', (e) => {
+                if (blockObj.isPlacedCorrectly && !blockObj.isLocked) {
+                    // パネルから解除
+                    const panel = panels.find(p => p.answer === blockObj.num);
+                    if (panel) panel.answer = null;
+                    
+                    blockObj.isPlacedCorrectly = false;
+                    blockEl.classList.remove('correct');
+                    moveBlockTo(blockObj, blockObj.startX, blockObj.startY);
+                }
+            });
+        }
+        checkAllPlacedStatus();
+    }
+
+    function setupDrag(block) {
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        block.el.addEventListener('pointerdown', (e) => {
+            if (block.isPlacedCorrectly) return; // 正解配置済みは動かせない
+            isDragging = true;
+            block.el.classList.remove('animating');
+            block.el.classList.add('dragging');
+            block.el.style.zIndex = ++zIndexCounter;
+
+            const rect = block.el.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            
+            // 既存のパネル回答をクリア
+            const panel = panels.find(p => p.answer === block.num);
+            if (panel) panel.answer = null;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); // スクロール防止
+            
+            let newX = e.clientX - offsetX;
+            let newY = e.clientY - offsetY;
+            
+            block.currentX = newX;
+            block.currentY = newY;
+            block.el.style.left = `${newX}px`;
+            block.el.style.top = `${newY}px`;
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            block.el.classList.remove('dragging');
+            block.el.classList.add('animating');
+
+            // 距離判定 (中心座標で計算)
+            const blockCenterX = block.currentX + cellSize / 2;
+            const blockCenterY = block.currentY + cellSize / 2;
+
+            let snapped = false;
+            // 判定距離をSwiftUIのpow(x,2)+pow(y,2)<2500 (=半径50px)に近似
+            const snapThreshold = cellSize * 0.8; 
+
+            for (let panel of panels) {
+                const panelCenterX = panel.x + cellSize / 2;
+                const panelCenterY = panel.y + cellSize / 2;
+                const distance = Math.hypot(blockCenterX - panelCenterX, blockCenterY - panelCenterY);
+
+                if (distance < snapThreshold && panel.answer === null) {
+                    // パネルにスナップ
+                    moveBlockTo(block, panel.x, panel.y);
+                    panel.answer = block.num;
+                    snapped = true;
+                    break;
+                }
+            }
+
+            if (!snapped) {
+                // どこにもスナップしなかったら元のトレイ位置へ
+                moveBlockTo(block, block.startX, block.startY);
+            }
+
+            // 全て配置されたかチェック
+            setTimeout(checkAllAnswer, 350); // アニメーション終了後に判定
+        });
+    }
+
+    function moveBlockTo(block, x, y) {
+        block.currentX = x;
+        block.currentY = y;
+        block.el.style.left = `${x}px`;
+        block.el.style.top = `${y}px`;
+    }
+
+    function checkAllAnswer() {
+        // 全てのパネルが埋まっているか？
+        const allFilled = panels.every(p => p.answer !== null);
+        if (!allFilled) return;
+
+        // 全て埋まった場合の正誤判定
+        let allCorrect = true;
+
+        panels.forEach(panel => {
+            const block = blocks.find(b => b.num === panel.answer);
+            if (panel.num === panel.answer) {
+                // 正解
+                block.isPlacedCorrectly = true;
+                block.el.classList.add('correct');
+            } else {
+                // 不正解 -> パネルの回答をリセットし、元の位置に戻す
+                panel.answer = null;
+                block.isPlacedCorrectly = false;
+                block.el.classList.remove('correct');
+                moveBlockTo(block, block.startX, block.startY);
+                allCorrect = false;
+            }
+        });
+
+        checkAllPlacedStatus();
+    }
+
+    function checkAllPlacedStatus() {
+        // ブロックがすべて correct かチェック
+        if (blocks.length > 0 && blocks.every(b => b.isPlacedCorrectly)) {
+            const btn = document.getElementById('next-btn');
+            btn.innerText = currentQuestion < settings.maxQuestions ? "つぎへ" : "ホームへ戻る";
+            document.getElementById('overlay-ui').style.display = 'block';
+        }
+    }
+
+    // 次の問題へ行くときに前のブロックをDOMから削除するクリーンアップ
+    const originalPrepareQuestion = prepareQuestion;
+    prepareQuestion = function() {
+        blocks.forEach(b => {
+            if(b.el && b.el.parentNode) {
+                b.el.parentNode.removeChild(b.el);
+            }
+        });
+        originalPrepareQuestion();
+    }
+
+    // 初期化
+    initSettingsUI();
+</script>
+</body>
+</html>
