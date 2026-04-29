@@ -6,8 +6,7 @@
 // ==========================================
 // 1. Google Analytics 4 (GA4) 統合設定
 // ==========================================
-const GA_MEASUREMENT_ID = 'G-4T10JYJ9XC'; // TODO: 取得した測定IDに書き換えてください
-
+const GA_MEASUREMENT_ID = 'G-4T10JYJ9XC';
 (function() {
     // gtag.jsのスクリプトを動的に読み込み
     const script = document.createElement('script');
