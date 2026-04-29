@@ -1,928 +1,1277 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>めいろアプリ</title>
-<style>
-  /* 誤操作防止設定 */
-  * {
-    box-sizing: border-box;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-  }
-  
-  body, html {
-    margin: 0; padding: 0; width: 100%; 
-    height: 100vh; /* フォールバック */
-    height: calc(var(--vh, 1vh) * 100); /* JSで計算した確実な高さを適用 */
-    font-family: 'Hiragino Maru Gothic ProN', sans-serif;
-    background-color: white; 
-    overflow: hidden; /* 画面全体のバウンススクロールを防止 */
-  }
-  
-  #app {
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
 
-  button {
-    font-family: inherit; background: none; border: none; cursor: pointer;
-  }
-  
-  /* 画面切り替え */
-  .view { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-  .view.active { display: flex; }
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>めいろ</title>
+    <style>
+        /* 誤操作防止設定 */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
 
-  /* スタート画面 */
-  #start-view { flex-direction: column; align-items: center; justify-content: center; }
-  .big-btn { font-size: 2rem; color: #007aff; padding: 20px; display: flex; align-items: center; gap: 10px; }
-  .big-btn.disabled { color: gray; pointer-events: none; }
-  .setting-hint { font-size: 0.8rem; opacity: 0.5; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
-  #loading { display: none; position: absolute; width: 100%; height: 100%; background: rgba(128,128,128,0.8); align-items: center; justify-content: center; z-index: 100;}
-  .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            /* フォールバック */
+            height: calc(var(--vh, 1vh) * 100);
+            /* JSで計算した確実な高さを適用 */
+            font-family: 'Hiragino Maru Gothic ProN', sans-serif;
+            background-color: white;
+            overflow: hidden;
+            /* 画面全体のバウンススクロールを防止 */
+        }
 
-  /* プレイ画面 */
-  #play-view { flex-direction: row; }
-  #play-view.pos-左 { flex-direction: row; }
-  #play-view.pos-右 { flex-direction: row-reverse; }
-  #play-view.pos-上 { flex-direction: column; }
-  #play-view.pos-下 { flex-direction: column-reverse; }
+        #app {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
 
-  /* 迷路プレイ部分だけはブラウザのスワイプ戻り等を禁止する */
-  #maze-container { 
-    flex: 1; 
-    position: relative; 
-    touch-action: none; 
-    margin: 10px 10px 20px 10px; /* ★上・左右に10px、下に20pxの余白を追加してOSジェスチャーとの競合を防止 */
-  }
-  canvas { display: block; position: absolute; top: 0; left: 0; }
-  
-  #buttons-area { display: flex; align-items: center; justify-content: space-between; padding: 20px; }
-  #play-view.pos-左 #buttons-area, #play-view.pos-右 #buttons-area { flex-direction: column; width: 120px; height: 100%; }
-  #play-view.pos-上 #buttons-area, #play-view.pos-下 #buttons-area { flex-direction: row; width: 100%; height: 100px; }
+        button {
+            font-family: inherit;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
 
-  .icon-btn { display: flex; flex-direction: column; align-items: center; font-size: 1rem; color: #007aff; }
-  .icon-btn svg { width: 30px; height: 30px; fill: currentColor; margin-bottom: 5px; }
-  .icon-btn.disabled { color: gray; opacity: 0.2; pointer-events: none; }
-  #count-text { font-size: 1.5rem; color: black; }
-  .hint-badge { background: #ffcc00; color: black; border-radius: 50%; width: 20px; height: 20px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; position: absolute; top: -5px; right: -5px; }
+        /* 画面切り替え */
+        .view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
 
-  /* ゴールオーバーレイ */
-  #goal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center; z-index: 50; }
-  #goal-btn { font-size: 2rem; color: black; background: rgba(255, 204, 0, 0.8); padding: 20px 40px; border-radius: 50px; display: flex; align-items: center; gap: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-  #goal-btn svg { width: 40px; height: 40px; fill: currentColor; }
+        .view.active {
+            display: flex;
+        }
 
-  /* 設定画面 (iOS設定アプリ風リストレイアウト) */
-  #setting-view { 
-    flex-direction: column; 
-    background: #f2f2f7; 
-    overflow-y: auto; 
-    /* セーフエリア（画面上部のバーやノッチ）を考慮した余白 */
-    padding: calc(20px + env(safe-area-inset-top)) 20px calc(80px + env(safe-area-inset-bottom)) 20px;
-    -webkit-overflow-scrolling: touch; /* 滑らかなスクロール */
-  }
-  #setting-content { 
-    max-width: 1000px; 
-    margin: 0 auto; 
-    width: 100%; 
-  }
-  
-  .form-title { font-size: 0.9rem; color: #6d6d72; margin-bottom: 5px; margin-left: 15px; }
-  .form-section { background: white; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
-  .form-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #e5e5ea; min-height: 44px; flex-wrap: wrap; gap: 10px; }
-  .form-row:last-child { border-bottom: none; }
-  .form-row > span:first-child { font-size: 1rem; color: #000; flex-shrink: 0; }
-  .form-row-alert { color: red; font-size: 0.85rem; padding: 10px 15px; border-bottom: 1px solid #e5e5ea; }
+        /* スタート画面 */
+        #start-view {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
 
-  /* スライダーと値 */
-  .slider-wrap { display: flex; align-items: center; flex: 1; margin-left: 20px; min-width: 200px; }
-  .slider-wrap input[type="range"] { flex: 1; margin-right: 15px; }
-  .slider-wrap span { width: 60px; text-align: right; color: #666; font-size: 1rem; }
+        .big-btn {
+            font-size: 2rem;
+            color: #007aff;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-  /* カスタムピッカー (横並び) */
-  .custom-picker { display: flex; background: #e5e5ea; border-radius: 8px; padding: 2px; }
-  .custom-picker div { padding: 6px 12px; cursor: pointer; text-align: center; border-radius: 6px; font-size: 0.9rem; color: #000; white-space: nowrap; }
-  .custom-picker div.selected { background: white; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-  .custom-picker div.disabled { opacity: 0.3; pointer-events: none; }
+        .big-btn.disabled {
+            color: gray;
+            pointer-events: none;
+        }
 
-  /* セグメントコントロール */
-  .segmented { display: flex; background: #e5e5ea; border-radius: 8px; padding: 2px; min-width: 200px; }
-  .segmented div { flex: 1; text-align: center; padding: 6px 10px; cursor: pointer; border-radius: 6px; font-size: 0.9rem; color: #000; white-space: nowrap; }
-  .segmented div.selected { background: white; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+        .setting-hint {
+            font-size: 0.8rem;
+            opacity: 0.5;
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
 
-  /* ステッパー */
-  .stepper { display: flex; align-items: center; background: #e5e5ea; border-radius: 8px; padding: 2px; }
-  .stepper button { font-size: 1.2rem; border-radius: 6px; padding: 4px 15px; background: transparent; }
-  .stepper button:active { background: #d1d1d6; }
-  .stepper span { font-size: 1rem; min-width: 30px; text-align: center; background: white; padding: 4px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; }
+        #loading {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(128, 128, 128, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
 
-  input[type="checkbox"] { transform: scale(1.5); margin-right: 5px; cursor: pointer; }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
 
-  .close-btn-wrap { text-align: center; margin-top: 10px; }
-  .close-btn { color: #007aff; font-size: 1.2rem; padding: 10px 30px; }
-</style>
-<script src="../common/core.js"></script>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* プレイ画面 */
+        #play-view {
+            flex-direction: row;
+        }
+
+        #play-view.pos-左 {
+            flex-direction: row;
+        }
+
+        #play-view.pos-右 {
+            flex-direction: row-reverse;
+        }
+
+        #play-view.pos-上 {
+            flex-direction: column;
+        }
+
+        #play-view.pos-下 {
+            flex-direction: column-reverse;
+        }
+
+        /* 迷路プレイ部分だけはブラウザのスワイプ戻り等を禁止する */
+        #maze-container {
+            flex: 1;
+            position: relative;
+            touch-action: none;
+            margin: 10px 10px 20px 10px;
+            /* ★上・左右に10px、下に20pxの余白を追加してOSジェスチャーとの競合を防止 */
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #buttons-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        #play-view.pos-左 #buttons-area,
+        #play-view.pos-右 #buttons-area {
+            flex-direction: column;
+            width: 120px;
+            height: 100%;
+        }
+
+        #play-view.pos-上 #buttons-area,
+        #play-view.pos-下 #buttons-area {
+            flex-direction: row;
+            width: 100%;
+            height: 100px;
+        }
+
+        .icon-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 1rem;
+            color: #007aff;
+        }
+
+        .icon-btn svg {
+            width: 30px;
+            height: 30px;
+            fill: currentColor;
+            margin-bottom: 5px;
+        }
+
+        .icon-btn.disabled {
+            color: gray;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        #count-text {
+            font-size: 1.5rem;
+            color: black;
+        }
+
+        .hint-badge {
+            background: #ffcc00;
+            color: black;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+
+        /* ゴールオーバーレイ */
+        #goal-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        #goal-btn {
+            font-size: 2rem;
+            color: black;
+            background: rgba(255, 204, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #goal-btn svg {
+            width: 40px;
+            height: 40px;
+            fill: currentColor;
+        }
+
+        /* 設定画面 (iOS設定アプリ風リストレイアウト) */
+        #setting-view {
+            flex-direction: column;
+            background: #f2f2f7;
+            overflow-y: auto;
+            /* セーフエリア（画面上部のバーやノッチ）を考慮した余白 */
+            padding: calc(20px + env(safe-area-inset-top)) 20px calc(80px + env(safe-area-inset-bottom)) 20px;
+            -webkit-overflow-scrolling: touch;
+            /* 滑らかなスクロール */
+        }
+
+        #setting-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-title {
+            font-size: 0.9rem;
+            color: #6d6d72;
+            margin-bottom: 5px;
+            margin-left: 15px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e5e5ea;
+            min-height: 44px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .form-row:last-child {
+            border-bottom: none;
+        }
+
+        .form-row>span:first-child {
+            font-size: 1rem;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .form-row-alert {
+            color: red;
+            font-size: 0.85rem;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e5e5ea;
+        }
+
+        /* スライダーと値 */
+        .slider-wrap {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            margin-left: 20px;
+            min-width: 200px;
+        }
+
+        .slider-wrap input[type="range"] {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .slider-wrap span {
+            width: 60px;
+            text-align: right;
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* カスタムピッカー (横並び) */
+        .custom-picker {
+            display: flex;
+            background: #e5e5ea;
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .custom-picker div {
+            padding: 6px 12px;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        .custom-picker div.selected {
+            background: white;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .custom-picker div.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* セグメントコントロール */
+        .segmented {
+            display: flex;
+            background: #e5e5ea;
+            border-radius: 8px;
+            padding: 2px;
+            min-width: 200px;
+        }
+
+        .segmented div {
+            flex: 1;
+            text-align: center;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        .segmented div.selected {
+            background: white;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ステッパー */
+        .stepper {
+            display: flex;
+            align-items: center;
+            background: #e5e5ea;
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .stepper button {
+            font-size: 1.2rem;
+            border-radius: 6px;
+            padding: 4px 15px;
+            background: transparent;
+        }
+
+        .stepper button:active {
+            background: #d1d1d6;
+        }
+
+        .stepper span {
+            font-size: 1rem;
+            min-width: 30px;
+            text-align: center;
+            background: white;
+            padding: 4px 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .close-btn-wrap {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .close-btn {
+            color: #007aff;
+            font-size: 1.2rem;
+            padding: 10px 30px;
+        }
+    </style>
 </head>
+
 <body>
 
-<div id="app">
-  <div id="start-view" class="view active">
-    <button id="start-btn" class="big-btn">
-      <span>スタート</span>
-      <svg viewBox="0 0 24 24" width="30" height="30"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-    </button>
-    <div style="position: relative; margin-top: 20px;">
-      <button id="setting-btn" class="big-btn">
-        <span>設定</span>
-        <svg viewBox="0 0 24 24" width="30" height="30"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" fill="currentColor"/></svg>
-      </button>
-      <span id="setting-hint" class="setting-hint"></span>
+    <div id="app">
+        <div id="start-view" class="view active">
+            <button id="start-btn" class="big-btn">
+                <span>スタート</span>
+                <svg viewBox="0 0 24 24" width="30" height="30">
+                    <path d="M8 5v14l11-7z" fill="currentColor" />
+                </svg>
+            </button>
+            <div style="position: relative; margin-top: 20px;">
+                <button id="setting-btn" class="big-btn">
+                    <span>設定</span>
+                    <svg viewBox="0 0 24 24" width="30" height="30">
+                        <path
+                            d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+                <span id="setting-hint" class="setting-hint"></span>
+            </div>
+            <div id="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <div id="play-view" class="view">
+            <div id="buttons-area">
+                <button id="btn-back" class="icon-btn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                    </svg>
+                    <span>もどる</span>
+                </button>
+                <div id="count-text">0</div>
+                <button id="btn-hint" class="icon-btn" style="position: relative;">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z" />
+                    </svg>
+                    <span>ひんと</span>
+                    <div id="hint-badge" class="hint-badge">2</div>
+                </button>
+            </div>
+            <div id="maze-container">
+                <canvas id="maze-canvas"></canvas>
+                <div id="goal-overlay">
+                    <div id="goal-btn">
+                        <span id="goal-text">つぎへ</span>
+                        <svg id="goal-icon" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="setting-view" class="view">
+            <div id="setting-content">
+
+                <div class="form-title">迷路の設定</div>
+                <div class="form-section">
+                    <div class="form-row-alert">※迷路のサイズが大きくなると、重くなったり操作が難しくなったりする場合があります。</div>
+                    <div class="form-row">
+                        <span>縦</span>
+                        <div class="slider-wrap"><input type="range" id="set-r" min="2" max="60" step="1"><span
+                                id="val-r">3マス</span></div>
+                    </div>
+                    <div class="form-row">
+                        <span>横</span>
+                        <div class="slider-wrap"><input type="range" id="set-c" min="2" max="60" step="1"><span
+                                id="val-c">3マス</span></div>
+                    </div>
+                    <div class="form-row">
+                        <span>スタートの位置</span>
+                        <div class="custom-picker" id="picker-start">
+                            <div data-val="左上">左上</div>
+                            <div data-val="右上">右上</div>
+                            <div data-val="左下">左下</div>
+                            <div data-val="右下">右下</div>
+                            <div data-val="四隅のどこか">四隅</div>
+                            <div data-val="ランダム">ランダム</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <span>ゴールの位置</span>
+                        <div class="custom-picker" id="picker-goal">
+                            <div data-val="左上">左上</div>
+                            <div data-val="右上">右上</div>
+                            <div data-val="左下">左下</div>
+                            <div data-val="右下">右下</div>
+                            <div data-val="四隅のどこか">四隅</div>
+                            <div data-val="ランダム">ランダム</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <span>問題数</span>
+                        <div class="stepper">
+                            <button id="q-minus">-</button><span id="val-q">10</span><button id="q-plus">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-title">画面の設定</div>
+                <div class="form-section">
+                    <div class="form-row">
+                        <span>壁の幅</span>
+                        <div class="slider-wrap"><input type="range" id="set-wall" min="1" max="100" step="1"><span
+                                id="val-wall">5.00</span></div>
+                    </div>
+                    <div class="form-row">
+                        <span>ボタンの位置</span>
+                        <div class="segmented" id="seg-btnPos">
+                            <div data-val="左">左</div>
+                            <div data-val="上">上</div>
+                            <div data-val="右">右</div>
+                            <div data-val="下">下</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <span>もどるボタンを表示する</span>
+                        <input type="checkbox" id="set-showBack">
+                    </div>
+                    <div class="form-row">
+                        <span>ヒントボタンを表示する</span>
+                        <input type="checkbox" id="set-showHint">
+                    </div>
+                    <div class="form-row">
+                        <span>ヒントを使える回数</span>
+                        <div class="stepper">
+                            <button id="hc-minus">-</button><span id="val-hc">2</span><button id="hc-plus">+</button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <span>ヒントで表示されるマス数</span>
+                        <div class="stepper">
+                            <button id="hm-minus">-</button><span id="val-hm">3</span><button id="hm-plus">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-title">その他</div>
+                <div class="form-section">
+                    <div class="form-row">
+                        <span>設定画面の開き方</span>
+                        <div class="segmented" id="seg-howTo">
+                            <div data-val="通常">通常</div>
+                            <div data-val="長押し">長押し</div>
+                            <div data-val="トリプルタップ">トリプルタップ</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <span>効果音</span>
+                        <input type="checkbox" id="set-sound">
+                    </div>
+                </div>
+
+                <div class="close-btn-wrap">
+                    <button class="close-btn" id="btn-close-setting">閉じる</button>
+                </div>
+
+            </div>
+        </div>
     </div>
-    <div id="loading"><div class="spinner"></div></div>
-  </div>
 
-  <div id="play-view" class="view">
-    <div id="buttons-area">
-      <button id="btn-back" class="icon-btn">
-        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        <span>もどる</span>
-      </button>
-      <div id="count-text">0</div>
-      <button id="btn-hint" class="icon-btn" style="position: relative;">
-        <svg viewBox="0 0 24 24"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/></svg>
-        <span>ひんと</span>
-        <div id="hint-badge" class="hint-badge">2</div>
-      </button>
-    </div>
-    <div id="maze-container">
-      <canvas id="maze-canvas"></canvas>
-      <div id="goal-overlay">
-        <div id="goal-btn">
-          <span id="goal-text">つぎへ</span>
-          <svg id="goal-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="setting-view" class="view">
-    <div id="setting-content">
-      
-      <div class="form-title">迷路の設定</div>
-      <div class="form-section">
-        <div class="form-row-alert">※迷路のサイズが大きくなると、重くなったり操作が難しくなったりする場合があります。</div>
-        <div class="form-row">
-          <span>縦</span>
-          <div class="slider-wrap"><input type="range" id="set-r" min="2" max="60" step="1"><span id="val-r">3マス</span></div>
-        </div>
-        <div class="form-row">
-          <span>横</span>
-          <div class="slider-wrap"><input type="range" id="set-c" min="2" max="60" step="1"><span id="val-c">3マス</span></div>
-        </div>
-        <div class="form-row">
-          <span>スタートの位置</span>
-          <div class="custom-picker" id="picker-start">
-            <div data-val="左上">左上</div><div data-val="右上">右上</div><div data-val="左下">左下</div>
-            <div data-val="右下">右下</div><div data-val="四隅のどこか">四隅</div><div data-val="ランダム">ランダム</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <span>ゴールの位置</span>
-          <div class="custom-picker" id="picker-goal">
-            <div data-val="左上">左上</div><div data-val="右上">右上</div><div data-val="左下">左下</div>
-            <div data-val="右下">右下</div><div data-val="四隅のどこか">四隅</div><div data-val="ランダム">ランダム</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <span>問題数</span>
-          <div class="stepper">
-            <button id="q-minus">-</button><span id="val-q">10</span><button id="q-plus">+</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-title">画面の設定</div>
-      <div class="form-section">
-        <div class="form-row">
-          <span>壁の幅</span>
-          <div class="slider-wrap"><input type="range" id="set-wall" min="1" max="100" step="1"><span id="val-wall">5.00</span></div>
-        </div>
-        <div class="form-row">
-          <span>ボタンの位置</span>
-          <div class="segmented" id="seg-btnPos">
-            <div data-val="左">左</div><div data-val="上">上</div><div data-val="右">右</div><div data-val="下">下</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <span>もどるボタンを表示する</span>
-          <input type="checkbox" id="set-showBack">
-        </div>
-        <div class="form-row">
-          <span>ヒントボタンを表示する</span>
-          <input type="checkbox" id="set-showHint">
-        </div>
-        <div class="form-row">
-          <span>ヒントを使える回数</span>
-          <div class="stepper">
-            <button id="hc-minus">-</button><span id="val-hc">2</span><button id="hc-plus">+</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <span>ヒントで表示されるマス数</span>
-          <div class="stepper">
-            <button id="hm-minus">-</button><span id="val-hm">3</span><button id="hm-plus">+</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-title">その他</div>
-      <div class="form-section">
-        <div class="form-row">
-          <span>設定画面の開き方</span>
-          <div class="segmented" id="seg-howTo">
-            <div data-val="通常">通常</div><div data-val="長押し">長押し</div><div data-val="トリプルタップ">トリプルタップ</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <span>効果音</span>
-          <input type="checkbox" id="set-sound">
-        </div>
-      </div>
-
-      <div class="close-btn-wrap">
-        <button class="close-btn" id="btn-close-setting">閉じる</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<script>
-// --- iOS SafariのURLバー対応: リアルタイム高さ計算 ---
-function setViewportHeight() {
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-// 初回実行とリサイズ・回転時の監視
-setViewportHeight();
-window.addEventListener('resize', setViewportHeight);
-window.addEventListener('orientationchange', () => {
-    setTimeout(setViewportHeight, 100); // 回転時のラグ対策
-});
-
-// --- Web Audio API (効果音のみ) ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-
-function soundPlay(name) {
-    if (!s.enableSound) return;
-    if (!audioCtx) audioCtx = new AudioContext();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
-    if (name === "correct") {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-        osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1); // A6
-        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.5);
-    }
-}
-
-// --- SettingClass 相当 ---
-class SettingClass {
-    constructor() {
-        this.columns = parseInt(localStorage.getItem("columns")) || 7;
-        this.rows = parseInt(localStorage.getItem("rows")) || 7;
-        this.items = [];
-        this.isPlaying = false;
-        this.startPos = localStorage.getItem("startPos") || "右下";
-        this.goalPos = localStorage.getItem("goalPos") || "左上";
-        this.wallWidth = parseFloat(localStorage.getItem("wallWidth")) || 5;
-        this.buttonPos = localStorage.getItem("buttonPos") || "左";
-        this.isShowBackButton = localStorage.getItem("isShowBackButton") !== "false";
-        this.isShowHint = localStorage.getItem("isShowHint") !== "false";
-        this.moveCountOfHint = parseInt(localStorage.getItem("moveCountOfHint")) || 3;
-        this.hintCount = parseInt(localStorage.getItem("hintCount")) || 2;
-        this.numOfQuestions = parseInt(localStorage.getItem("numOfQuestions")) || 10;
-        this.howToSetting = localStorage.getItem("howToSetting") || "通常";
-        this.enableSound = localStorage.getItem("enableSound") !== "false";
-
-        // 初期ロード時にスタートとゴールが被っていた場合の復旧処理（ランダム・四隅を除く）
-        if (this.startPos === this.goalPos && this.startPos !== "ランダム" && this.startPos !== "四隅のどこか") {
-            this.goalPos = (this.startPos === "左上") ? "右下" : "左上";
-            localStorage.setItem("goalPos", this.goalPos);
+    <script>
+        // --- iOS SafariのURLバー対応: リアルタイム高さ計算 ---
+        function setViewportHeight() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
         }
-    }
-    save(key, value) {
-        this[key] = value;
-        localStorage.setItem(key, value);
-    }
-}
-const s = new SettingClass();
+        // 初回実行とリサイズ・回転時の監視
+        setViewportHeight();
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(setViewportHeight, 100); // 回転時のラグ対策
+        });
 
-// --- 状態変数 ---
-let currentWall = [];
-let start = 0; let goal = 0;
-let firstPoint = null;
-let pos = {x: 0, y: 0};
-let rects = []; let lines = []; let hintLines = [];
-let isGoal = false;
-let countOfDone = 0;
-let correctRoot = []; let numsForRoot = []; let correctLines = [];
-let isSetHint = false; let currentPosForHint = 0; let hintCount = 0;
-let readyToStart = true;
-let isDrawingStarted = false; // スタート地点を触ったかどうかのフラグ
+        // --- Web Audio API (効果音のみ) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
 
-// --- Canvas ---
-const canvas = document.getElementById('maze-canvas');
-const ctx = canvas.getContext('2d');
-let cellWidth = 0, wallWidth = 0, cellHeight = 0, offsetX = 0, offsetY = 0;
+        function soundPlay(name) {
+            if (!s.enableSound) return;
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-// --- View切り替え ---
-function switchView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-}
-
-// --- 迷路生成ロジック ---
-function makeMaze() {
-    s.items = [];
-    for (let i = 0; i < s.rows; i++) {
-        for (let j = 0; j < s.columns; j++) {
-            let type = (i === 0 || i === s.rows - 1 || j === 0 || j === s.columns - 1) ? "壁" : "道";
-            s.items.push({ type: type });
+            if (name === "correct") {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1); // A6
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            }
         }
-    }
 
-    let startCells = [];
-    for (let i = 0; i < s.rows; i++) {
-        for (let j = 0; j < s.columns; j++) {
-            if (i % 2 === 0 && j % 2 === 0) {
-                if (i !== 0 && i !== s.rows - 1 && j !== 0 && j !== s.columns - 1) {
-                    startCells.push(s.columns * i + j);
+        // --- SettingClass 相当 ---
+        class SettingClass {
+            constructor() {
+                this.columns = parseInt(localStorage.getItem("columns")) || 7;
+                this.rows = parseInt(localStorage.getItem("rows")) || 7;
+                this.items = [];
+                this.isPlaying = false;
+                this.startPos = localStorage.getItem("startPos") || "右下";
+                this.goalPos = localStorage.getItem("goalPos") || "左上";
+                this.wallWidth = parseFloat(localStorage.getItem("wallWidth")) || 5;
+                this.buttonPos = localStorage.getItem("buttonPos") || "左";
+                this.isShowBackButton = localStorage.getItem("isShowBackButton") !== "false";
+                this.isShowHint = localStorage.getItem("isShowHint") !== "false";
+                this.moveCountOfHint = parseInt(localStorage.getItem("moveCountOfHint")) || 3;
+                this.hintCount = parseInt(localStorage.getItem("hintCount")) || 2;
+                this.numOfQuestions = parseInt(localStorage.getItem("numOfQuestions")) || 10;
+                this.howToSetting = localStorage.getItem("howToSetting") || "通常";
+                this.enableSound = localStorage.getItem("enableSound") !== "false";
+
+                // 初期ロード時にスタートとゴールが被っていた場合の復旧処理（ランダム・四隅を除く）
+                if (this.startPos === this.goalPos && this.startPos !== "ランダム" && this.startPos !== "四隅のどこか") {
+                    this.goalPos = (this.startPos === "左上") ? "右下" : "左上";
+                    localStorage.setItem("goalPos", this.goalPos);
                 }
             }
-        }
-    }
-
-    startCells.sort(() => Math.random() - 0.5);
-
-    while (startCells.length > 0) {
-        let cell = startCells.shift();
-        if (s.items[cell].type === "道") {
-            currentWall = []; currentWall.push(cell);
-            makeWall(cell);
-        }
-    }
-    setStartGoal();
-    
-    lines = []; hintLines = []; correctLines = []; correctRoot = []; isSetHint = false;
-    firstPoint = null; hintCount = s.hintCount; isGoal = false;
-    isDrawingStarted = false; // 初期化
-    document.getElementById('goal-overlay').style.display = 'none';
-    updateButtonsUI();
-}
-
-function makeWall(cell) {
-    s.items[cell].type = "壁";
-    let directions = [];
-    if (s.items[cell - s.columns].type === "道" && !currentWall.includes(cell - s.columns * 2)) directions.push(0);
-    if (s.items[cell + s.columns].type === "道" && !currentWall.includes(cell + s.columns * 2)) directions.push(1);
-    if (s.items[cell - 1].type === "道" && !currentWall.includes(cell - 2)) directions.push(2);
-    if (s.items[cell + 1].type === "道" && !currentWall.includes(cell + 2)) directions.push(3);
-
-    let currentCell = 0;
-    if (directions.length > 0) {
-        let isHitWall = false;
-        directions.sort(() => Math.random() - 0.5);
-        let direction = directions[0];
-        let num = 0;
-        if (direction === 0) {
-            if (s.items[cell - s.columns * 2].type === "壁") isHitWall = true;
-            num = -s.columns;
-        } else if (direction === 1) {
-            if (s.items[cell + s.columns * 2].type === "壁") isHitWall = true;
-            num = s.columns;
-        } else if (direction === 2) {
-            if (s.items[cell - 2].type === "壁") isHitWall = true;
-            num = -1;
-        } else {
-            if (s.items[cell + 2].type === "壁") isHitWall = true;
-            num = 1;
-        }
-        setWall(cell, num);
-        currentCell = cell + num * 2;
-
-        if (!isHitWall) makeWall(currentCell);
-    } else {
-        let idx = currentWall.indexOf(cell);
-        if (idx > 0) makeWall(currentWall[idx - 1]);
-    }
-}
-
-function setWall(cell, num) {
-    s.items[cell + num].type = "壁"; s.items[cell + num * 2].type = "壁";
-    currentWall.push(cell + num * 2);
-}
-
-function checkPosition(num) {
-    let x = num % s.columns; let y = Math.floor(num / s.columns);
-    return x % 2 === 1 && y % 2 === 1;
-}
-
-function checkWallForStartGoal(num) {
-    let walls = 0;
-    if (s.items[num - s.columns].type === "壁") walls += 1;
-    if (s.items[num + 1].type === "壁") walls += 1;
-    if (s.items[num + s.columns].type === "壁") walls += 1;
-    if (s.items[num - 1].type === "壁") walls += 1;
-    return walls === 3;
-}
-
-function getPosByRule(rule, otherPos) {
-    let p = 0;
-    switch(rule) {
-        case "左上": p = s.columns + 1; break;
-        case "右上": p = s.columns * 2 - 2; break;
-        case "左下": p = s.columns * (s.rows - 2) + 1; break;
-        case "右下": p = s.columns * (s.rows - 1) - 2; break;
-        case "四隅のどこか":
-            do {
-                let r = Math.floor(Math.random() * 4);
-                p = (r===0) ? s.columns+1 : (r===1) ? s.columns*2-2 : (r===2) ? s.columns*(s.rows-2)+1 : s.columns*(s.rows-1)-2;
-            } while(p === otherPos);
-            break;
-        case "ランダム":
-            let loopCount = 0;
-            do {
-                p = Math.floor(Math.random() * s.items.length);
-                loopCount++;
-                if (loopCount > 1000) break; // 無限ループ回避
-            } while(s.items[p].type !== "道" || !checkPosition(p) || !checkWallForStartGoal(p) || p === otherPos);
-            break;
-    }
-    return p;
-}
-
-function setStartGoal() {
-    start = getPosByRule(s.startPos, -1);
-    s.items[start].type = "スタート";
-    goal = getPosByRule(s.goalPos, start);
-    s.items[goal].type = "ゴール";
-}
-
-// --- 描画計算 ---
-function calcMazeGeometry() {
-    const container = document.getElementById('maze-container');
-    const gw = container.clientWidth; const gh = container.clientHeight;
-    if(gw === 0 || gh === 0) return;
-
-    wallWidth = Math.min(s.wallWidth, Math.min(gw, gh) / s.columns);
-    cellWidth = Math.max(gw, gh);
-    
-    while (cellWidth * Math.floor(s.columns / 2) + wallWidth * (Math.floor(s.columns / 2) + 1) >= gw || 
-           cellWidth * Math.floor(s.rows / 2) + wallWidth * (Math.floor(s.rows / 2) + 1) >= gh) {
-        cellWidth *= 0.95;
-    }
-    cellHeight = cellWidth;
-    
-    let mw = Math.floor(s.columns / 2) * cellWidth + (Math.floor(s.columns / 2) + 1) * wallWidth;
-    let mh = Math.floor(s.rows / 2) * cellHeight + (Math.floor(s.rows / 2) + 1) * wallWidth;
-    
-    offsetX = (gw - mw) / 2; offsetY = (gh - mh) / 2;
-    canvas.width = gw; canvas.height = gh;
-
-    rects = [];
-    for (let row = 0; row < s.rows; row++) {
-        for (let col = 0; col < s.columns; col++) {
-            let w = col % 2 === 1 ? cellWidth : wallWidth;
-            let h = row % 2 === 1 ? cellHeight : wallWidth;
-            let x = Math.floor(col / 2) * cellWidth + Math.floor((col + 1) / 2) * wallWidth + offsetX;
-            let y = Math.floor(row / 2) * cellHeight + Math.floor((row + 1) / 2) * wallWidth + offsetY;
-            rects.push({x, y, w, h, midX: x + w/2, midY: y + h/2});
-        }
-    }
-}
-
-function selectColor(type) {
-    if (type === "壁") return "rgba(0,0,0,1)";
-    if (type === "道") return "rgba(255,255,255,0.1)";
-    if (type === "スタート") return "rgba(255,165,0,0.9)";
-    if (type === "ゴール") return isDrawingStarted ? "rgba(0,0,255,0.9)" : "rgba(128,128,128,0.5)"; // スタートするまではグレー
-    if (type === "済") return "rgba(128,128,128,0.1)";
-    return "rgba(255,255,255,1)";
-}
-
-function drawMaze() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    for (let i = 0; i < s.items.length; i++) {
-        let r = rects[i];
-        ctx.fillStyle = selectColor(s.items[i].type);
-        ctx.fillRect(r.x, r.y, r.w, r.h);
-        if (s.items[i].type === "ゴール") {
-            ctx.fillStyle = isDrawingStarted ? "yellow" : "rgba(200,200,200,0.8)"; // スタートするまではグレーのアイコン
-            ctx.beginPath(); ctx.arc(r.midX, r.midY, Math.min(r.w, r.h)*0.4, 0, Math.PI*2); ctx.fill();
-        }
-    }
-
-    ctx.lineWidth = 2; ctx.lineCap = "round";
-    for (let line of lines) {
-        ctx.strokeStyle = "red";
-        ctx.beginPath(); ctx.moveTo(rects[line[0]].midX, rects[line[0]].midY); ctx.lineTo(rects[line[1]].midX, rects[line[1]].midY); ctx.stroke();
-    }
-    for (let line of hintLines) {
-        ctx.strokeStyle = "green";
-        ctx.beginPath(); ctx.moveTo(rects[line[0]].midX, rects[line[0]].midY); ctx.lineTo(rects[line[1]].midX, rects[line[1]].midY); ctx.stroke();
-    }
-
-    if (firstPoint !== null) {
-        ctx.strokeStyle = "red"; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.moveTo(rects[firstPoint].midX, rects[firstPoint].midY); ctx.lineTo(pos.x, pos.y); ctx.stroke();
-        ctx.fillStyle = "red";
-        let rSize = Math.min(cellWidth/2, 30);
-        ctx.beginPath(); ctx.arc(pos.x, pos.y, rSize/2, 0, Math.PI*2); ctx.fill();
-    }
-}
-
-// リサイズ
-let resizeTimer2;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer2);
-    resizeTimer2 = setTimeout(() => {
-        if (s.isPlaying) { calcMazeGeometry(); drawMaze(); }
-    }, 200);
-});
-
-// --- タッチインタラクション ---
-function intersects(pt, r) { return pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h; }
-
-function handlePointerDown(e) {
-    if (isGoal) return;
-    updatePos(e);
-    for (let i = 0; i < rects.length; i++) {
-        if (intersects(pos, rects[i])) {
-            if (s.items[i].type === "スタート" || s.items[i].type === "済") {
-                firstPoint = i; 
-                isDrawingStarted = true; // タッチしたらスタートとみなす
-                drawMaze(); 
-                break;
+            save(key, value) {
+                this[key] = value;
+                localStorage.setItem(key, value);
             }
         }
-    }
-}
+        const s = new SettingClass();
 
-function handlePointerMove(e) {
-    if (!firstPoint || isGoal) return;
-    updatePos(e); checkDistance(); drawMaze();
-}
+        // --- 状態変数 ---
+        let currentWall = [];
+        let start = 0; let goal = 0;
+        let firstPoint = null;
+        let pos = { x: 0, y: 0 };
+        let rects = []; let lines = []; let hintLines = [];
+        let isGoal = false;
+        let countOfDone = 0;
+        let correctRoot = []; let numsForRoot = []; let correctLines = [];
+        let isSetHint = false; let currentPosForHint = 0; let hintCount = 0;
+        let readyToStart = true;
+        let isDrawingStarted = false; // スタート地点を触ったかどうかのフラグ
 
-function handlePointerUp() { firstPoint = null; drawMaze(); }
+        // --- Canvas ---
+        const canvas = document.getElementById('maze-canvas');
+        const ctx = canvas.getContext('2d');
+        let cellWidth = 0, wallWidth = 0, cellHeight = 0, offsetX = 0, offsetY = 0;
 
-function updatePos(e) {
-    let rect = canvas.getBoundingClientRect();
-    let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    pos = { x: clientX - rect.left, y: clientY - rect.top };
-}
-
-canvas.addEventListener('mousedown', handlePointerDown);
-canvas.addEventListener('mousemove', handlePointerMove);
-window.addEventListener('mouseup', handlePointerUp);
-canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handlePointerDown(e); }, {passive: false});
-canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); }, {passive: false});
-window.addEventListener('touchend', handlePointerUp);
-
-function addLine(from, to) {
-    let exists = lines.some(l => (l[0]===from && l[1]===to) || (l[0]===to && l[1]===from));
-    if(!exists) lines.push([from, to]);
-}
-
-function addLine2(point, num) {
-    if (s.items[point + num].type !== "壁") {
-        addLine(point, point + num * 2);
-        if (s.items[point + num * 2].type === "道") {
-            s.items[point + num].type = "済"; s.items[point + num * 2].type = "済";
+        // --- View切り替え ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
         }
-        firstPoint = point + num * 2;
-    }
-}
 
-function addLine4(point, num) {
-    if (s.items[point + num].type !== "壁" && s.items[point + num * 3].type !== "壁") {
-        addLine(point, point + num * 2); addLine(point + num * 2, point + num * 4);
-        if (s.items[point + num * 2].type === "道") {
-            s.items[point + num].type = "済"; s.items[point + num * 2].type = "済";
-        }
-        if (s.items[point + num * 4].type === "道") {
-            s.items[point + num * 3].type = "済"; s.items[point + num * 4].type = "済";
-        }
-        firstPoint = point + num * 4;
-    }
-}
-
-function checkDistance() {
-    let point = firstPoint;
-    let x = point % s.columns; let y = Math.floor(point / s.columns);
-    let rObj = { x: pos.x, y: pos.y, w: 1, h: 1 };
-
-    if (x % 2 === 1 && y % 2 === 1) {
-        let num = null, num2 = null;
-        if (y > 1 && intersects(rObj, rects[point - s.columns * 2])) num = -s.columns;
-        else if (x < s.columns - 2 && intersects(rObj, rects[point + 2])) num = 1;
-        else if (y < s.rows - 2 && intersects(rObj, rects[point + s.columns * 2])) num = s.columns;
-        else if (x > 1 && intersects(rObj, rects[point - 2])) num = -1;
-
-        if (num !== null) addLine2(point, num);
-        else {
-            if (y > 3 && intersects(rObj, rects[point - s.columns * 4])) num2 = -s.columns;
-            else if (x < s.columns - 4 && intersects(rObj, rects[point + 4])) num2 = 1;
-            else if (y < s.rows - 4 && intersects(rObj, rects[point + s.columns * 4])) num2 = s.columns;
-            else if (x > 3 && intersects(rObj, rects[point - 4])) num2 = -1;
-            
-            if (num2 !== null) addLine4(point, num2);
-        }
-    } else {
-        let chk = [point, point - s.columns, point + 1, point + s.columns, point - 1];
-        for (let i=1; i<chk.length; i++) {
-            let n = chk[i];
-            if (rects[n] && intersects(rObj, rects[n])) {
-                if (s.items[n].type !== "壁") {
-                    addLine(point, n);
-                    if (s.items[n].type === "道") s.items[n].type = "済";
-                    firstPoint = n;
+        // --- 迷路生成ロジック ---
+        function makeMaze() {
+            s.items = [];
+            for (let i = 0; i < s.rows; i++) {
+                for (let j = 0; j < s.columns; j++) {
+                    let type = (i === 0 || i === s.rows - 1 || j === 0 || j === s.columns - 1) ? "壁" : "道";
+                    s.items.push({ type: type });
                 }
-                break;
             }
-        }
-    }
 
-    if (s.items[firstPoint].type === "ゴール") {
-        firstPoint = null;
-        if (!isGoal) {
-            soundPlay("correct"); // 正解音のみ
-            isGoal = true; countOfDone++;
-            document.getElementById('count-text').innerText = countOfDone;
-            document.getElementById('goal-overlay').style.display = 'flex';
-            if (countOfDone === s.numOfQuestions) {
-                document.getElementById('goal-text').innerText = "おわり";
-                document.getElementById('goal-icon').innerHTML = '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>';
+            let startCells = [];
+            for (let i = 0; i < s.rows; i++) {
+                for (let j = 0; j < s.columns; j++) {
+                    if (i % 2 === 0 && j % 2 === 0) {
+                        if (i !== 0 && i !== s.rows - 1 && j !== 0 && j !== s.columns - 1) {
+                            startCells.push(s.columns * i + j);
+                        }
+                    }
+                }
+            }
+
+            startCells.sort(() => Math.random() - 0.5);
+
+            while (startCells.length > 0) {
+                let cell = startCells.shift();
+                if (s.items[cell].type === "道") {
+                    currentWall = []; currentWall.push(cell);
+                    makeWall(cell);
+                }
+            }
+            setStartGoal();
+
+            lines = []; hintLines = []; correctLines = []; correctRoot = []; isSetHint = false;
+            firstPoint = null; hintCount = s.hintCount; isGoal = false;
+            isDrawingStarted = false; // 初期化
+            document.getElementById('goal-overlay').style.display = 'none';
+            updateButtonsUI();
+        }
+
+        function makeWall(cell) {
+            s.items[cell].type = "壁";
+            let directions = [];
+            if (s.items[cell - s.columns].type === "道" && !currentWall.includes(cell - s.columns * 2)) directions.push(0);
+            if (s.items[cell + s.columns].type === "道" && !currentWall.includes(cell + s.columns * 2)) directions.push(1);
+            if (s.items[cell - 1].type === "道" && !currentWall.includes(cell - 2)) directions.push(2);
+            if (s.items[cell + 1].type === "道" && !currentWall.includes(cell + 2)) directions.push(3);
+
+            let currentCell = 0;
+            if (directions.length > 0) {
+                let isHitWall = false;
+                directions.sort(() => Math.random() - 0.5);
+                let direction = directions[0];
+                let num = 0;
+                if (direction === 0) {
+                    if (s.items[cell - s.columns * 2].type === "壁") isHitWall = true;
+                    num = -s.columns;
+                } else if (direction === 1) {
+                    if (s.items[cell + s.columns * 2].type === "壁") isHitWall = true;
+                    num = s.columns;
+                } else if (direction === 2) {
+                    if (s.items[cell - 2].type === "壁") isHitWall = true;
+                    num = -1;
+                } else {
+                    if (s.items[cell + 2].type === "壁") isHitWall = true;
+                    num = 1;
+                }
+                setWall(cell, num);
+                currentCell = cell + num * 2;
+
+                if (!isHitWall) makeWall(currentCell);
             } else {
-                document.getElementById('goal-text').innerText = "つぎへ";
-                document.getElementById('goal-icon').innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>';
+                let idx = currentWall.indexOf(cell);
+                if (idx > 0) makeWall(currentWall[idx - 1]);
             }
         }
-    }
-}
 
-// --- ヒント機能 ---
-function hint() {
-    isDrawingStarted = true; // ヒント使用時もスタートとみなす
-    if (correctLines.length === 0) {
-        currentPosForHint = start; correctRoot.push(start); numsForRoot = [];
-        while (!isSetHint) makeHint();
-        if (isSetHint) {
-            for (let i = 0; i < correctRoot.length - 1; i++) {
-                correctLines.push([correctRoot[i], correctRoot[i + 1]]);
+        function setWall(cell, num) {
+            s.items[cell + num].type = "壁"; s.items[cell + num * 2].type = "壁";
+            currentWall.push(cell + num * 2);
+        }
+
+        function checkPosition(num) {
+            let x = num % s.columns; let y = Math.floor(num / s.columns);
+            return x % 2 === 1 && y % 2 === 1;
+        }
+
+        function checkWallForStartGoal(num) {
+            let walls = 0;
+            if (s.items[num - s.columns].type === "壁") walls += 1;
+            if (s.items[num + 1].type === "壁") walls += 1;
+            if (s.items[num + s.columns].type === "壁") walls += 1;
+            if (s.items[num - 1].type === "壁") walls += 1;
+            return walls === 3;
+        }
+
+        function getPosByRule(rule, otherPos) {
+            let p = 0;
+            switch (rule) {
+                case "左上": p = s.columns + 1; break;
+                case "右上": p = s.columns * 2 - 2; break;
+                case "左下": p = s.columns * (s.rows - 2) + 1; break;
+                case "右下": p = s.columns * (s.rows - 1) - 2; break;
+                case "四隅のどこか":
+                    do {
+                        let r = Math.floor(Math.random() * 4);
+                        p = (r === 0) ? s.columns + 1 : (r === 1) ? s.columns * 2 - 2 : (r === 2) ? s.columns * (s.rows - 2) + 1 : s.columns * (s.rows - 1) - 2;
+                    } while (p === otherPos);
+                    break;
+                case "ランダム":
+                    let loopCount = 0;
+                    do {
+                        p = Math.floor(Math.random() * s.items.length);
+                        loopCount++;
+                        if (loopCount > 1000) break; // 無限ループ回避
+                    } while (s.items[p].type !== "道" || !checkPosition(p) || !checkWallForStartGoal(p) || p === otherPos);
+                    break;
+            }
+            return p;
+        }
+
+        function setStartGoal() {
+            start = getPosByRule(s.startPos, -1);
+            s.items[start].type = "スタート";
+            goal = getPosByRule(s.goalPos, start);
+            s.items[goal].type = "ゴール";
+        }
+
+        // --- 描画計算 ---
+        function calcMazeGeometry() {
+            const container = document.getElementById('maze-container');
+            const gw = container.clientWidth; const gh = container.clientHeight;
+            if (gw === 0 || gh === 0) return;
+
+            wallWidth = Math.min(s.wallWidth, Math.min(gw, gh) / s.columns);
+            cellWidth = Math.max(gw, gh);
+
+            while (cellWidth * Math.floor(s.columns / 2) + wallWidth * (Math.floor(s.columns / 2) + 1) >= gw ||
+                cellWidth * Math.floor(s.rows / 2) + wallWidth * (Math.floor(s.rows / 2) + 1) >= gh) {
+                cellWidth *= 0.95;
+            }
+            cellHeight = cellWidth;
+
+            let mw = Math.floor(s.columns / 2) * cellWidth + (Math.floor(s.columns / 2) + 1) * wallWidth;
+            let mh = Math.floor(s.rows / 2) * cellHeight + (Math.floor(s.rows / 2) + 1) * wallWidth;
+
+            offsetX = (gw - mw) / 2; offsetY = (gh - mh) / 2;
+            canvas.width = gw; canvas.height = gh;
+
+            rects = [];
+            for (let row = 0; row < s.rows; row++) {
+                for (let col = 0; col < s.columns; col++) {
+                    let w = col % 2 === 1 ? cellWidth : wallWidth;
+                    let h = row % 2 === 1 ? cellHeight : wallWidth;
+                    let x = Math.floor(col / 2) * cellWidth + Math.floor((col + 1) / 2) * wallWidth + offsetX;
+                    let y = Math.floor(row / 2) * cellHeight + Math.floor((row + 1) / 2) * wallWidth + offsetY;
+                    rects.push({ x, y, w, h, midX: x + w / 2, midY: y + h / 2 });
+                }
             }
         }
-    }
-    
-    let correctLines2 = correctLines.filter(cl => !lines.some(l => (l[0]===cl[0]&&l[1]===cl[1]) || (l[0]===cl[1]&&l[1]===cl[0])));
-    
-    for (let i=0; i<s.moveCountOfHint; i++) {
-        if (correctLines2.length > 0) {
-            let line = correctLines2.shift();
-            lines.push(line); hintLines.push(line);
-            
-            let p1 = line[0];
-            let p2 = line[1];
-            if (s.items[p2].type === "道") s.items[p2].type = "済";
-            let midPoint = (p1 + p2) / 2;
-            if (s.items[midPoint] && s.items[midPoint].type === "道") {
-                s.items[midPoint].type = "済";
+
+        function selectColor(type) {
+            if (type === "壁") return "rgba(0,0,0,1)";
+            if (type === "道") return "rgba(255,255,255,0.1)";
+            if (type === "スタート") return "rgba(255,165,0,0.9)";
+            if (type === "ゴール") return isDrawingStarted ? "rgba(0,0,255,0.9)" : "rgba(128,128,128,0.5)"; // スタートするまではグレー
+            if (type === "済") return "rgba(128,128,128,0.1)";
+            return "rgba(255,255,255,1)";
+        }
+
+        function drawMaze() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < s.items.length; i++) {
+                let r = rects[i];
+                ctx.fillStyle = selectColor(s.items[i].type);
+                ctx.fillRect(r.x, r.y, r.w, r.h);
+                if (s.items[i].type === "ゴール") {
+                    ctx.fillStyle = isDrawingStarted ? "yellow" : "rgba(200,200,200,0.8)"; // スタートするまではグレーのアイコン
+                    ctx.beginPath(); ctx.arc(r.midX, r.midY, Math.min(r.w, r.h) * 0.4, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+
+            ctx.lineWidth = 2; ctx.lineCap = "round";
+            for (let line of lines) {
+                ctx.strokeStyle = "red";
+                ctx.beginPath(); ctx.moveTo(rects[line[0]].midX, rects[line[0]].midY); ctx.lineTo(rects[line[1]].midX, rects[line[1]].midY); ctx.stroke();
+            }
+            for (let line of hintLines) {
+                ctx.strokeStyle = "green";
+                ctx.beginPath(); ctx.moveTo(rects[line[0]].midX, rects[line[0]].midY); ctx.lineTo(rects[line[1]].midX, rects[line[1]].midY); ctx.stroke();
+            }
+
+            if (firstPoint !== null) {
+                ctx.strokeStyle = "red"; ctx.lineWidth = 5;
+                ctx.beginPath(); ctx.moveTo(rects[firstPoint].midX, rects[firstPoint].midY); ctx.lineTo(pos.x, pos.y); ctx.stroke();
+                ctx.fillStyle = "red";
+                let rSize = Math.min(cellWidth / 2, 30);
+                ctx.beginPath(); ctx.arc(pos.x, pos.y, rSize / 2, 0, Math.PI * 2); ctx.fill();
             }
         }
-    }
-    drawMaze();
-}
 
-function makeHint() {
-    let directions = [];
-    let moveNums = [-s.columns, 1, s.columns, -1];
-    for (let i = 0; i < 4; i++) {
-        if (s.items[currentPosForHint + moveNums[i]].type !== "壁") {
-            if (checkWallForHint(moveNums[i] * 2)) directions.push(i);
+        // リサイズ
+        let resizeTimer2;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer2);
+            resizeTimer2 = setTimeout(() => {
+                if (s.isPlaying) { calcMazeGeometry(); drawMaze(); }
+            }, 200);
+        });
+
+        // --- タッチインタラクション ---
+        function intersects(pt, r) { return pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h; }
+
+        function handlePointerDown(e) {
+            if (isGoal) return;
+            updatePos(e);
+            for (let i = 0; i < rects.length; i++) {
+                if (intersects(pos, rects[i])) {
+                    if (s.items[i].type === "スタート" || s.items[i].type === "済") {
+                        firstPoint = i;
+                        isDrawingStarted = true; // タッチしたらスタートとみなす
+                        drawMaze();
+                        break;
+                    }
+                }
+            }
         }
-    }
-    if (directions.length > 0) {
-        moveNext(moveNums[directions[0]] * 2);
-    } else {
-        if (correctRoot.length > 1) {
-            correctRoot.pop();
-            currentPosForHint = correctRoot[correctRoot.length - 1];
+
+        function handlePointerMove(e) {
+            if (!firstPoint || isGoal) return;
+            updatePos(e); checkDistance(); drawMaze();
         }
-    }
-}
 
-function checkWallForHint(num) {
-    let num2 = currentPosForHint + num;
-    let t = s.items[num2].type;
-    if (t === "道" || t === "壁" || t === "ゴール" || t === "済") {
-        return !numsForRoot.includes(num2);
-    }
-    return false;
-}
+        function handlePointerUp() { firstPoint = null; drawMaze(); }
 
-function moveNext(move) {
-    let p = currentPosForHint + move;
-    if (!correctRoot.includes(p)) correctRoot.push(p);
-    numsForRoot.push(p); currentPosForHint = p;
-    if (p === goal) isSetHint = true;
-}
-
-document.getElementById('btn-hint').addEventListener('click', () => {
-    if (hintCount > 0) {
-        hint(); hintCount--; updateButtonsUI();
-    }
-});
-
-function updateButtonsUI() {
-    document.getElementById('play-view').className = `view active pos-${s.buttonPos}`;
-    document.getElementById('count-text').innerText = countOfDone;
-    
-    document.getElementById('btn-back').style.visibility = s.isShowBackButton ? 'visible' : 'hidden';
-    
-    let hintBtn = document.getElementById('btn-hint');
-    if (s.isShowHint) {
-        hintBtn.style.visibility = 'visible';
-        hintBtn.className = hintCount > 0 ? "icon-btn" : "icon-btn disabled";
-        document.getElementById('hint-badge').innerText = hintCount;
-        document.getElementById('hint-badge').style.display = hintCount > 0 ? 'flex' : 'none';
-    } else {
-        hintBtn.style.visibility = 'hidden';
-    }
-}
-
-// --- 画面遷移イベント ---
-document.getElementById('start-btn').addEventListener('click', () => {
-    if (!readyToStart) return;
-    document.getElementById('loading').style.display = 'flex';
-    setTimeout(() => {
-        countOfDone = 0; s.isPlaying = true; makeMaze();
-        calcMazeGeometry(); drawMaze();
-        document.getElementById('loading').style.display = 'none';
-        switchView('play-view');
-    }, 100);
-});
-
-document.getElementById('btn-back').addEventListener('click', () => {
-    s.isPlaying = false; readyToStart = false;
-    switchView('start-view');
-    setTimeout(() => readyToStart = true, 500);
-});
-
-document.getElementById('goal-btn').addEventListener('click', () => {
-    if (countOfDone === s.numOfQuestions) {
-        s.isPlaying = false; readyToStart = false;
-        switchView('start-view');
-        setTimeout(() => readyToStart = true, 500);
-    } else {
-        makeMaze(); calcMazeGeometry(); drawMaze();
-    }
-});
-
-// --- 設定ボタン (トリプルタップ等) ---
-let tapTimes = [];
-document.getElementById('setting-btn').addEventListener('pointerdown', (e) => {
-    if (s.howToSetting === "通常") {
-        openSettings();
-    } else if (s.howToSetting === "トリプルタップ") {
-        let now = Date.now(); tapTimes.push(now);
-        tapTimes = tapTimes.filter(t => now - t <= 600);
-        if (tapTimes.length >= 3) { tapTimes = []; openSettings(); }
-    }
-});
-let longPressTimer;
-document.getElementById('setting-btn').addEventListener('touchstart', (e) => {
-    if (s.howToSetting === "長押し") longPressTimer = setTimeout(openSettings, 2000);
-});
-document.getElementById('setting-btn').addEventListener('touchend', () => clearTimeout(longPressTimer));
-document.getElementById('setting-btn').addEventListener('mousedown', (e) => {
-    if (s.howToSetting === "長押し") longPressTimer = setTimeout(openSettings, 2000);
-});
-document.getElementById('setting-btn').addEventListener('mouseup', () => clearTimeout(longPressTimer));
-
-function openSettings() {
-    updateSettingUI(); switchView('setting-view');
-}
-
-document.getElementById('btn-close-setting').addEventListener('click', () => {
-    switchView('start-view'); updateStartHint();
-});
-
-function updateStartHint() {
-    document.getElementById('setting-hint').innerText = s.howToSetting === "通常" ? "" : `※${s.howToSetting}`;
-}
-updateStartHint();
-
-// --- 設定UIのバインディング ---
-function bindSlider(id, valId, key, transform) {
-    let el = document.getElementById(id); let valEl = document.getElementById(valId);
-    el.addEventListener('input', e => {
-        let v = parseFloat(e.target.value);
-        if(key === "rows" || key === "columns") v = v * 2 + 1;
-        s.save(key, v);
-        valEl.innerText = transform ? transform(e.target.value) : e.target.value;
-    });
-}
-function bindCheckbox(id, key) {
-    let el = document.getElementById(id);
-    el.addEventListener('change', e => s.save(key, e.target.checked));
-}
-function bindStepper(minusId, plusId, valId, key, min, max) {
-    document.getElementById(minusId).addEventListener('click', () => {
-        if(s[key] > min) { s.save(key, s[key]-1); document.getElementById(valId).innerText = s[key]; }
-    });
-    document.getElementById(plusId).addEventListener('click', () => {
-        if(s[key] < max) { s.save(key, s[key]+1); document.getElementById(valId).innerText = s[key]; }
-    });
-}
-function bindCustomPicker(id, key, otherKey) {
-    let container = document.getElementById(id);
-    container.addEventListener('click', e => {
-        let target = e.target;
-        // 親要素のクリックや、disabled要素のクリックを完全に無視する
-        if (target.tagName !== 'DIV' || !target.dataset.val || target.classList.contains('disabled')) return;
-        
-        let val = target.dataset.val;
-        // ランダム・四隅以外で、相手と同じ値を選ぼうとした場合は弾く（念のための二重ブロック）
-        if (val === s[otherKey] && val !== "ランダム" && val !== "四隅のどこか") return;
-        
-        s.save(key, val);
-        updateSettingUI();
-    });
-}
-function bindSegmented(id, key) {
-    let container = document.getElementById(id);
-    container.addEventListener('click', e => {
-        if (e.target.tagName === 'DIV') {
-            s.save(key, e.target.dataset.val);
-            updateSettingUI();
+        function updatePos(e) {
+            let rect = canvas.getBoundingClientRect();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            pos = { x: clientX - rect.left, y: clientY - rect.top };
         }
-    });
-}
 
-bindSlider('set-r', 'val-r', 'rows', v => v + "マス");
-bindSlider('set-c', 'val-c', 'columns', v => v + "マス");
-bindSlider('set-wall', 'val-wall', 'wallWidth', v => parseFloat(v).toFixed(2));
-bindCheckbox('set-showBack', 'isShowBackButton');
-bindCheckbox('set-showHint', 'isShowHint');
-bindCheckbox('set-sound', 'enableSound');
-bindStepper('q-minus', 'q-plus', 'val-q', 'numOfQuestions', 1, 100);
-bindStepper('hc-minus', 'hc-plus', 'val-hc', 'hintCount', 1, 10);
-bindStepper('hm-minus', 'hm-plus', 'val-hm', 'moveCountOfHint', 1, 10);
-bindCustomPicker('picker-start', 'startPos', 'goalPos');
-bindCustomPicker('picker-goal', 'goalPos', 'startPos');
-bindSegmented('seg-btnPos', 'buttonPos');
-bindSegmented('seg-howTo', 'howToSetting');
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handlePointerDown(e); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); }, { passive: false });
+        window.addEventListener('touchend', handlePointerUp);
 
-function updateSettingUI() {
-    document.getElementById('set-r').value = (s.rows - 1) / 2; document.getElementById('val-r').innerText = ((s.rows - 1) / 2) + "マス";
-    document.getElementById('set-c').value = (s.columns - 1) / 2; document.getElementById('val-c').innerText = ((s.columns - 1) / 2) + "マス";
-    document.getElementById('set-wall').value = s.wallWidth; document.getElementById('val-wall').innerText = parseFloat(s.wallWidth).toFixed(2);
-    document.getElementById('val-q').innerText = s.numOfQuestions;
-    document.getElementById('val-hc').innerText = s.hintCount;
-    document.getElementById('val-hm').innerText = s.moveCountOfHint;
-    document.getElementById('set-showBack').checked = s.isShowBackButton;
-    document.getElementById('set-showHint').checked = s.isShowHint;
-    document.getElementById('set-sound').checked = s.enableSound;
-    
-    const updatePicker = (id, key, otherKey) => {
-        Array.from(document.getElementById(id).children).forEach(el => {
-            el.className = el.dataset.val === s[key] ? "selected" : "";
-            // ランダム・四隅以外で相手が選んでいるものは完全にdisabledにして選択不可にする
-            if (el.dataset.val === s[otherKey] && el.dataset.val !== "ランダム" && el.dataset.val !== "四隅のどこか") {
-                el.classList.add("disabled");
+        function addLine(from, to) {
+            let exists = lines.some(l => (l[0] === from && l[1] === to) || (l[0] === to && l[1] === from));
+            if (!exists) lines.push([from, to]);
+        }
+
+        function addLine2(point, num) {
+            if (s.items[point + num].type !== "壁") {
+                addLine(point, point + num * 2);
+                if (s.items[point + num * 2].type === "道") {
+                    s.items[point + num].type = "済"; s.items[point + num * 2].type = "済";
+                }
+                firstPoint = point + num * 2;
+            }
+        }
+
+        function addLine4(point, num) {
+            if (s.items[point + num].type !== "壁" && s.items[point + num * 3].type !== "壁") {
+                addLine(point, point + num * 2); addLine(point + num * 2, point + num * 4);
+                if (s.items[point + num * 2].type === "道") {
+                    s.items[point + num].type = "済"; s.items[point + num * 2].type = "済";
+                }
+                if (s.items[point + num * 4].type === "道") {
+                    s.items[point + num * 3].type = "済"; s.items[point + num * 4].type = "済";
+                }
+                firstPoint = point + num * 4;
+            }
+        }
+
+        function checkDistance() {
+            let point = firstPoint;
+            let x = point % s.columns; let y = Math.floor(point / s.columns);
+            let rObj = { x: pos.x, y: pos.y, w: 1, h: 1 };
+
+            if (x % 2 === 1 && y % 2 === 1) {
+                let num = null, num2 = null;
+                if (y > 1 && intersects(rObj, rects[point - s.columns * 2])) num = -s.columns;
+                else if (x < s.columns - 2 && intersects(rObj, rects[point + 2])) num = 1;
+                else if (y < s.rows - 2 && intersects(rObj, rects[point + s.columns * 2])) num = s.columns;
+                else if (x > 1 && intersects(rObj, rects[point - 2])) num = -1;
+
+                if (num !== null) addLine2(point, num);
+                else {
+                    if (y > 3 && intersects(rObj, rects[point - s.columns * 4])) num2 = -s.columns;
+                    else if (x < s.columns - 4 && intersects(rObj, rects[point + 4])) num2 = 1;
+                    else if (y < s.rows - 4 && intersects(rObj, rects[point + s.columns * 4])) num2 = s.columns;
+                    else if (x > 3 && intersects(rObj, rects[point - 4])) num2 = -1;
+
+                    if (num2 !== null) addLine4(point, num2);
+                }
+            } else {
+                let chk = [point, point - s.columns, point + 1, point + s.columns, point - 1];
+                for (let i = 1; i < chk.length; i++) {
+                    let n = chk[i];
+                    if (rects[n] && intersects(rObj, rects[n])) {
+                        if (s.items[n].type !== "壁") {
+                            addLine(point, n);
+                            if (s.items[n].type === "道") s.items[n].type = "済";
+                            firstPoint = n;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (s.items[firstPoint].type === "ゴール") {
+                firstPoint = null;
+                if (!isGoal) {
+                    soundPlay("correct"); // 正解音のみ
+                    isGoal = true; countOfDone++;
+                    document.getElementById('count-text').innerText = countOfDone;
+                    document.getElementById('goal-overlay').style.display = 'flex';
+                    if (countOfDone === s.numOfQuestions) {
+                        document.getElementById('goal-text').innerText = "おわり";
+                        document.getElementById('goal-icon').innerHTML = '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>';
+                    } else {
+                        document.getElementById('goal-text').innerText = "つぎへ";
+                        document.getElementById('goal-icon').innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>';
+                    }
+                }
+            }
+        }
+
+        // --- ヒント機能 ---
+        function hint() {
+            isDrawingStarted = true; // ヒント使用時もスタートとみなす
+            if (correctLines.length === 0) {
+                currentPosForHint = start; correctRoot.push(start); numsForRoot = [];
+                while (!isSetHint) makeHint();
+                if (isSetHint) {
+                    for (let i = 0; i < correctRoot.length - 1; i++) {
+                        correctLines.push([correctRoot[i], correctRoot[i + 1]]);
+                    }
+                }
+            }
+
+            let correctLines2 = correctLines.filter(cl => !lines.some(l => (l[0] === cl[0] && l[1] === cl[1]) || (l[0] === cl[1] && l[1] === cl[0])));
+
+            for (let i = 0; i < s.moveCountOfHint; i++) {
+                if (correctLines2.length > 0) {
+                    let line = correctLines2.shift();
+                    lines.push(line); hintLines.push(line);
+
+                    let p1 = line[0];
+                    let p2 = line[1];
+                    if (s.items[p2].type === "道") s.items[p2].type = "済";
+                    let midPoint = (p1 + p2) / 2;
+                    if (s.items[midPoint] && s.items[midPoint].type === "道") {
+                        s.items[midPoint].type = "済";
+                    }
+                }
+            }
+            drawMaze();
+        }
+
+        function makeHint() {
+            let directions = [];
+            let moveNums = [-s.columns, 1, s.columns, -1];
+            for (let i = 0; i < 4; i++) {
+                if (s.items[currentPosForHint + moveNums[i]].type !== "壁") {
+                    if (checkWallForHint(moveNums[i] * 2)) directions.push(i);
+                }
+            }
+            if (directions.length > 0) {
+                moveNext(moveNums[directions[0]] * 2);
+            } else {
+                if (correctRoot.length > 1) {
+                    correctRoot.pop();
+                    currentPosForHint = correctRoot[correctRoot.length - 1];
+                }
+            }
+        }
+
+        function checkWallForHint(num) {
+            let num2 = currentPosForHint + num;
+            let t = s.items[num2].type;
+            if (t === "道" || t === "壁" || t === "ゴール" || t === "済") {
+                return !numsForRoot.includes(num2);
+            }
+            return false;
+        }
+
+        function moveNext(move) {
+            let p = currentPosForHint + move;
+            if (!correctRoot.includes(p)) correctRoot.push(p);
+            numsForRoot.push(p); currentPosForHint = p;
+            if (p === goal) isSetHint = true;
+        }
+
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            if (hintCount > 0) {
+                hint(); hintCount--; updateButtonsUI();
             }
         });
-    };
-    updatePicker('picker-start', 'startPos', 'goalPos');
-    updatePicker('picker-goal', 'goalPos', 'startPos');
-    
-    Array.from(document.getElementById('seg-btnPos').children).forEach(el => el.className = el.dataset.val === s.buttonPos ? "selected" : "");
-    Array.from(document.getElementById('seg-howTo').children).forEach(el => el.className = el.dataset.val === s.howToSetting ? "selected" : "");
-}
-</script>
+
+        function updateButtonsUI() {
+            document.getElementById('play-view').className = `view active pos-${s.buttonPos}`;
+            document.getElementById('count-text').innerText = countOfDone;
+
+            document.getElementById('btn-back').style.visibility = s.isShowBackButton ? 'visible' : 'hidden';
+
+            let hintBtn = document.getElementById('btn-hint');
+            if (s.isShowHint) {
+                hintBtn.style.visibility = 'visible';
+                hintBtn.className = hintCount > 0 ? "icon-btn" : "icon-btn disabled";
+                document.getElementById('hint-badge').innerText = hintCount;
+                document.getElementById('hint-badge').style.display = hintCount > 0 ? 'flex' : 'none';
+            } else {
+                hintBtn.style.visibility = 'hidden';
+            }
+        }
+
+        // --- 画面遷移イベント ---
+        document.getElementById('start-btn').addEventListener('click', () => {
+            if (!readyToStart) return;
+            document.getElementById('loading').style.display = 'flex';
+            setTimeout(() => {
+                countOfDone = 0; s.isPlaying = true; makeMaze();
+                calcMazeGeometry(); drawMaze();
+                document.getElementById('loading').style.display = 'none';
+                switchView('play-view');
+            }, 100);
+        });
+
+        document.getElementById('btn-back').addEventListener('click', () => {
+            s.isPlaying = false; readyToStart = false;
+            switchView('start-view');
+            setTimeout(() => readyToStart = true, 500);
+        });
+
+        document.getElementById('goal-btn').addEventListener('click', () => {
+            if (countOfDone === s.numOfQuestions) {
+                s.isPlaying = false; readyToStart = false;
+                switchView('start-view');
+                setTimeout(() => readyToStart = true, 500);
+            } else {
+                makeMaze(); calcMazeGeometry(); drawMaze();
+            }
+        });
+
+        // --- 設定ボタン (トリプルタップ等) ---
+        let tapTimes = [];
+        document.getElementById('setting-btn').addEventListener('pointerdown', (e) => {
+            if (s.howToSetting === "通常") {
+                openSettings();
+            } else if (s.howToSetting === "トリプルタップ") {
+                let now = Date.now(); tapTimes.push(now);
+                tapTimes = tapTimes.filter(t => now - t <= 600);
+                if (tapTimes.length >= 3) { tapTimes = []; openSettings(); }
+            }
+        });
+        let longPressTimer;
+        document.getElementById('setting-btn').addEventListener('touchstart', (e) => {
+            if (s.howToSetting === "長押し") longPressTimer = setTimeout(openSettings, 2000);
+        });
+        document.getElementById('setting-btn').addEventListener('touchend', () => clearTimeout(longPressTimer));
+        document.getElementById('setting-btn').addEventListener('mousedown', (e) => {
+            if (s.howToSetting === "長押し") longPressTimer = setTimeout(openSettings, 2000);
+        });
+        document.getElementById('setting-btn').addEventListener('mouseup', () => clearTimeout(longPressTimer));
+
+        function openSettings() {
+            updateSettingUI(); switchView('setting-view');
+        }
+
+        document.getElementById('btn-close-setting').addEventListener('click', () => {
+            switchView('start-view'); updateStartHint();
+        });
+
+        function updateStartHint() {
+            document.getElementById('setting-hint').innerText = s.howToSetting === "通常" ? "" : `※${s.howToSetting}`;
+        }
+        updateStartHint();
+
+        // --- 設定UIのバインディング ---
+        function bindSlider(id, valId, key, transform) {
+            let el = document.getElementById(id); let valEl = document.getElementById(valId);
+            el.addEventListener('input', e => {
+                let v = parseFloat(e.target.value);
+                if (key === "rows" || key === "columns") v = v * 2 + 1;
+                s.save(key, v);
+                valEl.innerText = transform ? transform(e.target.value) : e.target.value;
+            });
+        }
+        function bindCheckbox(id, key) {
+            let el = document.getElementById(id);
+            el.addEventListener('change', e => s.save(key, e.target.checked));
+        }
+        function bindStepper(minusId, plusId, valId, key, min, max) {
+            document.getElementById(minusId).addEventListener('click', () => {
+                if (s[key] > min) { s.save(key, s[key] - 1); document.getElementById(valId).innerText = s[key]; }
+            });
+            document.getElementById(plusId).addEventListener('click', () => {
+                if (s[key] < max) { s.save(key, s[key] + 1); document.getElementById(valId).innerText = s[key]; }
+            });
+        }
+        function bindCustomPicker(id, key, otherKey) {
+            let container = document.getElementById(id);
+            container.addEventListener('click', e => {
+                let target = e.target;
+                // 親要素のクリックや、disabled要素のクリックを完全に無視する
+                if (target.tagName !== 'DIV' || !target.dataset.val || target.classList.contains('disabled')) return;
+
+                let val = target.dataset.val;
+                // ランダム・四隅以外で、相手と同じ値を選ぼうとした場合は弾く（念のための二重ブロック）
+                if (val === s[otherKey] && val !== "ランダム" && val !== "四隅のどこか") return;
+
+                s.save(key, val);
+                updateSettingUI();
+            });
+        }
+        function bindSegmented(id, key) {
+            let container = document.getElementById(id);
+            container.addEventListener('click', e => {
+                if (e.target.tagName === 'DIV') {
+                    s.save(key, e.target.dataset.val);
+                    updateSettingUI();
+                }
+            });
+        }
+
+        bindSlider('set-r', 'val-r', 'rows', v => v + "マス");
+        bindSlider('set-c', 'val-c', 'columns', v => v + "マス");
+        bindSlider('set-wall', 'val-wall', 'wallWidth', v => parseFloat(v).toFixed(2));
+        bindCheckbox('set-showBack', 'isShowBackButton');
+        bindCheckbox('set-showHint', 'isShowHint');
+        bindCheckbox('set-sound', 'enableSound');
+        bindStepper('q-minus', 'q-plus', 'val-q', 'numOfQuestions', 1, 100);
+        bindStepper('hc-minus', 'hc-plus', 'val-hc', 'hintCount', 1, 10);
+        bindStepper('hm-minus', 'hm-plus', 'val-hm', 'moveCountOfHint', 1, 10);
+        bindCustomPicker('picker-start', 'startPos', 'goalPos');
+        bindCustomPicker('picker-goal', 'goalPos', 'startPos');
+        bindSegmented('seg-btnPos', 'buttonPos');
+        bindSegmented('seg-howTo', 'howToSetting');
+
+        function updateSettingUI() {
+            document.getElementById('set-r').value = (s.rows - 1) / 2; document.getElementById('val-r').innerText = ((s.rows - 1) / 2) + "マス";
+            document.getElementById('set-c').value = (s.columns - 1) / 2; document.getElementById('val-c').innerText = ((s.columns - 1) / 2) + "マス";
+            document.getElementById('set-wall').value = s.wallWidth; document.getElementById('val-wall').innerText = parseFloat(s.wallWidth).toFixed(2);
+            document.getElementById('val-q').innerText = s.numOfQuestions;
+            document.getElementById('val-hc').innerText = s.hintCount;
+            document.getElementById('val-hm').innerText = s.moveCountOfHint;
+            document.getElementById('set-showBack').checked = s.isShowBackButton;
+            document.getElementById('set-showHint').checked = s.isShowHint;
+            document.getElementById('set-sound').checked = s.enableSound;
+
+            const updatePicker = (id, key, otherKey) => {
+                Array.from(document.getElementById(id).children).forEach(el => {
+                    el.className = el.dataset.val === s[key] ? "selected" : "";
+                    // ランダム・四隅以外で相手が選んでいるものは完全にdisabledにして選択不可にする
+                    if (el.dataset.val === s[otherKey] && el.dataset.val !== "ランダム" && el.dataset.val !== "四隅のどこか") {
+                        el.classList.add("disabled");
+                    }
+                });
+            };
+            updatePicker('picker-start', 'startPos', 'goalPos');
+            updatePicker('picker-goal', 'goalPos', 'startPos');
+
+            Array.from(document.getElementById('seg-btnPos').children).forEach(el => el.className = el.dataset.val === s.buttonPos ? "selected" : "");
+            Array.from(document.getElementById('seg-howTo').children).forEach(el => el.className = el.dataset.val === s.howToSetting ? "selected" : "");
+        }
+    </script>
 </body>
+
 </html>

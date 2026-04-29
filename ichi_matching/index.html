@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-4T10JYJ9XC');
+  </script>å
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>位置マッチング</title>
@@ -11,6 +21,7 @@
     :root {
       --vh: 1vh;
     }
+
     * {
       box-sizing: border-box;
       user-select: none;
@@ -21,14 +32,19 @@
       -webkit-user-drag: none;
       user-drag: none;
     }
-    html, body {
+
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100vw;
-      height: 100vh; /* フォールバック */
-      height: 100dvh; /* 最新iOS用フォールバック */
+      height: 100vh;
+      /* フォールバック */
+      height: 100dvh;
+      /* 最新iOS用フォールバック */
       height: calc(var(--vh, 1vh) * 100);
-      overflow: hidden; /* 全体のバウンススクロール防止 */
+      overflow: hidden;
+      /* 全体のバウンススクロール防止 */
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #f2f2f7;
       color: #333;
@@ -45,8 +61,9 @@
       flex-direction: column;
       z-index: 1;
     }
-    .view-container.active { 
-      display: flex; 
+
+    .view-container.active {
+      display: flex;
       z-index: 10;
     }
 
@@ -58,6 +75,7 @@
       align-items: center;
       gap: 40px;
     }
+
     .btn {
       display: flex;
       align-items: center;
@@ -71,12 +89,14 @@
       color: #007aff;
       cursor: pointer;
       touch-action: manipulation;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       transition: transform 0.1s;
     }
-    .btn:active { 
-      transform: scale(0.95); 
+
+    .btn:active {
+      transform: scale(0.95);
     }
+
     .hint-text {
       font-size: 1rem;
       color: #999;
@@ -93,13 +113,15 @@
       -webkit-overflow-scrolling: touch;
       padding-bottom: calc(80px + env(safe-area-inset-bottom));
     }
+
     .setting-form {
       background: #fff;
       margin: 20px;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
+
     .setting-row {
       display: flex;
       justify-content: space-between;
@@ -108,9 +130,16 @@
       border-bottom: 1px solid #eee;
       font-size: 1.5rem;
     }
-    .stepper { display: flex; align-items: center; gap: 20px; }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
     .stepper-btn {
-      width: 40px; height: 40px;
+      width: 40px;
+      height: 40px;
       font-size: 1.5rem;
       border-radius: 5px;
       border: none;
@@ -119,7 +148,11 @@
       cursor: pointer;
       touch-action: manipulation;
     }
-    .stepper-btn:active { background: #ddd; }
+
+    .stepper-btn:active {
+      background: #ddd;
+    }
+
     .close-btn {
       margin: 20px auto;
       display: block;
@@ -132,22 +165,27 @@
       cursor: pointer;
       touch-action: manipulation;
     }
-    .close-btn:active { transform: scale(0.95); }
+
+    .close-btn:active {
+      transform: scale(0.95);
+    }
 
     /* ==========================================
        Playing View
        ========================================== */
     #playing-view {
       background: #fff;
-      touch-action: none; /* プレイ領域の誤スワイプ防止 */
+      touch-action: none;
+      /* プレイ領域の誤スワイプ防止 */
     }
+
     .score-header {
       text-align: right;
       padding: 20px;
       font-size: 1.5rem;
       font-weight: bold;
     }
-    
+
     .grids-wrapper {
       display: flex;
       justify-content: center;
@@ -156,16 +194,24 @@
       padding: 0 20px;
       height: 50%;
     }
-    
+
     .grid-container {
       display: grid;
       gap: 0px;
       padding: 10px;
       transition: transform 1.5s ease-in-out, opacity 1.5s ease;
     }
-    #correct-grid { background-color: rgba(255, 255, 0, 0.4); border-radius: 10px; }
-    #answer-grid  { background-color: rgba(0, 128, 0, 0.3); border-radius: 10px; }
-    
+
+    #correct-grid {
+      background-color: rgba(255, 255, 0, 0.4);
+      border-radius: 10px;
+    }
+
+    #answer-grid {
+      background-color: rgba(0, 128, 0, 0.3);
+      border-radius: 10px;
+    }
+
     .cell {
       border: 5px solid #333;
       background-color: #fff;
@@ -174,11 +220,12 @@
       align-items: center;
       position: relative;
     }
+
     .cell.highlight {
       background-color: rgba(0, 128, 255, 0.2) !important;
       border-color: #007aff;
     }
-    
+
     /* 💡 発想の転換：テキスト(innerText)ではなく、CSSの疑似要素を使って描画 
        これによりOSが「ドラッグ可能なテキスト」と認識できなくなり、残像が消えます 
     */
@@ -190,7 +237,10 @@
     /* 正誤マーク（赤丸・青バツ） */
     .mark {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
       z-index: 5;
     }
@@ -204,38 +254,38 @@
       cursor: grab;
       z-index: 10;
       transition: transform 0.1s, filter 0.1s;
-      
+
       /* カード形式（背景や枠）を解除し、元の影のみの表示に戻す */
       background-color: transparent;
       border: none;
       border-radius: 0;
       box-shadow: none;
-      filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.2));
-      
-      touch-action: none; 
+      filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.2));
+
+      touch-action: none;
       -webkit-user-select: none;
       user-select: none;
       -webkit-user-drag: none;
       user-drag: none;
     }
-    
+
     /* こちらもテキストではなく疑似要素で描画 */
     .draggable-item::after {
       content: attr(data-emoji);
       pointer-events: none;
     }
-    
+
     .draggable-item.dragging {
       cursor: grabbing;
       transition: none;
       z-index: 100;
       transform: translate(-50%, -50%) scale(1.15) !important;
       /* 持ち上げた感の強調 */
-      filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.3));
+      filter: drop-shadow(0px 8px 8px rgba(0, 0, 0, 0.3));
     }
   </style>
-  <script src="../common/core.js"></script>
 </head>
+
 <body>
 
   <!-- Home View -->
@@ -243,7 +293,7 @@
     <button class="btn" onclick="startApp()">
       スタート <span>▶️</span>
     </button>
-    
+
     <div style="display:flex; flex-direction:column; align-items:center">
       <button class="btn" onclick="handleSettingTap()" style="color:#555; border-color:#555; background:transparent;">
         設定 <span>⚙️</span>
@@ -286,7 +336,7 @@
   <!-- Playing View -->
   <div id="playing-view" class="view-container">
     <div class="score-header" id="score-text">◯:0 ×:0</div>
-    
+
     <div class="grids-wrapper" id="grids-wrapper">
       <div id="correct-grid" class="grid-container"></div>
       <div style="width: 2px; height: 100%; background: #ccc;"></div>
@@ -294,7 +344,8 @@
     </div>
 
     <!-- ドラッグアイテム描画用コンテナ -->
-    <div id="draggables-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+    <div id="draggables-container"
+      style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
   </div>
 
   <script>
@@ -340,7 +391,7 @@
 
     const safeStorage = {
       get: (key) => { try { return window.localStorage.getItem(key); } catch (e) { return null; } },
-      set: (key, val) => { try { window.localStorage.setItem(key, val); } catch (e) {} }
+      set: (key, val) => { try { window.localStorage.setItem(key, val); } catch (e) { } }
     };
 
     const saved = safeStorage.get('matchSettings');
@@ -348,7 +399,7 @@
       try {
         let parsed = JSON.parse(saved);
         if (parsed && typeof parsed.questions === 'number') settings = parsed;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     function saveSettingsUI() {
@@ -356,12 +407,12 @@
       document.getElementById('val-rows').innerText = settings.rows;
       document.getElementById('val-columns').innerText = settings.columns;
     }
-    
+
     function saveSettings() {
       safeStorage.set('matchSettings', JSON.stringify(settings));
       saveSettingsUI();
     }
-    
+
     window.addEventListener('DOMContentLoaded', saveSettingsUI);
 
     function changeSetting(key, diff) {
@@ -384,7 +435,7 @@
       try {
         if (!audioCtx) audioCtx = new AudioContext();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     function playSound(type) {
@@ -410,19 +461,19 @@
           gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
           osc.start(t); osc.stop(t + 0.3);
         } else if (type === 'pinpon3') {
-          for(let i=0; i<3; i++) {
+          for (let i = 0; i < 3; i++) {
             let o = audioCtx.createOscillator();
             let g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
             o.type = 'sine';
-            o.frequency.setValueAtTime(660, t + i*0.2);
-            o.frequency.setValueAtTime(880, t + i*0.2 + 0.05);
-            g.gain.setValueAtTime(0.5, t + i*0.2);
-            g.gain.exponentialRampToValueAtTime(0.01, t + i*0.2 + 0.15);
-            o.start(t + i*0.2); o.stop(t + i*0.2 + 0.2);
+            o.frequency.setValueAtTime(660, t + i * 0.2);
+            o.frequency.setValueAtTime(880, t + i * 0.2 + 0.05);
+            g.gain.setValueAtTime(0.5, t + i * 0.2);
+            g.gain.exponentialRampToValueAtTime(0.01, t + i * 0.2 + 0.15);
+            o.start(t + i * 0.2); o.stop(t + i * 0.2 + 0.2);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // ==========================================
@@ -460,10 +511,10 @@
     // 5. ゲームロジック
     // ==========================================
     const imageLibrary = [
-      "🍎", "🍌", "🍇", "🍓", "🍉", 
-      "🐶", "🐱", "🐰", "🐘", "🦒", 
-      "🚗", "🚓", "🚒", "✈️", "🚀", 
-      "🌳", "🌻", "😊", "⭐", "🎈", 
+      "🍎", "🍌", "🍇", "🍓", "🍉",
+      "🐶", "🐱", "🐰", "🐘", "🦒",
+      "🚗", "🚓", "🚒", "✈️", "🚀",
+      "🌳", "🌻", "😊", "⭐", "🎈",
       "🎁", "🥁", "🎸", "⚽", "🧸"
     ];
 
@@ -494,12 +545,12 @@
     function setQuestion() {
       state.isAnswerChecked = false;
       const count = settings.rows * settings.columns;
-      
+
       let shuffled = shuffleArray([...imageLibrary]).slice(0, count);
-      
+
       state.correctCells = shuffled.map(img => ({ image: img }));
       state.answerCells = Array(count).fill(null).map(() => ({ image: null, el: null, isCorrect: null }));
-      
+
       let draggablesImages = shuffleArray([...shuffled]);
       state.draggables = draggablesImages.map((img, i) => ({ image: img, id: i }));
 
@@ -511,11 +562,11 @@
     function renderGrids() {
       const correctGrid = document.getElementById('correct-grid');
       const answerGrid = document.getElementById('answer-grid');
-      
+
       const gridStyle = `grid-template-columns: repeat(${settings.columns}, 1fr); grid-template-rows: repeat(${settings.rows}, 1fr);`;
       correctGrid.style = gridStyle;
       answerGrid.style = gridStyle;
-      
+
       answerGrid.style.transform = `translateX(0)`;
       answerGrid.style.opacity = '1.0';
 
@@ -540,17 +591,17 @@
 
     function updateGridSizes() {
       const wrapper = document.getElementById('grids-wrapper');
-      if(!wrapper) return;
+      if (!wrapper) return;
       const rect = wrapper.getBoundingClientRect();
       const maxW = (rect.width - 40) / (settings.columns * 2);
       const maxH = (rect.height) / settings.rows;
       const size = Math.min(200, maxW, maxH);
-      
+
       const cells = document.querySelectorAll('.cell');
       cells.forEach(c => {
         c.style.width = `${size}px`;
         c.style.height = `${size}px`;
-        c.style.fontSize = `${size * 0.6}px`; 
+        c.style.fontSize = `${size * 0.6}px`;
       });
 
       state.draggables.forEach((d, i) => {
@@ -570,7 +621,7 @@
     function renderDraggables() {
       const container = document.getElementById('draggables-container');
       container.innerHTML = '';
-      
+
       state.draggables.forEach((item, index) => {
         const el = document.createElement('div');
         el.className = 'draggable-item';
@@ -583,7 +634,7 @@
         el.ondragstart = () => false;
         el.addEventListener('dragstart', (e) => e.preventDefault());
         el.addEventListener('contextmenu', (e) => e.preventDefault());
-        
+
         container.appendChild(el);
         item.el = el;
         item.placed = false;
@@ -598,7 +649,7 @@
           isDragging = true;
           el.setPointerCapture(e.pointerId);
           el.classList.add('dragging');
-          
+
           if (item.placed) {
             state.answerCells[item.placedIndex].image = null;
             item.placed = false;
@@ -616,7 +667,7 @@
           state.answerCells.forEach(cell => {
             const rect = cell.el.getBoundingClientRect();
             if (activeX > rect.left && activeX < rect.right &&
-                activeY > rect.top && activeY < rect.bottom && !cell.image) {
+              activeY > rect.top && activeY < rect.bottom && !cell.image) {
               cell.el.classList.add('highlight');
             } else {
               cell.el.classList.remove('highlight');
@@ -634,11 +685,11 @@
           state.answerCells.forEach((cell, i) => {
             cell.el.classList.remove('highlight');
             const rect = cell.el.getBoundingClientRect();
-            
+
             if (activeX > rect.left && activeX < rect.right &&
-                activeY > rect.top && activeY < rect.bottom && !cell.image) {
-              el.style.left = `${rect.left + rect.width/2}px`;
-              el.style.top = `${rect.top + rect.height/2}px`;
+              activeY > rect.top && activeY < rect.bottom && !cell.image) {
+              el.style.left = `${rect.left + rect.width / 2}px`;
+              el.style.top = `${rect.top + rect.height / 2}px`;
               cell.image = item.image;
               item.placed = true;
               item.placedIndex = i;
@@ -670,19 +721,19 @@
     async function executeAnswerCheck() {
       const correctGrid = document.getElementById('correct-grid');
       const answerGrid = document.getElementById('answer-grid');
-      
+
       const cRect = correctGrid.getBoundingClientRect();
       const aRect = answerGrid.getBoundingClientRect();
       const offset = cRect.left - aRect.left;
-      
+
       answerGrid.style.transform = `translateX(${offset}px)`;
       answerGrid.style.opacity = '0.5';
-      
+
       state.draggables.forEach(d => {
-         // アイテム自体も透過するアニメーションを追加
-         d.el.style.transition = 'transform 1.5s ease-in-out, opacity 1.5s ease-in-out';
-         d.el.style.transform = `translate(calc(-50% + ${offset}px), -50%)`;
-         d.el.style.opacity = '0.5';
+        // アイテム自体も透過するアニメーションを追加
+        d.el.style.transition = 'transform 1.5s ease-in-out, opacity 1.5s ease-in-out';
+        d.el.style.transform = `translate(calc(-50% + ${offset}px), -50%)`;
+        d.el.style.opacity = '0.5';
       });
 
       await sleep(1500);
@@ -693,7 +744,7 @@
         await sleep(400);
         const cell = state.answerCells[i];
         const isMatch = cell.image === state.correctCells[i].image;
-        
+
         const svg = document.createElement('div');
         svg.className = 'mark';
         if (isMatch) {
@@ -714,7 +765,7 @@
         playSound('pinpon3');
         state.corrects++;
         updateScore();
-        
+
         if (state.corrects >= settings.questions) {
           await sleep(2000);
           state.isPlaying = false;
@@ -726,24 +777,24 @@
         playSound('bubu');
         state.wrongs++;
         updateScore();
-        
+
         state.draggables.forEach(d => {
           if (state.answerCells[d.placedIndex]?.isCorrect === false) {
-             state.answerCells[d.placedIndex].image = null;
-             state.answerCells[d.placedIndex].isCorrect = null;
-             d.placed = false;
-             d.placedIndex = -1;
+            state.answerCells[d.placedIndex].image = null;
+            state.answerCells[d.placedIndex].isCorrect = null;
+            d.placed = false;
+            d.placedIndex = -1;
           }
         });
 
         answerGrid.style.transform = `translateX(0)`;
         answerGrid.style.opacity = '1.0';
         state.answerCells.forEach(c => {
-           // 不正解のマークだけ消す
-           const mark = c.el.querySelector('.mark');
-           if(mark) mark.remove();
+          // 不正解のマークだけ消す
+          const mark = c.el.querySelector('.mark');
+          if (mark) mark.remove();
         });
-        
+
         state.draggables.forEach((d, index) => {
           // グリッド(1.5s ease-in-out)とタイミング・イージングを完全に一致させる
           d.el.style.transition = 'transform 1.5s ease-in-out, left 1.5s ease-in-out, top 1.5s ease-in-out, opacity 1.5s ease-in-out';
@@ -754,7 +805,7 @@
             d.el.style.top = `${window.innerHeight - 100}px`;
           }
           d.el.style.transform = `translate(-50%, -50%)`;
-          
+
           setTimeout(() => { d.el.style.transition = 'transform 0.1s, filter 0.1s'; }, 1500);
         });
 
@@ -764,4 +815,5 @@
     }
   </script>
 </body>
+
 </html>

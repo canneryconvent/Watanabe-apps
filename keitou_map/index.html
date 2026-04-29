@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>段階別教育アプリ系統マップ（エディタ）</title>
@@ -13,25 +23,116 @@
     <script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy-bundle.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/animations/shift-away.css">
     <style>
-        body { background-color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; margin: 0; }
-        #cy { flex-grow: 1; width: 100%; height: 100%; }
-        .eh-handle { background-color: #ef4444; width: 12px; height: 12px; shape: ellipse; overlay-opacity: 0; border-width: 12px; border-opacity: 0; }
-        .eh-source, .eh-target { border-width: 4px; border-color: #ef4444; }
-        .eh-preview, .eh-ghost-edge { background-color: #ef4444; line-color: #ef4444; target-arrow-color: #ef4444; source-arrow-color: #ef4444; }
-        .eh-ghost-edge.eh-preview-active { opacity: 0; }
-        .tippy-box[data-theme~='edu-dark'] { background-color: #1e293b; color: #f8fafc; font-size: 0.8rem; border-radius: 6px; padding: 4px; max-width: 260px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); pointer-events: auto; }
-        #export-modal { display: none; position: absolute; top: 80px; right: 20px; width: 320px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 50; }
-        #export-text { width: 100%; height: 200px; font-family: monospace; font-size: 10px; margin-top: 8px; resize: none; border: 1px solid #cbd5e1; padding: 4px; border-radius: 4px; }
-        
-        .tooltip-content { display: flex; flex-direction: column; gap: 4px; }
-        .app-link { color: #60a5fa; text-decoration: none; font-size: 0.75rem; background: #334155; padding: 4px 8px; border-radius: 4px; display: inline-block; align-self: flex-start; margin-top: 4px; transition: background 0.2s; pointer-events: auto; }
-        .app-link:hover { background: #475569; text-decoration: underline; }
+        body {
+            background-color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+
+        #cy {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .eh-handle {
+            background-color: #ef4444;
+            width: 12px;
+            height: 12px;
+            shape: ellipse;
+            overlay-opacity: 0;
+            border-width: 12px;
+            border-opacity: 0;
+        }
+
+        .eh-source,
+        .eh-target {
+            border-width: 4px;
+            border-color: #ef4444;
+        }
+
+        .eh-preview,
+        .eh-ghost-edge {
+            background-color: #ef4444;
+            line-color: #ef4444;
+            target-arrow-color: #ef4444;
+            source-arrow-color: #ef4444;
+        }
+
+        .eh-ghost-edge.eh-preview-active {
+            opacity: 0;
+        }
+
+        .tippy-box[data-theme~='edu-dark'] {
+            background-color: #1e293b;
+            color: #f8fafc;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            padding: 4px;
+            max-width: 260px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        #export-modal {
+            display: none;
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 50;
+        }
+
+        #export-text {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 10px;
+            margin-top: 8px;
+            resize: none;
+            border: 1px solid #cbd5e1;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .tooltip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .app-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 0.75rem;
+            background: #334155;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            align-self: flex-start;
+            margin-top: 4px;
+            transition: background 0.2s;
+            pointer-events: auto;
+        }
+
+        .app-link:hover {
+            background: #475569;
+            text-decoration: underline;
+        }
     </style>
-    <script src="../common/core.js"></script>
 </head>
+
 <body>
 
-    <header class="bg-slate-900 text-slate-100 p-4 shadow-xl z-10 flex justify-between items-center border-b border-slate-700">
+    <header
+        class="bg-slate-900 text-slate-100 p-4 shadow-xl z-10 flex justify-between items-center border-b border-slate-700">
         <div>
             <h1 class="text-xl font-bold tracking-tight">段階別教育アプリ系統マップ（エディタ）</h1>
             <p id="mode-desc" class="text-xs text-rose-400 font-bold">移動中：ノードをドラッグして配置を調整できます</p>
@@ -39,12 +140,16 @@
         <div class="flex gap-4 text-sm font-bold items-center">
             <div class="flex items-center gap-2 mr-4">
                 <div class="bg-rose-900/40 px-3 py-1 rounded border border-rose-500/50 text-rose-200 text-xs">国語</div>
-                <div class="bg-emerald-900/40 px-3 py-1 rounded border border-emerald-500/50 text-emerald-200 text-xs">自立活動</div>
+                <div class="bg-emerald-900/40 px-3 py-1 rounded border border-emerald-500/50 text-emerald-200 text-xs">
+                    自立活動</div>
                 <div class="bg-blue-900/40 px-3 py-1 rounded border border-blue-500/50 text-blue-200 text-xs">算数</div>
             </div>
-            <button id="btn-toggle-draw" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-white transition-colors">線引きモードにする</button>
-            <button id="btn-edit" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white hidden transition-colors">編集モードに戻る</button>
-            <button id="btn-view" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-white transition-colors">出力＆閲覧モードにする</button>
+            <button id="btn-toggle-draw"
+                class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-white transition-colors">線引きモードにする</button>
+            <button id="btn-edit"
+                class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white hidden transition-colors">編集モードに戻る</button>
+            <button id="btn-view"
+                class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-white transition-colors">出力＆閲覧モードにする</button>
         </div>
     </header>
 
@@ -54,7 +159,8 @@
         <h3 class="font-bold text-slate-800 text-sm">現在の状態データ (JSON)</h3>
         <p class="text-xs text-slate-500 mt-1">このデータを保存して次回読み込むことで状態を復元できます。</p>
         <textarea id="export-text" readonly></textarea>
-        <button onclick="document.getElementById('export-modal').style.display='none'" class="mt-2 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold py-2 rounded">閉じる</button>
+        <button onclick="document.getElementById('export-modal').style.display='none'"
+            class="mt-2 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold py-2 rounded">閉じる</button>
     </div>
 
     <script>
@@ -68,7 +174,7 @@
             { id: 'bg6', name: '測定', color: '#fdf4ff' },
             { id: 'bg7', name: 'データの活用', color: '#f8fafc' }
         ];
-        
+
         const bgWidth = 350;
         const bgHeight = 1200;
 
@@ -124,76 +230,76 @@
 
         // 座標とエッジ（線の繋がり）のデータ
         const importedData = [
-          { "group": "nodes", "data": { "id": "s_listen_mem" }, "position": { "x": 125, "y": 367 } },
-          { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1060.9142358120218, "y": 105.74710064945151 } },
-          { "group": "nodes", "data": { "id": "m_dist_one" }, "position": { "x": 1060.9142358120218, "y": 18.411111111111104 } },
-          { "group": "nodes", "data": { "id": "m_match" }, "position": { "x": 1510.7251982847026, "y": 21.195603057704858 } },
-          { "group": "nodes", "data": { "id": "m_count_s" }, "position": { "x": 1255.004673627296, "y": 105.55833709331593 } },
-          { "group": "nodes", "data": { "id": "s_tap" }, "position": { "x": 610.6307448494453, "y": 34.152773375594286 } },
-          { "group": "nodes", "data": { "id": "m_base" }, "position": { "x": 1262.1369458376064, "y": 211.32119567446637 } },
-          { "group": "nodes", "data": { "id": "m_puz1" }, "position": { "x": 1426.8162727696467, "y": 119.16521226810852 } },
-          { "group": "nodes", "data": { "id": "m_dish" }, "position": { "x": 1053.096624778596, "y": 217.89736319567447 } },
-          { "group": "nodes", "data": { "id": "m_puz2" }, "position": { "x": 1616.5207606973058, "y": 128.76770746713896 } },
-          { "group": "nodes", "data": { "id": "s_shape" }, "position": { "x": 633.5571296727884, "y": 234.0575885149622 } },
-          { "group": "nodes", "data": { "id": "m_cat" }, "position": { "x": 1693.492181038501, "y": 214.0465117926728 } },
-          { "group": "nodes", "data": { "id": "m_flag" }, "position": { "x": 1610.8260511792678, "y": 332.38320126782884 } },
-          { "group": "nodes", "data": { "id": "m_shape" }, "position": { "x": 1443.1169572107765, "y": 331.26497622820926 } },
-          { "group": "nodes", "data": { "id": "j_find" }, "position": { "x": 911.7932033187286, "y": 297.6562430316025 } },
-          { "group": "nodes", "data": { "id": "j_one" }, "position": { "x": 765.4502282091918, "y": 300.08785783536865 } },
-          { "group": "nodes", "data": { "id": "s_pos" }, "position": { "x": 470.0502881513933, "y": 249.23500018644532 } },
-          { "group": "nodes", "data": { "id": "s_dot" }, "position": { "x": 514.0944935210217, "y": 308.6960920108138 } },
-          { "group": "nodes", "data": { "id": "s_ice" }, "position": { "x": 380.88031826232833, "y": 188.34577328237157 } },
-          { "group": "nodes", "data": { "id": "s_maze" }, "position": { "x": 330.7892368789035, "y": 367.7668543861286 } },
-          { "group": "nodes", "data": { "id": "m_count2" }, "position": { "x": 1265.5192770578913, "y": 317.61646490165 } },
-          { "group": "nodes", "data": { "id": "m_which" }, "position": { "x": 1169.6804024942253, "y": 561.6692586930175 } },
-          { "group": "nodes", "data": { "id": "m_t_tap" }, "position": { "x": 1180.8657519343708, "y": 467.69732954227635 } },
-          { "group": "nodes", "data": { "id": "m_t_arr" }, "position": { "x": 1089.019233336441, "y": 364.1731497156707 } },
-          { "group": "nodes", "data": { "id": "suuji_narabe_2" }, "position": { "x": 1075.088888888889, "y": 675.0444444444445 } },
-          { "group": "nodes", "data": { "id": "j_karuta" }, "position": { "x": 833.6787345949473, "y": 585.6529082688543 } },
-          { "group": "nodes", "data": { "id": "j_kbd" }, "position": { "x": 650.310369161928, "y": 451.7942509555328 } },
-          { "group": "nodes", "data": { "id": "j_kbd_quiz" }, "position": { "x": 650.310369161928, "y": 540 } },
-          { "group": "nodes", "data": { "id": "j_pict" }, "position": { "x": 568.0094615456326, "y": 631.2865327677822 } },
-          { "group": "nodes", "data": { "id": "j_trace" }, "position": { "x": 413.96032627948154, "y": 456.92384599608465 } },
-          { "group": "nodes", "data": { "id": "s_lines" }, "position": { "x": 514.5216977719772, "y": 367.0043126689661 } },
-          { "group": "nodes", "data": { "id": "s_memory" }, "position": { "x": 199.12393026941365, "y": 168.95451664025353 } },
-          { "group": "nodes", "data": { "id": "m_math1" }, "position": { "x": 1267.6287689941273, "y": 616.6253230166868 } },
-          { "group": "nodes", "data": { "id": "m_clock" }, "position": { "x": 1410.6095087163233, "y": 496.42662440570524 } },
-          { "group": "nodes", "data": { "id": "j_50" }, "position": { "x": 655.2175886081851, "y": 365.78945949473297 } },
-          { "group": "nodes", "data": { "id": "j_write" }, "position": { "x": 395.1988738696746, "y": 630.0004788850564 } },
-          { "group": "nodes", "data": { "id": "j_quiz" }, "position": { "x": 890.949706162021, "y": 440.5153724247226 } },
-          { "group": "edges", "data": { "id": "07ed4e46-09ba-4579-acaa-dabfd535aaad", "source": "s_maze", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "68db12c3-41fb-472c-a96b-e25ab24945ab", "source": "j_trace", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "95b2ace3-be5e-4c7f-a235-d9155e4a22c8", "source": "j_find", "target": "j_kbd" } },
-          { "group": "edges", "data": { "id": "3f945dec-c163-446d-8fe6-a8480b4f68e5", "source": "s_ice", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "c3eca546-228d-4b74-a8ed-1a7bb3fd2156", "source": "j_trace", "target": "j_pict" } },
-          { "group": "edges", "data": { "id": "39d13ea8-5313-41ec-9c99-47b8f9cc377f", "source": "j_one", "target": "j_kbd" } },
-          { "group": "edges", "data": { "id": "d82876bc-5b80-4b29-9c4a-9f29cfcc6bbc", "source": "j_50", "target": "j_kbd" } },
-          { "group": "edges", "data": { "id": "610bd118-48ef-4e3d-b4e6-fb28675e8e00", "source": "j_kbd", "target": "j_karuta" } },
-          { "group": "edges", "data": { "id": "b22f3782-cfc0-4357-95fc-6df3cbe40ca2", "source": "j_kbd", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "edge_kbd_to_quiz", "source": "j_kbd", "target": "j_kbd_quiz" } },
-          { "group": "edges", "data": { "id": "9feb0d6f-769a-4975-ba88-6647c96c19c6", "source": "s_lines", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "8ed7ff85-b9a5-49c5-8551-c648a712f910", "source": "s_pos", "target": "j_trace" } },
-          { "group": "edges", "data": { "id": "ecabc485-2420-4a4e-9d2f-2667ba61e1cf", "source": "j_write", "target": "j_pict" } },
-          { "group": "edges", "data": { "id": "da5e9273-1641-452f-9c58-70bdf9b0e36d", "source": "s_shape", "target": "s_lines" } },
-          { "group": "edges", "data": { "id": "a05bda42-4622-45e2-9c0a-78feaafab762", "source": "s_shape", "target": "s_dot" } },
-          { "group": "edges", "data": { "id": "68926cea-db53-4225-bf47-5161f22ae8c1", "source": "m_count_s", "target": "m_base" } },
-          { "group": "edges", "data": { "id": "ccc12f4c-8269-489a-8f79-6be4db487e9b", "source": "m_dish", "target": "m_base" } },
-          { "group": "edges", "data": { "id": "4233e79b-9e3b-42d9-9fd8-0766c34129b9", "source": "m_base", "target": "m_dish" } },
-          { "group": "edges", "data": { "id": "bf747eaa-cf46-4118-9bd1-089574faa952", "source": "m_base", "target": "m_count2" } },
-          { "group": "edges", "data": { "id": "6d86b823-f62f-4448-b3b2-d7850912bbae", "source": "m_base", "target": "m_t_arr" } },
-          { "group": "edges", "data": { "id": "bbd87b31-97f7-40d2-bb05-d6507dccdfc9", "source": "m_t_arr", "target": "m_which" } },
-          { "group": "edges", "data": { "id": "3dec0ebe-75f6-48d5-8195-2b64938dd9ed", "source": "m_t_arr", "target": "m_t_tap" } },
-          { "group": "edges", "data": { "id": "edge_t_arr_to_arr2", "source": "m_t_arr", "target": "suuji_narabe_2" } },
-          { "group": "edges", "data": { "id": "8793bba5-ea3b-4aae-916c-148f4c246af5", "source": "m_count2", "target": "m_math1" } },
-          { "group": "edges", "data": { "id": "5a79b32a-9967-4af0-9792-369e22d8bd79", "source": "m_dist", "target": "m_dish" } },
-          { "group": "edges", "data": { "id": "23bd1170-baaa-49ae-ae44-a8891918505a", "source": "j_quiz", "target": "j_karuta" } },
-          { "group": "edges", "data": { "id": "60b1286b-9a33-415a-91a8-438216f82166", "source": "m_match", "target": "m_puz1" } },
-          { "group": "edges", "data": { "id": "d7224c0a-20d2-48e6-9ac0-92f98b20b9d2", "source": "m_match", "target": "m_puz2" } },
-          { "group": "edges", "data": { "id": "fd73e110-43fb-4fff-bf8c-d25d273010b6", "source": "m_puz1", "target": "m_puz2" } },
-          { "group": "edges", "data": { "id": "7a356379-c9c4-4a11-bcaf-7b927fd5d538", "source": "m_puz2", "target": "m_puz1" } },
-          { "group": "edges", "data": { "id": "ea939353-c1cd-4905-b10f-d16c9907dce4", "source": "m_cat", "target": "m_count2" } },
-          { "group": "edges", "data": { "id": "5e205d24-c5d2-47d6-8f9d-853b139d140d", "source": "j_pict", "target": "j_write" } },
-          { "group": "edges", "data": { "id": "5f08a98b-59d2-46f5-b93b-bd96e85602e9", "source": "m_dist_one", "target": "m_dist" } }
+            { "group": "nodes", "data": { "id": "s_listen_mem" }, "position": { "x": 125, "y": 367 } },
+            { "group": "nodes", "data": { "id": "m_dist" }, "position": { "x": 1060.9142358120218, "y": 105.74710064945151 } },
+            { "group": "nodes", "data": { "id": "m_dist_one" }, "position": { "x": 1060.9142358120218, "y": 18.411111111111104 } },
+            { "group": "nodes", "data": { "id": "m_match" }, "position": { "x": 1510.7251982847026, "y": 21.195603057704858 } },
+            { "group": "nodes", "data": { "id": "m_count_s" }, "position": { "x": 1255.004673627296, "y": 105.55833709331593 } },
+            { "group": "nodes", "data": { "id": "s_tap" }, "position": { "x": 610.6307448494453, "y": 34.152773375594286 } },
+            { "group": "nodes", "data": { "id": "m_base" }, "position": { "x": 1262.1369458376064, "y": 211.32119567446637 } },
+            { "group": "nodes", "data": { "id": "m_puz1" }, "position": { "x": 1426.8162727696467, "y": 119.16521226810852 } },
+            { "group": "nodes", "data": { "id": "m_dish" }, "position": { "x": 1053.096624778596, "y": 217.89736319567447 } },
+            { "group": "nodes", "data": { "id": "m_puz2" }, "position": { "x": 1616.5207606973058, "y": 128.76770746713896 } },
+            { "group": "nodes", "data": { "id": "s_shape" }, "position": { "x": 633.5571296727884, "y": 234.0575885149622 } },
+            { "group": "nodes", "data": { "id": "m_cat" }, "position": { "x": 1693.492181038501, "y": 214.0465117926728 } },
+            { "group": "nodes", "data": { "id": "m_flag" }, "position": { "x": 1610.8260511792678, "y": 332.38320126782884 } },
+            { "group": "nodes", "data": { "id": "m_shape" }, "position": { "x": 1443.1169572107765, "y": 331.26497622820926 } },
+            { "group": "nodes", "data": { "id": "j_find" }, "position": { "x": 911.7932033187286, "y": 297.6562430316025 } },
+            { "group": "nodes", "data": { "id": "j_one" }, "position": { "x": 765.4502282091918, "y": 300.08785783536865 } },
+            { "group": "nodes", "data": { "id": "s_pos" }, "position": { "x": 470.0502881513933, "y": 249.23500018644532 } },
+            { "group": "nodes", "data": { "id": "s_dot" }, "position": { "x": 514.0944935210217, "y": 308.6960920108138 } },
+            { "group": "nodes", "data": { "id": "s_ice" }, "position": { "x": 380.88031826232833, "y": 188.34577328237157 } },
+            { "group": "nodes", "data": { "id": "s_maze" }, "position": { "x": 330.7892368789035, "y": 367.7668543861286 } },
+            { "group": "nodes", "data": { "id": "m_count2" }, "position": { "x": 1265.5192770578913, "y": 317.61646490165 } },
+            { "group": "nodes", "data": { "id": "m_which" }, "position": { "x": 1169.6804024942253, "y": 561.6692586930175 } },
+            { "group": "nodes", "data": { "id": "m_t_tap" }, "position": { "x": 1180.8657519343708, "y": 467.69732954227635 } },
+            { "group": "nodes", "data": { "id": "m_t_arr" }, "position": { "x": 1089.019233336441, "y": 364.1731497156707 } },
+            { "group": "nodes", "data": { "id": "suuji_narabe_2" }, "position": { "x": 1075.088888888889, "y": 675.0444444444445 } },
+            { "group": "nodes", "data": { "id": "j_karuta" }, "position": { "x": 833.6787345949473, "y": 585.6529082688543 } },
+            { "group": "nodes", "data": { "id": "j_kbd" }, "position": { "x": 650.310369161928, "y": 451.7942509555328 } },
+            { "group": "nodes", "data": { "id": "j_kbd_quiz" }, "position": { "x": 650.310369161928, "y": 540 } },
+            { "group": "nodes", "data": { "id": "j_pict" }, "position": { "x": 568.0094615456326, "y": 631.2865327677822 } },
+            { "group": "nodes", "data": { "id": "j_trace" }, "position": { "x": 413.96032627948154, "y": 456.92384599608465 } },
+            { "group": "nodes", "data": { "id": "s_lines" }, "position": { "x": 514.5216977719772, "y": 367.0043126689661 } },
+            { "group": "nodes", "data": { "id": "s_memory" }, "position": { "x": 199.12393026941365, "y": 168.95451664025353 } },
+            { "group": "nodes", "data": { "id": "m_math1" }, "position": { "x": 1267.6287689941273, "y": 616.6253230166868 } },
+            { "group": "nodes", "data": { "id": "m_clock" }, "position": { "x": 1410.6095087163233, "y": 496.42662440570524 } },
+            { "group": "nodes", "data": { "id": "j_50" }, "position": { "x": 655.2175886081851, "y": 365.78945949473297 } },
+            { "group": "nodes", "data": { "id": "j_write" }, "position": { "x": 395.1988738696746, "y": 630.0004788850564 } },
+            { "group": "nodes", "data": { "id": "j_quiz" }, "position": { "x": 890.949706162021, "y": 440.5153724247226 } },
+            { "group": "edges", "data": { "id": "07ed4e46-09ba-4579-acaa-dabfd535aaad", "source": "s_maze", "target": "j_trace" } },
+            { "group": "edges", "data": { "id": "68db12c3-41fb-472c-a96b-e25ab24945ab", "source": "j_trace", "target": "j_write" } },
+            { "group": "edges", "data": { "id": "95b2ace3-be5e-4c7f-a235-d9155e4a22c8", "source": "j_find", "target": "j_kbd" } },
+            { "group": "edges", "data": { "id": "3f945dec-c163-446d-8fe6-a8480b4f68e5", "source": "s_ice", "target": "j_trace" } },
+            { "group": "edges", "data": { "id": "c3eca546-228d-4b74-a8ed-1a7bb3fd2156", "source": "j_trace", "target": "j_pict" } },
+            { "group": "edges", "data": { "id": "39d13ea8-5313-41ec-9c99-47b8f9cc377f", "source": "j_one", "target": "j_kbd" } },
+            { "group": "edges", "data": { "id": "d82876bc-5b80-4b29-9c4a-9f29cfcc6bbc", "source": "j_50", "target": "j_kbd" } },
+            { "group": "edges", "data": { "id": "610bd118-48ef-4e3d-b4e6-fb28675e8e00", "source": "j_kbd", "target": "j_karuta" } },
+            { "group": "edges", "data": { "id": "b22f3782-cfc0-4357-95fc-6df3cbe40ca2", "source": "j_kbd", "target": "j_write" } },
+            { "group": "edges", "data": { "id": "edge_kbd_to_quiz", "source": "j_kbd", "target": "j_kbd_quiz" } },
+            { "group": "edges", "data": { "id": "9feb0d6f-769a-4975-ba88-6647c96c19c6", "source": "s_lines", "target": "j_trace" } },
+            { "group": "edges", "data": { "id": "8ed7ff85-b9a5-49c5-8551-c648a712f910", "source": "s_pos", "target": "j_trace" } },
+            { "group": "edges", "data": { "id": "ecabc485-2420-4a4e-9d2f-2667ba61e1cf", "source": "j_write", "target": "j_pict" } },
+            { "group": "edges", "data": { "id": "da5e9273-1641-452f-9c58-70bdf9b0e36d", "source": "s_shape", "target": "s_lines" } },
+            { "group": "edges", "data": { "id": "a05bda42-4622-45e2-9c0a-78feaafab762", "source": "s_shape", "target": "s_dot" } },
+            { "group": "edges", "data": { "id": "68926cea-db53-4225-bf47-5161f22ae8c1", "source": "m_count_s", "target": "m_base" } },
+            { "group": "edges", "data": { "id": "ccc12f4c-8269-489a-8f79-6be4db487e9b", "source": "m_dish", "target": "m_base" } },
+            { "group": "edges", "data": { "id": "4233e79b-9e3b-42d9-9fd8-0766c34129b9", "source": "m_base", "target": "m_dish" } },
+            { "group": "edges", "data": { "id": "bf747eaa-cf46-4118-9bd1-089574faa952", "source": "m_base", "target": "m_count2" } },
+            { "group": "edges", "data": { "id": "6d86b823-f62f-4448-b3b2-d7850912bbae", "source": "m_base", "target": "m_t_arr" } },
+            { "group": "edges", "data": { "id": "bbd87b31-97f7-40d2-bb05-d6507dccdfc9", "source": "m_t_arr", "target": "m_which" } },
+            { "group": "edges", "data": { "id": "3dec0ebe-75f6-48d5-8195-2b64938dd9ed", "source": "m_t_arr", "target": "m_t_tap" } },
+            { "group": "edges", "data": { "id": "edge_t_arr_to_arr2", "source": "m_t_arr", "target": "suuji_narabe_2" } },
+            { "group": "edges", "data": { "id": "8793bba5-ea3b-4aae-916c-148f4c246af5", "source": "m_count2", "target": "m_math1" } },
+            { "group": "edges", "data": { "id": "5a79b32a-9967-4af0-9792-369e22d8bd79", "source": "m_dist", "target": "m_dish" } },
+            { "group": "edges", "data": { "id": "23bd1170-baaa-49ae-ae44-a8891918505a", "source": "j_quiz", "target": "j_karuta" } },
+            { "group": "edges", "data": { "id": "60b1286b-9a33-415a-91a8-438216f82166", "source": "m_match", "target": "m_puz1" } },
+            { "group": "edges", "data": { "id": "d7224c0a-20d2-48e6-9ac0-92f98b20b9d2", "source": "m_match", "target": "m_puz2" } },
+            { "group": "edges", "data": { "id": "fd73e110-43fb-4fff-bf8c-d25d273010b6", "source": "m_puz1", "target": "m_puz2" } },
+            { "group": "edges", "data": { "id": "7a356379-c9c4-4a11-bcaf-7b927fd5d538", "source": "m_puz2", "target": "m_puz1" } },
+            { "group": "edges", "data": { "id": "ea939353-c1cd-4905-b10f-d16c9907dce4", "source": "m_cat", "target": "m_count2" } },
+            { "group": "edges", "data": { "id": "5e205d24-c5d2-47d6-8f9d-853b139d140d", "source": "j_pict", "target": "j_write" } },
+            { "group": "edges", "data": { "id": "5f08a98b-59d2-46f5-b93b-bd96e85602e9", "source": "m_dist_one", "target": "m_dist" } }
         ];
 
         // データ結合
@@ -203,10 +309,10 @@
             const position = importedNode && importedNode.position ? importedNode.position : { x: 0, y: 0 };
             initialElements.push({
                 group: 'nodes',
-                data: { 
-                    id: n.id, 
-                    name: n.name, 
-                    goal: n.goal, 
+                data: {
+                    id: n.id,
+                    name: n.name,
+                    goal: n.goal,
                     type: n.type,
                     url: n.url,
                     color: n.type === 'jp' ? '#f43f5e' : (n.type === 'support' ? '#10b981' : '#3b82f6')
@@ -216,7 +322,7 @@
         });
         importedData.forEach(item => {
             if (item.group === 'edges') {
-                if(!item.data.source.startsWith('bg') && !item.data.target.startsWith('bg')){
+                if (!item.data.source.startsWith('bg') && !item.data.target.startsWith('bg')) {
                     initialElements.push({
                         group: 'edges',
                         data: { id: item.data.id, source: item.data.source, target: item.data.target }
@@ -225,7 +331,7 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const cy = cytoscape({
                 container: document.getElementById('cy'),
                 elements: initialElements,
@@ -233,7 +339,7 @@
                     {
                         selector: 'node',
                         style: {
-                            'label': function(ele) { return ele.data('url') ? ele.data('name') + ' 🔗' : ele.data('name'); },
+                            'label': function (ele) { return ele.data('url') ? ele.data('name') + ' 🔗' : ele.data('name'); },
                             'width': '140px',
                             'height': '36px',
                             'background-color': 'data(color)',
@@ -267,7 +373,7 @@
                             'border-color': '#e2e8f0',
                             'z-index-compare': 'manual',
                             'z-index': 1,
-                            'events': 'no' 
+                            'events': 'no'
                         }
                     },
                     {
@@ -295,12 +401,12 @@
 
             let eh = null;
             if (typeof cy.edgehandles === 'function') {
-                eh = cy.edgehandles({ 
-                    snap: false, 
-                    noEdgeEventsInDraw: true, 
+                eh = cy.edgehandles({
+                    snap: false,
+                    noEdgeEventsInDraw: true,
                     disableBrowserGestures: true,
                     handleNodes: 'node[type != "bg"]',
-                    edgeType: function( sourceNode, targetNode ) {
+                    edgeType: function (sourceNode, targetNode) {
                         if (targetNode.data('type') === 'bg') return undefined;
                         return 'flat';
                     }
@@ -316,11 +422,11 @@
             const activeTippies = [];
 
             cy.nodes().forEach(node => {
-                if(node.data('type') === 'bg') return;
-                
+                if (node.data('type') === 'bg') return;
+
                 const dummyDom = document.createElement('div');
                 const urlHtml = node.data('url') ? `<a href="${node.data('url')}" target="_blank" class="app-link">🔗 アプリを開く</a>` : '';
-                
+
                 // 教科名マッピング
                 const typeMap = { 'jp': '国語', 'math': '算数', 'support': '自立活動' };
                 const category = typeMap[node.data('type')] || '';
@@ -337,22 +443,22 @@
                     allowHTML: true,
                     theme: 'edu-dark',
                     placement: 'top',
-                    trigger: 'manual', 
+                    trigger: 'manual',
                     animation: 'shift-away',
                     interactive: true,
                     hideOnClick: false,
                     appendTo: document.body
                 });
-                
+
                 activeTippies.push(tippyInstance);
 
                 const showTippy = (e) => {
-                    if (isDrawMode) return; 
+                    if (isDrawMode) return;
                     if (tippyInstance.state.isVisible) {
                         tippyInstance.hide();
                         return;
                     }
-                    activeTippies.forEach(t => { if(t !== tippyInstance) t.hide(); });
+                    activeTippies.forEach(t => { if (t !== tippyInstance) t.hide(); });
                     tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
                     tippyInstance.show();
                     if (e && (e.type === 'tap' || e.type === 'click')) {
@@ -366,17 +472,17 @@
                     const isClickInsideTippy = event.target.closest('.tippy-box');
                     const isClickOnNode = event.target.closest('canvas');
                     if (!isClickInsideTippy && !isClickOnNode) {
-                         tippyInstance.hide();
-                         document.removeEventListener('click', hideTippyOnClickOutside);
+                        tippyInstance.hide();
+                        document.removeEventListener('click', hideTippyOnClickOutside);
                     }
                 };
 
                 node.on('tap', showTippy);
-                node.on('mouseover', () => { if(node.data('url')) node.style('cursor', 'pointer'); });
+                node.on('mouseover', () => { if (node.data('url')) node.style('cursor', 'pointer'); });
                 node.on('position drag zoom pan', () => {
-                   if (tippyInstance.state.isVisible) {
-                       tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
-                   }
+                    if (tippyInstance.state.isVisible) {
+                        tippyInstance.setProps({ getReferenceClientRect: node.popperRef().getBoundingClientRect });
+                    }
                 });
             });
 
@@ -434,11 +540,12 @@
                 btnToggleDraw.classList.remove('hidden');
                 exportModal.style.display = 'none';
             });
-            
-            cy.on('cxttap', 'edge', function(evt){
+
+            cy.on('cxttap', 'edge', function (evt) {
                 if (!cy.autolock()) evt.target.remove();
             });
         });
     </script>
 </body>
+
 </html>

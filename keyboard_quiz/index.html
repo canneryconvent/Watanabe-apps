@@ -1,1267 +1,1460 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ひらがなキーボードクイズ</title>
-<!-- アイコン設定 -->
-<link rel="apple-touch-icon" href="img.png">
-<link rel="icon" href="img.png">
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
-    
-    :root {
-        --key-size: min(4.2vw, 8.5vh); /* はみ出し防止のためvhの上限を下げました */
-    }
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
 
-    /* === 基本レイアウト・誤操作防止 === */
-    body, html {
-        font-family: "UD Digi Kyokasho N-R", "UD Digi Kyokasho N-B", "UDデジタル教科書体 N-R", "UDデジタル教科書体 N-B", "Klee One", "Hiragino Maru Gothic ProN", sans-serif; 
-        margin: 0; 
-        padding: 0;
-        height: calc(var(--vh, 1vh) * 100);
-        width: 100vw;
-        background: #f4f7f6; 
-        user-select: none; 
-        -webkit-user-select: none; 
-        -webkit-touch-callout: none;
-        -webkit-tap-highlight-color: transparent;
-        overflow: hidden; 
-        box-sizing: border-box;
-    }
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ひらがなキーボードクイズ</title>
+    <!-- アイコン設定 -->
+    <link rel="apple-touch-icon" href="img.png">
+    <link rel="icon" href="img.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
 
-    * { box-sizing: border-box; }
-    .hidden { display: none !important; }
+        :root {
+            --key-size: min(4.2vw, 8.5vh);
+            /* はみ出し防止のためvhの上限を下げました */
+        }
 
-    /* === iOSタップ遅延防止・操作性向上 === */
-    button, .btn, .btn-home, .btn-header, .key, .col-checkbox, .char-box, .tab, .word-item, #emoji-display {
-        touch-action: manipulation; /* ダブルタップズーム待機を無効化し、即座に反応させる */
-    }
-    .key, .col-checkbox, .char-box, .tab, #emoji-display {
-        cursor: pointer;
-    }
+        /* === 基本レイアウト・誤操作防止 === */
+        body,
+        html {
+            font-family: "UD Digi Kyokasho N-R", "UD Digi Kyokasho N-B", "UDデジタル教科書体 N-R", "UDデジタル教科書体 N-B", "Klee One", "Hiragino Maru Gothic ProN", sans-serif;
+            margin: 0;
+            padding: 0;
+            height: calc(var(--vh, 1vh) * 100);
+            width: 100vw;
+            background: #f4f7f6;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
 
-    #home-screen, #play-screen {
-        height: 100%;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        touch-action: none; 
-        padding-top: env(safe-area-inset-top);
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-        padding-bottom: env(safe-area-inset-bottom);
-        position: relative;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    /* === ホーム画面 (SwiftUI風) === */
-    #home-screen {
-        justify-content: center;
-        align-items: center;
-        background: #fff;
-    }
-    .title-logo {
-        font-size: min(8vw, 6vh);
-        color: #333;
-        margin-bottom: 8vh;
-        font-weight: bold;
-        text-align: center;
-    }
-    .btn-home-group {
-        display: flex;
-        flex-direction: column;
-        gap: 3vh;
-        align-items: center;
-        width: 100%;
-    }
-    .btn-home {
-        background: #007AFF;
-        color: white;
-        border-radius: 14px;
-        padding: 2vh 0;
-        width: 60vw;
-        max-width: 320px;
-        font-size: min(5vw, 3.5vh);
-        border: none;
-        font-weight: bold;
-        box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        line-height: 1.2;
-        font-family: inherit;
-        transition: transform 0.1s, opacity 0.1s;
-    }
-    .btn-home:active { transform: scale(0.96); opacity: 0.9; }
-    .btn-home.secondary {
-        background: #e5f1ff;
-        color: #007AFF;
-        box-shadow: none;
-    }
-    .btn-home.tertiary {
-        background: transparent;
-        color: #888;
-        border: 2px solid #ccc;
-        box-shadow: none;
-        padding: 1.5vh 0;
-    }
+        .hidden {
+            display: none !important;
+        }
 
-    /* === プレイ画面 === */
-    #play-header {
-        position: absolute;
-        top: max(2vh, env(safe-area-inset-top));
-        left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        padding: 0 3vw;
-        z-index: 20;
-        pointer-events: none;
-    }
-    #play-header > button {
-        pointer-events: auto;
-    }
-    .btn-header {
-        background: #fff;
-        border: 2px solid #ccc;
-        border-radius: 8px;
-        padding: 1vh 3vw;
-        font-size: min(4vw, 2.5vh);
-        font-weight: bold;
-        color: #555;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        font-family: inherit;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: transform 0.1s;
-    }
-    .btn-header:active { transform: scale(0.95); }
+        /* === iOSタップ遅延防止・操作性向上 === */
+        button,
+        .btn,
+        .btn-home,
+        .btn-header,
+        .key,
+        .col-checkbox,
+        .char-box,
+        .tab,
+        .word-item,
+        #emoji-display {
+            touch-action: manipulation;
+            /* ダブルタップズーム待機を無効化し、即座に反応させる */
+        }
 
-    #display { 
-        display: flex; 
-        flex-direction: column;
-        justify-content: center; 
-        align-items: center; 
-        padding: 2vh 2vw; 
-        flex-grow: 1;
-        min-height: 0;
-        z-index: 10;
-        background: #fff;
-        border-bottom: 2px solid #eee;
-        overflow: hidden; /* コンテンツが伸びてキーボードを押し出すのを防ぐ */
-    }
+        .key,
+        .col-checkbox,
+        .char-box,
+        .tab,
+        #emoji-display {
+            cursor: pointer;
+        }
 
-    #question-area {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 3vw;
-        margin-bottom: 3vh;
-        width: 100%;
-    }
+        #home-screen,
+        #play-screen {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            touch-action: none;
+            padding-top: env(safe-area-inset-top);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
+        }
 
-    #emoji-display {
-        font-size: min(20vw, 12vh); /* 上下の余裕を持たせるため微縮小 */
-        line-height: 1;
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-        transition: transform 0.1s;
-    }
-    #emoji-display:active {
-        transform: scale(0.92);
-    }
+        /* === ホーム画面 (SwiftUI風) === */
+        #home-screen {
+            justify-content: center;
+            align-items: center;
+            background: #fff;
+        }
 
-    /* マス目のデザイン */
-    #boxes-area {
-        display: flex;
-        justify-content: center;
-        gap: 0;
-    }
+        .title-logo {
+            font-size: min(8vw, 6vh);
+            color: #333;
+            margin-bottom: 8vh;
+            font-weight: bold;
+            text-align: center;
+        }
 
-    .char-box {
-        width: min(13vw, 10vh); /* 上下の余裕を持たせるため微縮小 */
-        height: min(13vw, 10vh);
-        border: 2px solid #333;
-        border-right: none;
-        border-radius: 0;
-        font-size: min(7vw, 6vh);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        background: #fff;
-        color: #333;
-        transition: background-color 0.2s;
-    }
-    .char-box:last-child {
-        border-right: 2px solid #333;
-    }
-    .char-box.active {
-        background: #e6f2ff;
-    }
-    .char-box.locked {
-        background: #fff; 
-        color: #333;
-    }
-    .char-box.highlight {
-        background: #fff9c4;
-    }
+        .btn-home-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3vh;
+            align-items: center;
+            width: 100%;
+        }
 
-    .controls-grid { 
-        display: flex;
-        gap: 2vw;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .btn { 
-        font-family: inherit;
-        font-size: min(3vh, 3.5vw); 
-        padding: 1.5vh 3vw; 
-        border-radius: 10px; 
-        background: #f9f9f9; 
-        border: 2px solid #ccc; 
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .btn:active { opacity: 0.7; }
+        .btn-home {
+            background: #007AFF;
+            color: white;
+            border-radius: 14px;
+            padding: 2vh 0;
+            width: 60vw;
+            max-width: 320px;
+            font-size: min(5vw, 3.5vh);
+            border: none;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            font-family: inherit;
+            transition: transform 0.1s, opacity 0.1s;
+        }
 
-    #btn-dekita {
-        background: #e0e0e0;
-        color: #888;
-        border-color: #ccc;
-        padding: 1.5vh 5vw;
-        font-size: min(4vh, 4.5vw);
-        transition: all 0.3s;
-    }
-    #btn-dekita.ready {
-        background: #FF9800;
-        color: white;
-        border-color: #F57C00;
-        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
-    }
-    #btn-next {
-        background: #4CAF50;
-        color: white;
-        border-color: #388E3C;
-        padding: 1.5vh 5vw;
-        font-size: min(4vh, 4.5vw);
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-    }
+        .btn-home:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
 
-    /* === キーボード === */
-    #keyboard-wrapper {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        flex-shrink: 0;
-        background: #fff;
-        z-index: 2;
-        padding-bottom: max(2vh, env(safe-area-inset-bottom));
-        padding-top: 1vh;
-    }
+        .btn-home.secondary {
+            background: #e5f1ff;
+            color: #007AFF;
+            box-shadow: none;
+        }
 
-    #keyboard { 
-        display: flex; 
-        flex-direction: row-reverse; 
-        width: 100%;
-        padding: 0 1vw; 
-        gap: 0.5vw; 
-        justify-content: center;
-        align-items: flex-end; 
-    }
-    
-    .kb-col {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5vh;
-        align-items: center;
-    }
-    
-    .col-checkbox {
-        width: calc(var(--key-size) * 0.4);
-        height: calc(var(--key-size) * 0.4);
-        border: 2px solid #aaa;
-        border-radius: 4px;
-        opacity: 0.2;
-        background: transparent;
-        margin-bottom: 0.5vh;
-    }
-    .col-checkbox.active { background: #aaa; }
-    
-    .key { 
-        font-family: inherit;
-        background: #fffacd; 
-        border-radius: 10px; 
-        font-size: calc(var(--key-size) * 0.55); 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        font-weight: bold; 
-        border: 1px solid #e6e6e6; 
-        width: var(--key-size);
-        height: var(--key-size);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        color: #333;
-    }
-    .key:active { background: #ffeb3b; transform: scale(0.95); }
-    .disabled-key { opacity: 0.3 !important; pointer-events: none !important; background: #e0e0e0; }
-    .empty { visibility: hidden; pointer-events: none; }
+        .btn-home.tertiary {
+            background: transparent;
+            color: #888;
+            border: 2px solid #ccc;
+            box-shadow: none;
+            padding: 1.5vh 0;
+        }
 
-    /* === モーダル共通 === */
-    .modal-overlay {
-        position: absolute;
-        top: 0; left: 0; width: 100vw; height: 100%;
-        background: rgba(0,0,0,0.6);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 100;
-        touch-action: none;
-    }
-    
-    .settings-content {
-        background: #fff;
-        border-radius: 15px;
-        width: 90vw;
-        height: 85vh;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        overflow: hidden;
-    }
+        /* === プレイ画面 === */
+        #play-header {
+            position: absolute;
+            top: max(2vh, env(safe-area-inset-top));
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 3vw;
+            z-index: 20;
+            pointer-events: none;
+        }
 
-    .tabs {
-        display: flex;
-        background: #f0f0f0;
-        flex-shrink: 0;
-    }
-    .tab {
-        flex: 1;
-        text-align: center;
-        padding: 2vh 0;
-        font-size: 2.5vh;
-        font-weight: bold;
-        color: #666;
-    }
-    .tab.active {
-        background: #fff;
-        color: #007AFF;
-        border-bottom: 3px solid #007AFF;
-    }
+        #play-header>button {
+            pointer-events: auto;
+        }
 
-    .tab-pane {
-        flex-grow: 1;
-        padding: 2vh 4vw;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-y;
-        display: none;
-    }
-    .tab-pane.active { display: block; }
+        .btn-header {
+            background: #fff;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 1vh 3vw;
+            font-size: min(4vw, 2.5vh);
+            font-weight: bold;
+            color: #555;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
 
-    .setting-group { margin-bottom: 3vh; }
-    .setting-group h3 { margin: 0 0 1vh 0; font-size: 2.2vh; color: #555; border-bottom: 1px solid #eee; padding-bottom: 0.5vh;}
-    .setting-item { display: flex; align-items: center; margin-bottom: 1.5vh; font-size: 2.2vh;}
-    .setting-item input[type="checkbox"] { transform: scale(1.5); margin-right: 2vw; }
-    .setting-item select { font-size: 2vh; padding: 0.5vh 1vw; font-family: inherit;}
+        .btn-header:active {
+            transform: scale(0.95);
+        }
 
-    .filter-area {
-        background: #f9f9f9; padding: 1.5vh 2vw; border-radius: 8px; margin-bottom: 2vh;
-    }
-    .filter-area p { margin: 0 0 1vh 0; font-size: 1.8vh; color: #666; font-weight: bold;}
-    .filter-grid { display: flex; flex-wrap: wrap; gap: 2vw; }
-    .filter-grid label { font-size: 2vh; display: flex; align-items: center; }
-    .filter-grid input { transform: scale(1.3); margin-right: 1vw; }
-    
-    .word-item {
-        display: flex; align-items: center; padding: 1.5vh 0; border-bottom: 1px solid #eee; font-size: 2.5vh;
-        transition: opacity 0.2s;
-    }
-    .word-item.disabled {
-        opacity: 0.4;
-        background: #fafafa;
-    }
-    .word-item input { transform: scale(1.5); margin-right: 3vw; }
-    .word-label { flex-grow: 1; }
-    .word-stat { color: #666; font-size: 2vh; }
+        #display {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2vh 2vw;
+            flex-grow: 1;
+            min-height: 0;
+            z-index: 10;
+            background: #fff;
+            border-bottom: 2px solid #eee;
+            overflow: hidden;
+            /* コンテンツが伸びてキーボードを押し出すのを防ぐ */
+        }
 
-    .session-log {
-        background: #f9f9f9;
-        border-radius: 8px;
-        padding: 1.5vh 3vw;
-        margin-bottom: 2vh;
-        border: 1px solid #eee;
-    }
-    .session-date {
-        font-size: 2vh; color: #888; font-weight: bold; margin-bottom: 1vh; border-bottom: 1px solid #ddd; padding-bottom: 0.5vh;
-    }
-    .session-record {
-        font-size: 2.2vh; margin-bottom: 0.5vh; display: flex; align-items: center;
-    }
-    .mark-ok { color: #4CAF50; font-weight: bold; margin-right: 1vw; }
-    .mark-ng { color: #F44336; font-weight: bold; margin-right: 1vw; }
+        #question-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3vw;
+            margin-bottom: 3vh;
+            width: 100%;
+        }
 
-    .modal-footer {
-        padding: 2vh;
-        text-align: center;
-        background: #f9f9f9;
-        border-top: 1px solid #ddd;
-        flex-shrink: 0;
-    }
-    .btn-close {
-        background: #007AFF; color: white; border: none; padding: 1.5vh 5vw; border-radius: 8px; font-size: 2.5vh; font-weight: bold; width: 50%; font-family: inherit;
-    }
+        #emoji-display {
+            font-size: min(20vw, 12vh);
+            /* 上下の余裕を持たせるため微縮小 */
+            line-height: 1;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+            transition: transform 0.1s;
+        }
 
-    #toast {
-        position: fixed; top: 10vh; left: 50%; transform: translateX(-50%);
-        background: rgba(0,0,0,0.8); color: white; padding: 1.5vh 4vw; border-radius: 30px;
-        font-size: 2.2vh; font-weight: bold; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-    }
-    #toast.show { opacity: 1; }
+        #emoji-display:active {
+            transform: scale(0.92);
+        }
 
-</style>
-<script src="../common/core.js"></script>
+        /* マス目のデザイン */
+        #boxes-area {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .char-box {
+            width: min(13vw, 10vh);
+            /* 上下の余裕を持たせるため微縮小 */
+            height: min(13vw, 10vh);
+            border: 2px solid #333;
+            border-right: none;
+            border-radius: 0;
+            font-size: min(7vw, 6vh);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background: #fff;
+            color: #333;
+            transition: background-color 0.2s;
+        }
+
+        .char-box:last-child {
+            border-right: 2px solid #333;
+        }
+
+        .char-box.active {
+            background: #e6f2ff;
+        }
+
+        .char-box.locked {
+            background: #fff;
+            color: #333;
+        }
+
+        .char-box.highlight {
+            background: #fff9c4;
+        }
+
+        .controls-grid {
+            display: flex;
+            gap: 2vw;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: min(3vh, 3.5vw);
+            padding: 1.5vh 3vw;
+            border-radius: 10px;
+            background: #f9f9f9;
+            border: 2px solid #ccc;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:active {
+            opacity: 0.7;
+        }
+
+        #btn-dekita {
+            background: #e0e0e0;
+            color: #888;
+            border-color: #ccc;
+            padding: 1.5vh 5vw;
+            font-size: min(4vh, 4.5vw);
+            transition: all 0.3s;
+        }
+
+        #btn-dekita.ready {
+            background: #FF9800;
+            color: white;
+            border-color: #F57C00;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+        }
+
+        #btn-next {
+            background: #4CAF50;
+            color: white;
+            border-color: #388E3C;
+            padding: 1.5vh 5vw;
+            font-size: min(4vh, 4.5vw);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        /* === キーボード === */
+        #keyboard-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            flex-shrink: 0;
+            background: #fff;
+            z-index: 2;
+            padding-bottom: max(2vh, env(safe-area-inset-bottom));
+            padding-top: 1vh;
+        }
+
+        #keyboard {
+            display: flex;
+            flex-direction: row-reverse;
+            width: 100%;
+            padding: 0 1vw;
+            gap: 0.5vw;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .kb-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5vh;
+            align-items: center;
+        }
+
+        .col-checkbox {
+            width: calc(var(--key-size) * 0.4);
+            height: calc(var(--key-size) * 0.4);
+            border: 2px solid #aaa;
+            border-radius: 4px;
+            opacity: 0.2;
+            background: transparent;
+            margin-bottom: 0.5vh;
+        }
+
+        .col-checkbox.active {
+            background: #aaa;
+        }
+
+        .key {
+            font-family: inherit;
+            background: #fffacd;
+            border-radius: 10px;
+            font-size: calc(var(--key-size) * 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 1px solid #e6e6e6;
+            width: var(--key-size);
+            height: var(--key-size);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+        .key:active {
+            background: #ffeb3b;
+            transform: scale(0.95);
+        }
+
+        .disabled-key {
+            opacity: 0.3 !important;
+            pointer-events: none !important;
+            background: #e0e0e0;
+        }
+
+        .empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* === モーダル共通 === */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            touch-action: none;
+        }
+
+        .settings-content {
+            background: #fff;
+            border-radius: 15px;
+            width: 90vw;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f0f0f0;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 2vh 0;
+            font-size: 2.5vh;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .tab.active {
+            background: #fff;
+            color: #007AFF;
+            border-bottom: 3px solid #007AFF;
+        }
+
+        .tab-pane {
+            flex-grow: 1;
+            padding: 2vh 4vw;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .setting-group {
+            margin-bottom: 3vh;
+        }
+
+        .setting-group h3 {
+            margin: 0 0 1vh 0;
+            font-size: 2.2vh;
+            color: #555;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5vh;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5vh;
+            font-size: 2.2vh;
+        }
+
+        .setting-item input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-right: 2vw;
+        }
+
+        .setting-item select {
+            font-size: 2vh;
+            padding: 0.5vh 1vw;
+            font-family: inherit;
+        }
+
+        .filter-area {
+            background: #f9f9f9;
+            padding: 1.5vh 2vw;
+            border-radius: 8px;
+            margin-bottom: 2vh;
+        }
+
+        .filter-area p {
+            margin: 0 0 1vh 0;
+            font-size: 1.8vh;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .filter-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2vw;
+        }
+
+        .filter-grid label {
+            font-size: 2vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-grid input {
+            transform: scale(1.3);
+            margin-right: 1vw;
+        }
+
+        .word-item {
+            display: flex;
+            align-items: center;
+            padding: 1.5vh 0;
+            border-bottom: 1px solid #eee;
+            font-size: 2.5vh;
+            transition: opacity 0.2s;
+        }
+
+        .word-item.disabled {
+            opacity: 0.4;
+            background: #fafafa;
+        }
+
+        .word-item input {
+            transform: scale(1.5);
+            margin-right: 3vw;
+        }
+
+        .word-label {
+            flex-grow: 1;
+        }
+
+        .word-stat {
+            color: #666;
+            font-size: 2vh;
+        }
+
+        .session-log {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 1.5vh 3vw;
+            margin-bottom: 2vh;
+            border: 1px solid #eee;
+        }
+
+        .session-date {
+            font-size: 2vh;
+            color: #888;
+            font-weight: bold;
+            margin-bottom: 1vh;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5vh;
+        }
+
+        .session-record {
+            font-size: 2.2vh;
+            margin-bottom: 0.5vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .mark-ok {
+            color: #4CAF50;
+            font-weight: bold;
+            margin-right: 1vw;
+        }
+
+        .mark-ng {
+            color: #F44336;
+            font-weight: bold;
+            margin-right: 1vw;
+        }
+
+        .modal-footer {
+            padding: 2vh;
+            text-align: center;
+            background: #f9f9f9;
+            border-top: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        .btn-close {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 1.5vh 5vw;
+            border-radius: 8px;
+            font-size: 2.5vh;
+            font-weight: bold;
+            width: 50%;
+            font-family: inherit;
+        }
+
+        #toast {
+            position: fixed;
+            top: 10vh;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1.5vh 4vw;
+            border-radius: 30px;
+            font-size: 2.2vh;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #toast.show {
+            opacity: 1;
+        }
+    </style>
 </head>
+
 <body>
 
-<div id="toast">メッセージ</div>
+    <div id="toast">メッセージ</div>
 
-<!-- ホーム画面 -->
-<div id="home-screen">
-    <div class="title-logo">ひらがな<br>キーボードクイズ</div>
-    <div class="btn-home-group">
-        <button class="btn-home" onclick="startGame()">スタート</button>
-        <button class="btn-home secondary" onclick="openHistoryModal()">りれき</button>
-        <button class="btn-home tertiary" onpointerdown="handleTripleTap(event)">
-            設定<br><span style="font-size: 0.6em; opacity: 0.6; font-weight: normal;">トリプルタップ</span>
-        </button>
-    </div>
-</div>
-
-<!-- プレイ画面 -->
-<div id="play-screen" class="hidden">
-    <!-- プレイ画面ヘッダー -->
-    <div id="play-header">
-        <button id="btn-back-home" class="btn-header" onpointerdown="backToHome(event)">🏠</button>
-        <button id="btn-play-settings" class="btn-header" style="margin-left: auto; font-size: min(3vw, 2vh); padding: 0.5vh 2vw; border-color: transparent; background: transparent; color: #ccc;" onpointerdown="handlePlaySettingsTripleTap(event)">
-            ⚙️<br><span style="font-size: 0.5em;">トリプルタップ</span>
-        </button>
-    </div>
-
-    <div id="display">
-        <div id="question-area">
-            <!-- イラストタップで音声再生 -->
-            <div id="emoji-display" onpointerdown="spkCurrentWord(event)">🍎</div>
-            <div id="boxes-area"></div>
-        </div>
-        <div class="controls-grid">
-            <!-- 🔊ボタンを削除し、他の操作ボタンをpointerdownで即時反応化 -->
-            <button class="btn" onpointerdown="del(event)" style="font-size: min(4vh, 4vw);">⌫</button>
-            <button class="btn" id="btn-dekita" onpointerdown="doCheck(event)">できた</button>
-            <button class="btn hidden" id="btn-next" onpointerdown="nextQuestion(event)">つぎへ</button>
+    <!-- ホーム画面 -->
+    <div id="home-screen">
+        <div class="title-logo">ひらがな<br>キーボードクイズ</div>
+        <div class="btn-home-group">
+            <button class="btn-home" onclick="startGame()">スタート</button>
+            <button class="btn-home secondary" onclick="openHistoryModal()">りれき</button>
+            <button class="btn-home tertiary" onpointerdown="handleTripleTap(event)">
+                設定<br><span style="font-size: 0.6em; opacity: 0.6; font-weight: normal;">トリプルタップ</span>
+            </button>
         </div>
     </div>
-    <div id="keyboard-wrapper">
-        <div id="keyboard"></div>
-    </div>
-</div>
 
-<!-- 履歴モーダル -->
-<div id="history-modal" class="modal-overlay hidden">
-    <div class="settings-content">
-        <h2 style="text-align: center; margin: 2vh 0; color: #333;">プレイりれき</h2>
-        <div class="tab-pane active" id="history-container" style="display:block;"></div>
-        <div class="modal-footer">
-            <button class="btn-close" onclick="closeHistoryModal()">とじる</button>
+    <!-- プレイ画面 -->
+    <div id="play-screen" class="hidden">
+        <!-- プレイ画面ヘッダー -->
+        <div id="play-header">
+            <button id="btn-back-home" class="btn-header" onpointerdown="backToHome(event)">🏠</button>
+            <button id="btn-play-settings" class="btn-header"
+                style="margin-left: auto; font-size: min(3vw, 2vh); padding: 0.5vh 2vw; border-color: transparent; background: transparent; color: #ccc;"
+                onpointerdown="handlePlaySettingsTripleTap(event)">
+                ⚙️<br><span style="font-size: 0.5em;">トリプルタップ</span>
+            </button>
+        </div>
+
+        <div id="display">
+            <div id="question-area">
+                <!-- イラストタップで音声再生 -->
+                <div id="emoji-display" onpointerdown="spkCurrentWord(event)">🍎</div>
+                <div id="boxes-area"></div>
+            </div>
+            <div class="controls-grid">
+                <!-- 🔊ボタンを削除し、他の操作ボタンをpointerdownで即時反応化 -->
+                <button class="btn" onpointerdown="del(event)" style="font-size: min(4vh, 4vw);">⌫</button>
+                <button class="btn" id="btn-dekita" onpointerdown="doCheck(event)">できた</button>
+                <button class="btn hidden" id="btn-next" onpointerdown="nextQuestion(event)">つぎへ</button>
+            </div>
+        </div>
+        <div id="keyboard-wrapper">
+            <div id="keyboard"></div>
         </div>
     </div>
-</div>
 
-<!-- 設定モーダル（ホーム用） -->
-<div id="settings-modal" class="modal-overlay hidden">
-    <div class="settings-content">
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('tab-basic')">基本設定</div>
-            <div class="tab" onclick="switchTab('tab-words')">単語の指定</div>
+    <!-- 履歴モーダル -->
+    <div id="history-modal" class="modal-overlay hidden">
+        <div class="settings-content">
+            <h2 style="text-align: center; margin: 2vh 0; color: #333;">プレイりれき</h2>
+            <div class="tab-pane active" id="history-container" style="display:block;"></div>
+            <div class="modal-footer">
+                <button class="btn-close" onclick="closeHistoryModal()">とじる</button>
+            </div>
         </div>
-        
-        <div id="tab-basic" class="tab-pane active">
-            <div class="setting-group">
-                <h3>出題ルール</h3>
-                <div class="setting-item">
-                    <span style="flex-grow:1;">出題の順番</span>
-                    <select id="opt-order">
-                        <option value="random">ランダム</option>
-                        <option value="list">リスト順</option>
-                    </select>
+    </div>
+
+    <!-- 設定モーダル（ホーム用） -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="settings-content">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('tab-basic')">基本設定</div>
+                <div class="tab" onclick="switchTab('tab-words')">単語の指定</div>
+            </div>
+
+            <div id="tab-basic" class="tab-pane active">
+                <div class="setting-group">
+                    <h3>出題ルール</h3>
+                    <div class="setting-item">
+                        <span style="flex-grow:1;">出題の順番</span>
+                        <select id="opt-order">
+                            <option value="random">ランダム</option>
+                            <option value="list">リスト順</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span style="flex-grow:1;">出題数</span>
+                        <select id="opt-count">
+                            <option value="5">5問</option>
+                            <option value="10">10問</option>
+                            <option value="15">15問</option>
+                            <option value="all">ぜんぶ</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span style="flex-grow:1;">正解ロックのタイミング</span>
+                        <select id="opt-timing">
+                            <option value="A">「できた」ボタン後</option>
+                            <option value="B">入力時（即時）</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label><input type="checkbox" id="opt-autoread"> 出題時に単語を読み上げる</label>
+                    </div>
+                    <div class="setting-item">
+                        <label><input type="checkbox" id="opt-show-home"> プレイ画面に「🏠」ボタンを表示</label>
+                    </div>
+                    <div class="setting-item">
+                        <label><input type="checkbox" id="opt-show-hint"> 答えの文字をうすく表示する（ヒント）</label>
+                    </div>
                 </div>
-                <div class="setting-item">
-                    <span style="flex-grow:1;">出題数</span>
-                    <select id="opt-count">
-                        <option value="5">5問</option>
-                        <option value="10">10問</option>
-                        <option value="15">15問</option>
-                        <option value="all">ぜんぶ</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <span style="flex-grow:1;">正解ロックのタイミング</span>
-                    <select id="opt-timing">
-                        <option value="A">「できた」ボタン後</option>
-                        <option value="B">入力時（即時）</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label><input type="checkbox" id="opt-autoread"> 出題時に単語を読み上げる</label>
-                </div>
-                <div class="setting-item">
-                    <label><input type="checkbox" id="opt-show-home"> プレイ画面に「🏠」ボタンを表示</label>
-                </div>
-                <div class="setting-item">
-                    <label><input type="checkbox" id="opt-show-hint"> 答えの文字をうすく表示する（ヒント）</label>
+
+                <div class="setting-group">
+                    <h3>キーボード表示</h3>
+                    <div class="setting-item"><label><input type="checkbox" id="chk-dakuon"> 濁音・半濁音（が〜ぽ）</label></div>
+                    <div class="setting-item"><label><input type="checkbox" id="chk-yoon"> 拗音・小文字（ゃゅょっ等）</label></div>
                 </div>
             </div>
 
-            <div class="setting-group">
-                <h3>キーボード表示</h3>
-                <div class="setting-item"><label><input type="checkbox" id="chk-dakuon"> 濁音・半濁音（が〜ぽ）</label></div>
-                <div class="setting-item"><label><input type="checkbox" id="chk-yoon"> 拗音・小文字（ゃゅょっ等）</label></div>
-            </div>
-        </div>
-        
-        <div id="tab-words" class="tab-pane">
-            <div class="filter-area">
-                <p>使用する文字の種類を指定</p>
-                <div class="filter-grid">
-                    <label><input type="checkbox" id="f-seion" onchange="applyWordFilters()"> 清音</label>
-                    <label><input type="checkbox" id="f-dakuon" onchange="applyWordFilters()"> 濁音・半濁音</label>
-                    <label><input type="checkbox" id="f-yoon" onchange="applyWordFilters()"> 拗音</label>
-                    <label><input type="checkbox" id="f-sokuon" onchange="applyWordFilters()"> 促音</label>
+            <div id="tab-words" class="tab-pane">
+                <div class="filter-area">
+                    <p>使用する文字の種類を指定</p>
+                    <div class="filter-grid">
+                        <label><input type="checkbox" id="f-seion" onchange="applyWordFilters()"> 清音</label>
+                        <label><input type="checkbox" id="f-dakuon" onchange="applyWordFilters()"> 濁音・半濁音</label>
+                        <label><input type="checkbox" id="f-yoon" onchange="applyWordFilters()"> 拗音</label>
+                        <label><input type="checkbox" id="f-sokuon" onchange="applyWordFilters()"> 促音</label>
+                    </div>
+                    <p style="font-size: 1.5vh; margin-top: 1vh; color: #888;">※チェックを外すと、その文字を含む単語がグレーアウトされ出題されません。</p>
                 </div>
-                <p style="font-size: 1.5vh; margin-top: 1vh; color: #888;">※チェックを外すと、その文字を含む単語がグレーアウトされ出題されません。</p>
+                <div id="word-list-container"></div>
             </div>
-            <div id="word-list-container"></div>
-        </div>
-        
-        <div class="modal-footer">
-            <button class="btn-close" onclick="saveSettingsAndClose()">保存して閉じる</button>
+
+            <div class="modal-footer">
+                <button class="btn-close" onclick="saveSettingsAndClose()">保存して閉じる</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- プレイ画面用設定モーダル -->
-<div id="play-settings-modal" class="modal-overlay hidden">
-    <div class="settings-content" style="height: auto; width: 80vw; max-width: 400px; padding-top: 2vh;">
-        <h2 style="text-align: center; margin-top: 0; font-size: 2.5vh; color: #333;">キーボード表示</h2>
-        <div class="setting-group" style="padding: 0 4vw;">
-            <div class="setting-item"><label><input type="checkbox" id="play-chk-dakuon"> 濁音・半濁音（が〜ぽ）</label></div>
-            <div class="setting-item"><label><input type="checkbox" id="play-chk-yoon"> 拗音・小文字（ゃゅょっ等）</label></div>
-        </div>
-        <div class="modal-footer" style="margin-top: 2vh;">
-            <button class="btn-close" onclick="savePlaySettingsAndClose()">とじる</button>
+    <!-- プレイ画面用設定モーダル -->
+    <div id="play-settings-modal" class="modal-overlay hidden">
+        <div class="settings-content" style="height: auto; width: 80vw; max-width: 400px; padding-top: 2vh;">
+            <h2 style="text-align: center; margin-top: 0; font-size: 2.5vh; color: #333;">キーボード表示</h2>
+            <div class="setting-group" style="padding: 0 4vw;">
+                <div class="setting-item"><label><input type="checkbox" id="play-chk-dakuon"> 濁音・半濁音（が〜ぽ）</label></div>
+                <div class="setting-item"><label><input type="checkbox" id="play-chk-yoon"> 拗音・小文字（ゃゅょっ等）</label></div>
+            </div>
+            <div class="modal-footer" style="margin-top: 2vh;">
+                <button class="btn-close" onclick="savePlaySettingsAndClose()">とじる</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    /* === 1. 共通・誤操作防止・画面サイズ対応 === */
-    function setVh() {
-        let vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-    }
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(setVh, 100);
-    });
-    setVh();
-
-    document.addEventListener('touchmove', function(e) {
-        if (!e.target.closest('.tab-pane') && !e.target.closest('.settings-content')) {
-            e.preventDefault();
+    <script>
+        /* === 1. 共通・誤操作防止・画面サイズ対応 === */
+        function setVh() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
         }
-    }, { passive: false });
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(setVh, 100);
+        });
+        setVh();
 
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 3000);
-    }
+        document.addEventListener('touchmove', function (e) {
+            if (!e.target.closest('.tab-pane') && !e.target.closest('.settings-content')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
-    /* === 2. 音声・効果音 === */
-    const synth = window.speechSynthesis;
-    let audioCtx = null;
-
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-
-    function playSound(type) {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        const now = audioCtx.currentTime;
-        
-        if (type === 'start') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(440, now);
-            osc.frequency.setValueAtTime(880, now + 0.1);
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now); osc.stop(now + 0.3);
-        } else if (type === 'correct') { 
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, now);
-            osc.frequency.setValueAtTime(1046.5, now + 0.15);
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
-            gain.gain.setValueAtTime(0.5, now + 0.3);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-            osc.start(now); osc.stop(now + 0.6);
-        } else if (type === 'wrong') { 
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(160, now);
-            osc.frequency.setValueAtTime(150, now + 0.1);
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
-            gain.gain.setValueAtTime(0.3, now + 0.3);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-            osc.start(now); osc.stop(now + 0.5);
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
         }
-    }
 
-    function spkFast(text) {
-        if (!text) return;
-        synth.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ja-JP';
-        synth.speak(u);
-    }
+        /* === 2. 音声・効果音 === */
+        const synth = window.speechSynthesis;
+        let audioCtx = null;
 
-    function speakText(text) {
-        return new Promise(resolve => {
-            if (!text) return resolve();
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'start') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1046.5, now + 0.15);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+                gain.gain.setValueAtTime(0.5, now + 0.3);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            } else if (type === 'wrong') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.setValueAtTime(150, now + 0.1);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                gain.gain.setValueAtTime(0.3, now + 0.3);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        function spkFast(text) {
+            if (!text) return;
             synth.cancel();
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'ja-JP';
-            u.rate = 0.8;
-            let fallbackTimer = setTimeout(() => { resolve(); }, text.length * 500 + 1000);
-            u.onend = () => { clearTimeout(fallbackTimer); resolve(); };
-            u.onerror = () => { clearTimeout(fallbackTimer); resolve(); };
             synth.speak(u);
-        });
-    }
-
-    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-    /* === 3. データと設定 === */
-    const baseCols = [["あ","い","う","え","お"],["か","き","く","け","こ"],["さ","し","す","せ","そ"],["た","ち","つ","て","と"],["な","に","ぬ","ね","の"],["は","ひ","ふ","へ","ほ"],["ま","み","む","め","も"],["や"," ","ゆ"," ","よ"],["ら","り","る","れ","ろ"],["わ"," "," "," ","を"]];
-    const nnCol = ["ん"," "," "," "," "];
-    const dakuonCols = [["が","ぎ","ぐ","げ","ご"],["ざ","じ","ず","ぜ","ぞ"],["だ","ぢ","づ","で","ど"],["ば","び","ぶ","べ","ぼ"],["ぱ","ぴ","ぷ","ぺ","ぽ"]];
-    const yoonCols = [["ゃ"," ","ゅ"," ","ょ"],["っ"," "," "," "," "],["ぁ","ぃ","ぅ","ぇ","ぉ"]];
-
-    const defaultWords = [
-        { word: "あいす", emoji: "🍨", types: ["清音のみ"] },
-        { word: "あり", emoji: "🐜", types: ["清音のみ"] },
-        { word: "いか", emoji: "🦑", types: ["清音のみ"] },
-        { word: "いぬ", emoji: "🐶", types: ["清音のみ"] },
-        { word: "うし", emoji: "🐮", types: ["清音のみ"] },
-        { word: "うま", emoji: "🐴", types: ["清音のみ"] },
-        { word: "えんぴつ", emoji: "✏️", types: ["半濁音"] },
-        { word: "おに", emoji: "👹", types: ["清音のみ"] },
-        { word: "おにぎり", emoji: "🍙", types: ["濁音"] },
-        { word: "かえる", emoji: "🐸", types: ["清音のみ"] },
-        { word: "かさ", emoji: "☂️", types: ["清音のみ"] },
-        { word: "かめ", emoji: "🐢", types: ["清音のみ"] },
-        { word: "きつね", emoji: "🦊", types: ["清音のみ"] },
-        { word: "きりん", emoji: "🦒", types: ["清音のみ"] },
-        { word: "きんぎょ", emoji: "🐠", types: ["濁音", "拗音"] },
-        { word: "くつ", emoji: "👞", types: ["清音のみ"] },
-        { word: "くも", emoji: "☁️", types: ["清音のみ"] },
-        { word: "こっぷ", emoji: "🥛", types: ["半濁音", "促音"] },
-        { word: "さかな", emoji: "🐟", types: ["清音のみ"] },
-        { word: "さる", emoji: "🐵", types: ["清音のみ"] },
-        { word: "しか", emoji: "🦌", types: ["清音のみ"] },
-        { word: "すいか", emoji: "🍉", types: ["清音のみ"] },
-        { word: "せっけん", emoji: "🧼", types: ["促音"] },
-        { word: "たこ", emoji: "🐙", types: ["清音のみ"] },
-        { word: "ちきゅう", emoji: "🌍", types: ["拗音"] },
-        { word: "ちょうちょ", emoji: "🦋", types: ["拗音"] },
-        { word: "つき", emoji: "🌙", types: ["清音のみ"] },
-        { word: "てがみ", emoji: "✉️", types: ["濁音"] },
-        { word: "でんしゃ", emoji: "🚃", types: ["濁音", "拗音"] },
-        { word: "とけい", emoji: "⌚", types: ["清音のみ"] },
-        { word: "とり", emoji: "🐦", types: ["清音のみ"] },
-        { word: "なす", emoji: "🍆", types: ["清音のみ"] },
-        { word: "にんじん", emoji: "🥕", types: ["濁音"] },
-        { word: "にわとり", emoji: "🐔", types: ["清音のみ"] },
-        { word: "ねこ", emoji: "🐱", types: ["清音のみ"] },
-        { word: "ねずみ", emoji: "🐭", types: ["濁音"] },
-        { word: "のこぎり", emoji: "🪚", types: ["濁音"] },
-        { word: "はち", emoji: "🐝", types: ["清音のみ"] },
-        { word: "はな", emoji: "👃", types: ["清音のみ"] },
-        { word: "ばなな", emoji: "🍌", types: ["濁音"] },
-        { word: "ぱん", emoji: "🍞", types: ["半濁音"] },
-        { word: "ぱんだ", emoji: "🐼", types: ["濁音", "半濁音"] },
-        { word: "ひつじ", emoji: "🐑", types: ["濁音"] },
-        { word: "ひまわり", emoji: "🌻", types: ["清音のみ"] },
-        { word: "ふね", emoji: "🚢", types: ["清音のみ"] },
-        { word: "へび", emoji: "🐍", types: ["濁音"] },
-        { word: "ほし", emoji: "⭐", types: ["清音のみ"] },
-        { word: "ほん", emoji: "📖", types: ["清音のみ"] },
-        { word: "まど", emoji: "🪟", types: ["濁音"] },
-        { word: "みかん", emoji: "🍊", types: ["清音のみ"] },
-        { word: "みみ", emoji: "👂", types: ["清音のみ"] },
-        { word: "むしめがね", emoji: "🔍", types: ["濁音"] },
-        { word: "めがね", emoji: "👓", types: ["濁音"] },
-        { word: "もも", emoji: "🍑", types: ["清音のみ"] },
-        { word: "やま", emoji: "⛰️", types: ["清音のみ"] },
-        { word: "ゆきだるま", emoji: "⛄", types: ["濁音"] },
-        { word: "よっと", emoji: "⛵", types: ["促音"] },
-        { word: "らいおん", emoji: "🦁", types: ["清音のみ"] },
-        { word: "らくだ", emoji: "🐪", types: ["濁音"] },
-        { word: "らっぱ", emoji: "🎺", types: ["半濁音", "促音"] },
-        { word: "りんご", emoji: "🍎", types: ["濁音"] },
-        { word: "れもん", emoji: "🍋", types: ["清音のみ"] },
-        { word: "ろうそく", emoji: "🕯️", types: ["清音のみ"] },
-        { word: "ろけっと", emoji: "🚀", types: ["促音"] },
-        { word: "わに", emoji: "🐊", types: ["清音のみ"] }
-    ];
-
-    let appSettings = {
-        questionOrder: 'random', questionCount: '5', instantLock: false, autoReadWord: true,
-        showDakuon: true, showYoon: true, showHomeBtn: true, showHint: false,
-        allowedTypes: { seion: true, dakuon: true, yoon: true, sokuon: true } 
-    };
-    let wordSettings = {};
-    let playHistory = []; 
-    let currentSessionLogs = [];
-
-    function loadSettingsLocal() {
-        const data = localStorage.getItem('hiraganaAppConfig');
-        if (data) {
-            const parsed = JSON.parse(data);
-            if(parsed.appSettings) appSettings = {...appSettings, ...parsed.appSettings};
-            if(parsed.wordSettings) wordSettings = {...wordSettings, ...parsed.wordSettings};
-            if(parsed.playHistory) playHistory = parsed.playHistory;
         }
-        defaultWords.forEach(w => {
-            if (!wordSettings[w.word]) wordSettings[w.word] = { isActive: true, asked: 0, correct: 0 };
-        });
-    }
 
-    function saveSettingsLocal() {
-        localStorage.setItem('hiraganaAppConfig', JSON.stringify({ appSettings, wordSettings, playHistory }));
-    }
-
-    /* === 4. UI制御とゲームロジック === */
-    let activeQuestions = [];
-    let currentQuestionIndex = 0;
-    let currentWordObj = null;
-    let currentInput = []; 
-    let cursorIndex = 0;
-    let isFirstTry = true;
-
-    // トリプルタップ (ホーム用)
-    let tapCount = 0;
-    let tapTimer = null;
-    function handleTripleTap(e) {
-        e.preventDefault();
-        tapCount++;
-        if(tapCount === 1) {
-            tapTimer = setTimeout(() => { tapCount = 0; }, 600);
-        } else if (tapCount === 3) {
-            clearTimeout(tapTimer);
-            tapCount = 0;
-            openSettings();
-        }
-    }
-
-    // トリプルタップ (プレイ画面設定用)
-    let playTapCount = 0;
-    let playTapTimer = null;
-    function handlePlaySettingsTripleTap(e) {
-        e.preventDefault();
-        playTapCount++;
-        if(playTapCount === 1) {
-            playTapTimer = setTimeout(() => { playTapCount = 0; }, 600);
-        } else if (playTapCount === 3) {
-            clearTimeout(playTapTimer);
-            playTapCount = 0;
-            openPlaySettings();
-        }
-    }
-
-    function startGame() {
-        initAudio();
-        playSound('start'); 
-        spkFast("　"); 
-        
-        activeQuestions = defaultWords.filter(w => wordSettings[w.word].isActive);
-        if (activeQuestions.length === 0) {
-            showToast("出題する単語がありません。設定から単語を有効にしてください。");
-            return;
-        }
-        
-        if (appSettings.questionOrder === 'random') {
-            activeQuestions.sort(() => Math.random() - 0.5);
-        }
-        
-        currentQuestionIndex = 0;
-        currentSessionLogs = []; 
-        document.getElementById('home-screen').classList.add('hidden');
-        document.getElementById('play-screen').classList.remove('hidden');
-        
-        // ホームボタンの表示制御
-        document.getElementById('btn-back-home').classList.toggle('hidden', !appSettings.showHomeBtn);
-        
-        showQuestion();
-    }
-
-    function showQuestion() {
-        currentWordObj = activeQuestions[currentQuestionIndex];
-        currentInput = new Array(currentWordObj.word.length).fill(null);
-        isFirstTry = true;
-        cursorIndex = 0;
-        
-        document.getElementById('emoji-display').innerText = currentWordObj.emoji;
-        
-        const btnDekita = document.getElementById('btn-dekita');
-        btnDekita.classList.remove('hidden');
-        btnDekita.disabled = true;
-        btnDekita.classList.remove('ready');
-        document.getElementById('btn-next').classList.add('hidden');
-        
-        renderBoxes();
-        
-        if (appSettings.autoReadWord) speakText(currentWordObj.word);
-    }
-
-    function renderBoxes() {
-        const container = document.getElementById('boxes-area');
-        container.innerHTML = '';
-        for(let i=0; i<currentWordObj.word.length; i++){
-            const box = document.createElement('div');
-            box.className = 'char-box';
-            box.id = `box-${i}`;
-            box.addEventListener('click', () => {
-                if(currentInput[i]?.locked) return;
-                cursorIndex = i;
-                updateBoxes();
+        function speakText(text) {
+            return new Promise(resolve => {
+                if (!text) return resolve();
+                synth.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'ja-JP';
+                u.rate = 0.8;
+                let fallbackTimer = setTimeout(() => { resolve(); }, text.length * 500 + 1000);
+                u.onend = () => { clearTimeout(fallbackTimer); resolve(); };
+                u.onerror = () => { clearTimeout(fallbackTimer); resolve(); };
+                synth.speak(u);
             });
-            container.appendChild(box);
         }
-        updateBoxes();
-    }
 
-    function updateBoxes() {
-        for(let i=0; i<currentWordObj.word.length; i++) {
-            const box = document.getElementById(`box-${i}`);
-            if (!box) continue;
-            
-            box.className = 'char-box';
-            
-            if (currentInput[i]?.locked) {
-                box.classList.add('locked');
-                box.innerText = currentInput[i].char;
-            } else {
-                if (i === cursorIndex) box.classList.add('active');
-                
-                if (currentInput[i] && currentInput[i].char) {
+        function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        /* === 3. データと設定 === */
+        const baseCols = [["あ", "い", "う", "え", "お"], ["か", "き", "く", "け", "こ"], ["さ", "し", "す", "せ", "そ"], ["た", "ち", "つ", "て", "と"], ["な", "に", "ぬ", "ね", "の"], ["は", "ひ", "ふ", "へ", "ほ"], ["ま", "み", "む", "め", "も"], ["や", " ", "ゆ", " ", "よ"], ["ら", "り", "る", "れ", "ろ"], ["わ", " ", " ", " ", "を"]];
+        const nnCol = ["ん", " ", " ", " ", " "];
+        const dakuonCols = [["が", "ぎ", "ぐ", "げ", "ご"], ["ざ", "じ", "ず", "ぜ", "ぞ"], ["だ", "ぢ", "づ", "で", "ど"], ["ば", "び", "ぶ", "べ", "ぼ"], ["ぱ", "ぴ", "ぷ", "ぺ", "ぽ"]];
+        const yoonCols = [["ゃ", " ", "ゅ", " ", "ょ"], ["っ", " ", " ", " ", " "], ["ぁ", "ぃ", "ぅ", "ぇ", "ぉ"]];
+
+        const defaultWords = [
+            { word: "あいす", emoji: "🍨", types: ["清音のみ"] },
+            { word: "あり", emoji: "🐜", types: ["清音のみ"] },
+            { word: "いか", emoji: "🦑", types: ["清音のみ"] },
+            { word: "いぬ", emoji: "🐶", types: ["清音のみ"] },
+            { word: "うし", emoji: "🐮", types: ["清音のみ"] },
+            { word: "うま", emoji: "🐴", types: ["清音のみ"] },
+            { word: "えんぴつ", emoji: "✏️", types: ["半濁音"] },
+            { word: "おに", emoji: "👹", types: ["清音のみ"] },
+            { word: "おにぎり", emoji: "🍙", types: ["濁音"] },
+            { word: "かえる", emoji: "🐸", types: ["清音のみ"] },
+            { word: "かさ", emoji: "☂️", types: ["清音のみ"] },
+            { word: "かめ", emoji: "🐢", types: ["清音のみ"] },
+            { word: "きつね", emoji: "🦊", types: ["清音のみ"] },
+            { word: "きりん", emoji: "🦒", types: ["清音のみ"] },
+            { word: "きんぎょ", emoji: "🐠", types: ["濁音", "拗音"] },
+            { word: "くつ", emoji: "👞", types: ["清音のみ"] },
+            { word: "くも", emoji: "☁️", types: ["清音のみ"] },
+            { word: "こっぷ", emoji: "🥛", types: ["半濁音", "促音"] },
+            { word: "さかな", emoji: "🐟", types: ["清音のみ"] },
+            { word: "さる", emoji: "🐵", types: ["清音のみ"] },
+            { word: "しか", emoji: "🦌", types: ["清音のみ"] },
+            { word: "すいか", emoji: "🍉", types: ["清音のみ"] },
+            { word: "せっけん", emoji: "🧼", types: ["促音"] },
+            { word: "たこ", emoji: "🐙", types: ["清音のみ"] },
+            { word: "ちきゅう", emoji: "🌍", types: ["拗音"] },
+            { word: "ちょうちょ", emoji: "🦋", types: ["拗音"] },
+            { word: "つき", emoji: "🌙", types: ["清音のみ"] },
+            { word: "てがみ", emoji: "✉️", types: ["濁音"] },
+            { word: "でんしゃ", emoji: "🚃", types: ["濁音", "拗音"] },
+            { word: "とけい", emoji: "⌚", types: ["清音のみ"] },
+            { word: "とり", emoji: "🐦", types: ["清音のみ"] },
+            { word: "なす", emoji: "🍆", types: ["清音のみ"] },
+            { word: "にんじん", emoji: "🥕", types: ["濁音"] },
+            { word: "にわとり", emoji: "🐔", types: ["清音のみ"] },
+            { word: "ねこ", emoji: "🐱", types: ["清音のみ"] },
+            { word: "ねずみ", emoji: "🐭", types: ["濁音"] },
+            { word: "のこぎり", emoji: "🪚", types: ["濁音"] },
+            { word: "はち", emoji: "🐝", types: ["清音のみ"] },
+            { word: "はな", emoji: "👃", types: ["清音のみ"] },
+            { word: "ばなな", emoji: "🍌", types: ["濁音"] },
+            { word: "ぱん", emoji: "🍞", types: ["半濁音"] },
+            { word: "ぱんだ", emoji: "🐼", types: ["濁音", "半濁音"] },
+            { word: "ひつじ", emoji: "🐑", types: ["濁音"] },
+            { word: "ひまわり", emoji: "🌻", types: ["清音のみ"] },
+            { word: "ふね", emoji: "🚢", types: ["清音のみ"] },
+            { word: "へび", emoji: "🐍", types: ["濁音"] },
+            { word: "ほし", emoji: "⭐", types: ["清音のみ"] },
+            { word: "ほん", emoji: "📖", types: ["清音のみ"] },
+            { word: "まど", emoji: "🪟", types: ["濁音"] },
+            { word: "みかん", emoji: "🍊", types: ["清音のみ"] },
+            { word: "みみ", emoji: "👂", types: ["清音のみ"] },
+            { word: "むしめがね", emoji: "🔍", types: ["濁音"] },
+            { word: "めがね", emoji: "👓", types: ["濁音"] },
+            { word: "もも", emoji: "🍑", types: ["清音のみ"] },
+            { word: "やま", emoji: "⛰️", types: ["清音のみ"] },
+            { word: "ゆきだるま", emoji: "⛄", types: ["濁音"] },
+            { word: "よっと", emoji: "⛵", types: ["促音"] },
+            { word: "らいおん", emoji: "🦁", types: ["清音のみ"] },
+            { word: "らくだ", emoji: "🐪", types: ["濁音"] },
+            { word: "らっぱ", emoji: "🎺", types: ["半濁音", "促音"] },
+            { word: "りんご", emoji: "🍎", types: ["濁音"] },
+            { word: "れもん", emoji: "🍋", types: ["清音のみ"] },
+            { word: "ろうそく", emoji: "🕯️", types: ["清音のみ"] },
+            { word: "ろけっと", emoji: "🚀", types: ["促音"] },
+            { word: "わに", emoji: "🐊", types: ["清音のみ"] }
+        ];
+
+        let appSettings = {
+            questionOrder: 'random', questionCount: '5', instantLock: false, autoReadWord: true,
+            showDakuon: true, showYoon: true, showHomeBtn: true, showHint: false,
+            allowedTypes: { seion: true, dakuon: true, yoon: true, sokuon: true }
+        };
+        let wordSettings = {};
+        let playHistory = [];
+        let currentSessionLogs = [];
+
+        function loadSettingsLocal() {
+            const data = localStorage.getItem('hiraganaAppConfig');
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (parsed.appSettings) appSettings = { ...appSettings, ...parsed.appSettings };
+                if (parsed.wordSettings) wordSettings = { ...wordSettings, ...parsed.wordSettings };
+                if (parsed.playHistory) playHistory = parsed.playHistory;
+            }
+            defaultWords.forEach(w => {
+                if (!wordSettings[w.word]) wordSettings[w.word] = { isActive: true, asked: 0, correct: 0 };
+            });
+        }
+
+        function saveSettingsLocal() {
+            localStorage.setItem('hiraganaAppConfig', JSON.stringify({ appSettings, wordSettings, playHistory }));
+        }
+
+        /* === 4. UI制御とゲームロジック === */
+        let activeQuestions = [];
+        let currentQuestionIndex = 0;
+        let currentWordObj = null;
+        let currentInput = [];
+        let cursorIndex = 0;
+        let isFirstTry = true;
+
+        // トリプルタップ (ホーム用)
+        let tapCount = 0;
+        let tapTimer = null;
+        function handleTripleTap(e) {
+            e.preventDefault();
+            tapCount++;
+            if (tapCount === 1) {
+                tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+            } else if (tapCount === 3) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                openSettings();
+            }
+        }
+
+        // トリプルタップ (プレイ画面設定用)
+        let playTapCount = 0;
+        let playTapTimer = null;
+        function handlePlaySettingsTripleTap(e) {
+            e.preventDefault();
+            playTapCount++;
+            if (playTapCount === 1) {
+                playTapTimer = setTimeout(() => { playTapCount = 0; }, 600);
+            } else if (playTapCount === 3) {
+                clearTimeout(playTapTimer);
+                playTapCount = 0;
+                openPlaySettings();
+            }
+        }
+
+        function startGame() {
+            initAudio();
+            playSound('start');
+            spkFast("　");
+
+            activeQuestions = defaultWords.filter(w => wordSettings[w.word].isActive);
+            if (activeQuestions.length === 0) {
+                showToast("出題する単語がありません。設定から単語を有効にしてください。");
+                return;
+            }
+
+            if (appSettings.questionOrder === 'random') {
+                activeQuestions.sort(() => Math.random() - 0.5);
+            }
+
+            currentQuestionIndex = 0;
+            currentSessionLogs = [];
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('play-screen').classList.remove('hidden');
+
+            // ホームボタンの表示制御
+            document.getElementById('btn-back-home').classList.toggle('hidden', !appSettings.showHomeBtn);
+
+            showQuestion();
+        }
+
+        function showQuestion() {
+            currentWordObj = activeQuestions[currentQuestionIndex];
+            currentInput = new Array(currentWordObj.word.length).fill(null);
+            isFirstTry = true;
+            cursorIndex = 0;
+
+            document.getElementById('emoji-display').innerText = currentWordObj.emoji;
+
+            const btnDekita = document.getElementById('btn-dekita');
+            btnDekita.classList.remove('hidden');
+            btnDekita.disabled = true;
+            btnDekita.classList.remove('ready');
+            document.getElementById('btn-next').classList.add('hidden');
+
+            renderBoxes();
+
+            if (appSettings.autoReadWord) speakText(currentWordObj.word);
+        }
+
+        function renderBoxes() {
+            const container = document.getElementById('boxes-area');
+            container.innerHTML = '';
+            for (let i = 0; i < currentWordObj.word.length; i++) {
+                const box = document.createElement('div');
+                box.className = 'char-box';
+                box.id = `box-${i}`;
+                box.addEventListener('click', () => {
+                    if (currentInput[i]?.locked) return;
+                    cursorIndex = i;
+                    updateBoxes();
+                });
+                container.appendChild(box);
+            }
+            updateBoxes();
+        }
+
+        function updateBoxes() {
+            for (let i = 0; i < currentWordObj.word.length; i++) {
+                const box = document.getElementById(`box-${i}`);
+                if (!box) continue;
+
+                box.className = 'char-box';
+
+                if (currentInput[i]?.locked) {
+                    box.classList.add('locked');
                     box.innerText = currentInput[i].char;
                 } else {
-                    // ヒント表示ロジック
-                    if (appSettings.showHint) {
-                        box.innerHTML = `<span style="color: #ccc; opacity: 0.6; font-weight: normal;">${currentWordObj.word[i]}</span>`;
+                    if (i === cursorIndex) box.classList.add('active');
+
+                    if (currentInput[i] && currentInput[i].char) {
+                        box.innerText = currentInput[i].char;
                     } else {
-                        box.innerText = "";
+                        // ヒント表示ロジック
+                        if (appSettings.showHint) {
+                            box.innerHTML = `<span style="color: #ccc; opacity: 0.6; font-weight: normal;">${currentWordObj.word[i]}</span>`;
+                        } else {
+                            box.innerText = "";
+                        }
                     }
                 }
             }
+            checkDekita();
         }
-        checkDekita();
-    }
 
-    function moveCursorToNextEmpty() {
-        for(let i = cursorIndex + 1; i < currentWordObj.word.length; i++) {
-            if (!currentInput[i] || !currentInput[i].locked && !currentInput[i].char) {
-                cursorIndex = i; return true;
-            }
-        }
-        for(let i = 0; i < currentWordObj.word.length; i++) {
-            if (!currentInput[i] || !currentInput[i].locked && !currentInput[i].char) {
-                cursorIndex = i; return true;
-            }
-        }
-        return false;
-    }
-
-    function inputChar(char) {
-        if (cursorIndex >= currentWordObj.word.length) return;
-        if (currentInput[cursorIndex]?.locked) return;
-
-        currentInput[cursorIndex] = { char: char, locked: false };
-        
-        if (appSettings.instantLock) {
-            if (char === currentWordObj.word[cursorIndex]) {
-                currentInput[cursorIndex].locked = true;
-            }
-        }
-        moveCursorToNextEmpty();
-        updateBoxes();
-    }
-
-    function del(e) {
-        if (e) e.preventDefault();
-        
-        if (currentInput[cursorIndex]?.char && !currentInput[cursorIndex]?.locked) {
-            currentInput[cursorIndex] = null;
-        } else {
-            for(let i = cursorIndex - 1; i >= 0; i--) {
-                if (!currentInput[i]?.locked) {
-                    currentInput[i] = null;
-                    cursorIndex = i;
-                    break;
+        function moveCursorToNextEmpty() {
+            for (let i = cursorIndex + 1; i < currentWordObj.word.length; i++) {
+                if (!currentInput[i] || !currentInput[i].locked && !currentInput[i].char) {
+                    cursorIndex = i; return true;
                 }
             }
-        }
-        updateBoxes();
-    }
-
-    function checkDekita() {
-        const btn = document.getElementById('btn-dekita');
-        const allFilled = currentInput.every(c => c && c.char);
-        btn.disabled = !allFilled;
-        if(allFilled) btn.classList.add('ready');
-        else btn.classList.remove('ready');
-    }
-
-    async function doCheck(e) {
-        if (e) e.preventDefault();
-        const btn = document.getElementById('btn-dekita');
-        if (btn.disabled) return;
-        
-        btn.disabled = true; btn.classList.remove('ready');
-        document.getElementById('keyboard-wrapper').style.pointerEvents = 'none';
-
-        cursorIndex = -1; 
-        updateBoxes();
-
-        for(let i=0; i<currentWordObj.word.length; i++) {
-            const box = document.getElementById(`box-${i}`);
-            box.classList.add('highlight');
-            await speakText(currentInput[i].char);
-            box.classList.remove('highlight');
-            await delay(150);
-        }
-        
-        await delay(300);
-        
-        const userInputStr = currentInput.map(c => c ? (c.char === "　" ? " " : c.char) : " ").join("");
-        await speakText(userInputStr); 
-        await delay(300);
-        
-        let isCorrect = true;
-        for(let i=0; i<currentWordObj.word.length; i++) {
-            if(currentInput[i].char === currentWordObj.word[i]) {
-                currentInput[i].locked = true;
-            } else {
-                isCorrect = false;
-                currentInput[i] = null;
+            for (let i = 0; i < currentWordObj.word.length; i++) {
+                if (!currentInput[i] || !currentInput[i].locked && !currentInput[i].char) {
+                    cursorIndex = i; return true;
+                }
             }
+            return false;
         }
-        
-        if (isCorrect) {
-            playSound('correct');
-            recordStat(currentWordObj.word, true);
-            currentSessionLogs.push({ word: currentWordObj.word, input: userInputStr, correct: true });
-            
-            document.getElementById('btn-dekita').classList.add('hidden');
-            document.getElementById('btn-next').classList.remove('hidden');
-            
+
+        function inputChar(char) {
+            if (cursorIndex >= currentWordObj.word.length) return;
+            if (currentInput[cursorIndex]?.locked) return;
+
+            currentInput[cursorIndex] = { char: char, locked: false };
+
+            if (appSettings.instantLock) {
+                if (char === currentWordObj.word[cursorIndex]) {
+                    currentInput[cursorIndex].locked = true;
+                }
+            }
+            moveCursorToNextEmpty();
+            updateBoxes();
+        }
+
+        function del(e) {
+            if (e) e.preventDefault();
+
+            if (currentInput[cursorIndex]?.char && !currentInput[cursorIndex]?.locked) {
+                currentInput[cursorIndex] = null;
+            } else {
+                for (let i = cursorIndex - 1; i >= 0; i--) {
+                    if (!currentInput[i]?.locked) {
+                        currentInput[i] = null;
+                        cursorIndex = i;
+                        break;
+                    }
+                }
+            }
+            updateBoxes();
+        }
+
+        function checkDekita() {
+            const btn = document.getElementById('btn-dekita');
+            const allFilled = currentInput.every(c => c && c.char);
+            btn.disabled = !allFilled;
+            if (allFilled) btn.classList.add('ready');
+            else btn.classList.remove('ready');
+        }
+
+        async function doCheck(e) {
+            if (e) e.preventDefault();
+            const btn = document.getElementById('btn-dekita');
+            if (btn.disabled) return;
+
+            btn.disabled = true; btn.classList.remove('ready');
+            document.getElementById('keyboard-wrapper').style.pointerEvents = 'none';
+
+            cursorIndex = -1;
+            updateBoxes();
+
+            for (let i = 0; i < currentWordObj.word.length; i++) {
+                const box = document.getElementById(`box-${i}`);
+                box.classList.add('highlight');
+                await speakText(currentInput[i].char);
+                box.classList.remove('highlight');
+                await delay(150);
+            }
+
+            await delay(300);
+
+            const userInputStr = currentInput.map(c => c ? (c.char === "　" ? " " : c.char) : " ").join("");
+            await speakText(userInputStr);
+            await delay(300);
+
+            let isCorrect = true;
+            for (let i = 0; i < currentWordObj.word.length; i++) {
+                if (currentInput[i].char === currentWordObj.word[i]) {
+                    currentInput[i].locked = true;
+                } else {
+                    isCorrect = false;
+                    currentInput[i] = null;
+                }
+            }
+
+            if (isCorrect) {
+                playSound('correct');
+                recordStat(currentWordObj.word, true);
+                currentSessionLogs.push({ word: currentWordObj.word, input: userInputStr, correct: true });
+
+                document.getElementById('btn-dekita').classList.add('hidden');
+                document.getElementById('btn-next').classList.remove('hidden');
+
+                let limit = appSettings.questionCount === 'all' ? activeQuestions.length : parseInt(appSettings.questionCount);
+                if (currentQuestionIndex + 1 >= Math.min(limit, activeQuestions.length)) {
+                    document.getElementById('btn-next').innerText = "ホームへ";
+                } else {
+                    document.getElementById('btn-next').innerText = "つぎへ";
+                }
+            } else {
+                playSound('wrong');
+                recordStat(currentWordObj.word, false);
+                currentSessionLogs.push({ word: currentWordObj.word, input: userInputStr, correct: false });
+
+                isFirstTry = false;
+                for (let i = 0; i < currentWordObj.word.length; i++) {
+                    if (!currentInput[i]?.locked) { cursorIndex = i; break; }
+                }
+            }
+
+            updateBoxes();
+            document.getElementById('keyboard-wrapper').style.pointerEvents = 'auto';
+        }
+
+        function nextQuestion(e) {
+            if (e) e.preventDefault();
+
+            currentQuestionIndex++;
             let limit = appSettings.questionCount === 'all' ? activeQuestions.length : parseInt(appSettings.questionCount);
-            if (currentQuestionIndex + 1 >= Math.min(limit, activeQuestions.length)) {
-                document.getElementById('btn-next').innerText = "ホームへ";
+
+            if (currentQuestionIndex >= limit || currentQuestionIndex >= activeQuestions.length) {
+                saveSessionAndGoHome();
             } else {
-                document.getElementById('btn-next').innerText = "つぎへ";
-            }
-        } else {
-            playSound('wrong');
-            recordStat(currentWordObj.word, false);
-            currentSessionLogs.push({ word: currentWordObj.word, input: userInputStr, correct: false });
-            
-            isFirstTry = false;
-            for(let i=0; i<currentWordObj.word.length; i++) {
-                if (!currentInput[i]?.locked) { cursorIndex = i; break; }
+                showQuestion();
             }
         }
-        
-        updateBoxes();
-        document.getElementById('keyboard-wrapper').style.pointerEvents = 'auto';
-    }
 
-    function nextQuestion(e) {
-        if (e) e.preventDefault();
-        
-        currentQuestionIndex++;
-        let limit = appSettings.questionCount === 'all' ? activeQuestions.length : parseInt(appSettings.questionCount);
-        
-        if (currentQuestionIndex >= limit || currentQuestionIndex >= activeQuestions.length) {
+        function backToHome(e) {
+            if (e) e.preventDefault();
             saveSessionAndGoHome();
-        } else {
-            showQuestion();
         }
-    }
 
-    function backToHome(e) {
-        if (e) e.preventDefault();
-        saveSessionAndGoHome();
-    }
+        function saveSessionAndGoHome() {
+            if (currentSessionLogs.length > 0) {
+                const now = new Date();
+                const dateStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+                playHistory.unshift({ date: dateStr, records: currentSessionLogs });
+                if (playHistory.length > 30) playHistory.pop();
+                saveSettingsLocal();
+            }
+            document.getElementById('play-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
+        }
 
-    function saveSessionAndGoHome() {
-        if (currentSessionLogs.length > 0) {
-            const now = new Date();
-            const dateStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-            playHistory.unshift({ date: dateStr, records: currentSessionLogs });
-            if (playHistory.length > 30) playHistory.pop(); 
+        function recordStat(word, isCorrect) {
+            wordSettings[word].asked++;
+            if (isCorrect) wordSettings[word].correct++;
             saveSettingsLocal();
         }
-        document.getElementById('play-screen').classList.add('hidden');
-        document.getElementById('home-screen').classList.remove('hidden');
-    }
 
-    function recordStat(word, isCorrect) {
-        wordSettings[word].asked++;
-        if (isCorrect) wordSettings[word].correct++;
-        saveSettingsLocal();
-    }
+        function spkCurrentWord(e) {
+            if (e) e.preventDefault();
+            speakText(currentWordObj.word);
+        }
 
-    function spkCurrentWord(e) {
-        if (e) e.preventDefault();
-        speakText(currentWordObj.word);
-    }
+        /* === 5. キーボード構築 === */
+        function buildKeyboard() {
+            const kb = document.getElementById('keyboard');
+            kb.innerHTML = '';
+            let colsToRender = [];
+            baseCols.forEach(col => colsToRender.push(col));
+            colsToRender.push(nnCol);
+            if (appSettings.showDakuon) dakuonCols.forEach((col, i) => { let c = [...col]; c.isBlockStart = (i === 0); colsToRender.push(c); });
+            if (appSettings.showYoon) yoonCols.forEach((col, i) => { let c = [...col]; if (!appSettings.showDakuon && i === 0) c.isBlockStart = true; colsToRender.push(c); });
 
-    /* === 5. キーボード構築 === */
-    function buildKeyboard() {
-        const kb = document.getElementById('keyboard');
-        kb.innerHTML = '';
-        let colsToRender = [];
-        baseCols.forEach(col => colsToRender.push(col));
-        colsToRender.push(nnCol); 
-        if (appSettings.showDakuon) dakuonCols.forEach((col, i) => { let c = [...col]; c.isBlockStart = (i === 0); colsToRender.push(c); });
-        if (appSettings.showYoon) yoonCols.forEach((col, i) => { let c = [...col]; if (!appSettings.showDakuon && i === 0) c.isBlockStart = true; colsToRender.push(c); });
+            const colCount = colsToRender.length;
+            let blockStartCount = colsToRender.filter(c => c.isBlockStart).length;
+            const availableVw = 98 - ((colCount - 1) * 0.5) - (blockStartCount * 2);
+            const vwPerKey = availableVw / colCount;
 
-        const colCount = colsToRender.length;
-        let blockStartCount = colsToRender.filter(c => c.isBlockStart).length;
-        const availableVw = 98 - ((colCount - 1) * 0.5) - (blockStartCount * 2);
-        const vwPerKey = availableVw / colCount;
-        
-        // 縦長の画面（iPad縦など）ではみ出さないよう、vhの上限をさらに下げて固定します
-        document.documentElement.style.setProperty('--key-size', `min(${vwPerKey}vw, 8.5vh)`);
+            // 縦長の画面（iPad縦など）ではみ出さないよう、vhの上限をさらに下げて固定します
+            document.documentElement.style.setProperty('--key-size', `min(${vwPerKey}vw, 8.5vh)`);
 
-        colsToRender.forEach(colArr => {
-            const colDiv = document.createElement('div');
-            colDiv.className = 'kb-col';
-            if (colArr.isBlockStart) colDiv.style.marginRight = "2vw";
-            
-            const cb = document.createElement('div');
-            cb.className = 'col-checkbox active';
-            
-            // ポインターダウンでシングルタップ切り替えに変更
-            cb.addEventListener('pointerdown', (e) => {
-                e.preventDefault(); // タップ遅延や他の挙動を防止
-                cb.classList.toggle('active');
-                colDiv.querySelectorAll('.key').forEach(k => {
-                    if (!k.classList.contains('empty')) k.classList.toggle('disabled-key', !cb.classList.contains('active'));
-                });
-            });
-            
-            colDiv.appendChild(cb);
-            
-            colArr.forEach(char => {
-                const btn = document.createElement('button');
-                btn.className = char === " " ? 'key empty' : 'key';
-                btn.innerText = char === "␣" ? "空白" : (char === " " ? "" : char);
-                if (char === "␣") btn.style.fontSize = "calc(var(--key-size) * 0.35)";
-                if (char !== " ") {
-                    btn.addEventListener('pointerdown', (e) => {
-                        e.preventDefault(); // タップ遅延やフォーカス移動を防止して即座に反応
-                        let inputC = char === "␣" ? "　" : char;
-                        inputChar(inputC);
-                        spkFast(char === "␣" ? "スペース" : char);
+            colsToRender.forEach(colArr => {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'kb-col';
+                if (colArr.isBlockStart) colDiv.style.marginRight = "2vw";
+
+                const cb = document.createElement('div');
+                cb.className = 'col-checkbox active';
+
+                // ポインターダウンでシングルタップ切り替えに変更
+                cb.addEventListener('pointerdown', (e) => {
+                    e.preventDefault(); // タップ遅延や他の挙動を防止
+                    cb.classList.toggle('active');
+                    colDiv.querySelectorAll('.key').forEach(k => {
+                        if (!k.classList.contains('empty')) k.classList.toggle('disabled-key', !cb.classList.contains('active'));
                     });
-                }
-                colDiv.appendChild(btn);
-            });
-            kb.appendChild(colDiv);
-        });
-    }
-
-    /* === 6. 設定・履歴モーダル === */
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
-        document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-    }
-
-    function openSettings() {
-        document.getElementById('opt-order').value = appSettings.questionOrder;
-        document.getElementById('opt-count').value = appSettings.questionCount;
-        document.getElementById('opt-timing').value = appSettings.instantLock ? 'B' : 'A';
-        document.getElementById('opt-autoread').checked = appSettings.autoReadWord;
-        document.getElementById('opt-show-home').checked = appSettings.showHomeBtn;
-        document.getElementById('opt-show-hint').checked = appSettings.showHint; // ヒント設定
-        document.getElementById('chk-dakuon').checked = appSettings.showDakuon;
-        document.getElementById('chk-yoon').checked = appSettings.showYoon;
-        
-        document.getElementById('f-seion').checked = appSettings.allowedTypes.seion;
-        document.getElementById('f-dakuon').checked = appSettings.allowedTypes.dakuon;
-        document.getElementById('f-yoon').checked = appSettings.allowedTypes.yoon;
-        document.getElementById('f-sokuon').checked = appSettings.allowedTypes.sokuon;
-        
-        renderWordList();
-        document.getElementById('settings-modal').classList.remove('hidden');
-    }
-
-    function saveSettingsAndClose() {
-        appSettings.questionOrder = document.getElementById('opt-order').value;
-        appSettings.questionCount = document.getElementById('opt-count').value;
-        appSettings.instantLock = document.getElementById('opt-timing').value === 'B';
-        appSettings.autoReadWord = document.getElementById('opt-autoread').checked;
-        appSettings.showHomeBtn = document.getElementById('opt-show-home').checked;
-        appSettings.showHint = document.getElementById('opt-show-hint').checked; // ヒント設定
-        appSettings.showDakuon = document.getElementById('chk-dakuon').checked;
-        appSettings.showYoon = document.getElementById('chk-yoon').checked;
-        
-        saveSettingsLocal();
-        buildKeyboard();
-        document.getElementById('settings-modal').classList.add('hidden');
-    }
-
-    // プレイ画面専用設定
-    function openPlaySettings() {
-        document.getElementById('play-chk-dakuon').checked = appSettings.showDakuon;
-        document.getElementById('play-chk-yoon').checked = appSettings.showYoon;
-        document.getElementById('play-settings-modal').classList.remove('hidden');
-    }
-
-    function savePlaySettingsAndClose() {
-        appSettings.showDakuon = document.getElementById('play-chk-dakuon').checked;
-        appSettings.showYoon = document.getElementById('play-chk-yoon').checked;
-        saveSettingsLocal();
-        buildKeyboard();
-        document.getElementById('play-settings-modal').classList.add('hidden');
-    }
-
-    function applyWordFilters() {
-        appSettings.allowedTypes.seion = document.getElementById('f-seion').checked;
-        appSettings.allowedTypes.dakuon = document.getElementById('f-dakuon').checked;
-        appSettings.allowedTypes.yoon = document.getElementById('f-yoon').checked;
-        appSettings.allowedTypes.sokuon = document.getElementById('f-sokuon').checked;
-
-        defaultWords.forEach(item => {
-            let shouldBeActive = true;
-            item.types.forEach(type => {
-                if (type === "清音のみ" && !appSettings.allowedTypes.seion) shouldBeActive = false;
-                if ((type === "濁音" || type === "半濁音") && !appSettings.allowedTypes.dakuon) shouldBeActive = false;
-                if (type === "拗音" && !appSettings.allowedTypes.yoon) shouldBeActive = false;
-                if (type === "促音" && !appSettings.allowedTypes.sokuon) shouldBeActive = false;
-            });
-            wordSettings[item.word].isActive = shouldBeActive;
-        });
-        
-        renderWordList();
-    }
-
-    function renderWordList() {
-        const container = document.getElementById('word-list-container');
-        container.innerHTML = '';
-        
-        defaultWords.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'word-item';
-            if (!wordSettings[item.word].isActive) div.classList.add('disabled');
-            
-            div.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'INPUT') {
-                    chk.checked = !chk.checked;
-                    chk.dispatchEvent(new Event('change'));
-                }
-            });
-
-            const chk = document.createElement('input');
-            chk.type = 'checkbox';
-            chk.checked = wordSettings[item.word].isActive;
-            chk.onchange = (e) => {
-                wordSettings[item.word].isActive = e.target.checked;
-                if(e.target.checked) div.classList.remove('disabled');
-                else div.classList.add('disabled');
-            };
-            
-            const label = document.createElement('span');
-            label.className = 'word-label';
-            label.innerText = `${item.emoji} ${item.word}`;
-            
-            const stat = document.createElement('span');
-            stat.className = 'word-stat';
-            const wstat = wordSettings[item.word];
-            const rate = wstat.asked > 0 ? Math.round((wstat.correct / wstat.asked)*100) : 0;
-            stat.innerText = `正答: ${wstat.correct}/${wstat.asked} (${rate}%)`;
-            
-            div.appendChild(chk);
-            div.appendChild(label);
-            div.appendChild(stat);
-            container.appendChild(div);
-        });
-    }
-
-    function openHistoryModal() {
-        const container = document.getElementById('history-container');
-        container.innerHTML = '';
-
-        if (playHistory.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#888; margin-top:5vh;">まだプレイりれきがありません</p>';
-        } else {
-            playHistory.forEach(session => {
-                const sessionDiv = document.createElement('div');
-                sessionDiv.className = 'session-log';
-                
-                const dateHeader = document.createElement('div');
-                dateHeader.className = 'session-date';
-                dateHeader.innerText = session.date;
-                sessionDiv.appendChild(dateHeader);
-
-                session.records.forEach(rec => {
-                    const row = document.createElement('div');
-                    row.className = 'session-record';
-                    const mark = rec.correct ? '<span class="mark-ok">〇</span>' : '<span class="mark-ng">×</span>';
-                    row.innerHTML = `${mark} ${rec.word} ➔ ${rec.input}`;
-                    sessionDiv.appendChild(row);
                 });
-                container.appendChild(sessionDiv);
+
+                colDiv.appendChild(cb);
+
+                colArr.forEach(char => {
+                    const btn = document.createElement('button');
+                    btn.className = char === " " ? 'key empty' : 'key';
+                    btn.innerText = char === "␣" ? "空白" : (char === " " ? "" : char);
+                    if (char === "␣") btn.style.fontSize = "calc(var(--key-size) * 0.35)";
+                    if (char !== " ") {
+                        btn.addEventListener('pointerdown', (e) => {
+                            e.preventDefault(); // タップ遅延やフォーカス移動を防止して即座に反応
+                            let inputC = char === "␣" ? "　" : char;
+                            inputChar(inputC);
+                            spkFast(char === "␣" ? "スペース" : char);
+                        });
+                    }
+                    colDiv.appendChild(btn);
+                });
+                kb.appendChild(colDiv);
             });
         }
-        document.getElementById('history-modal').classList.remove('hidden');
-    }
 
-    function closeHistoryModal() {
-        document.getElementById('history-modal').classList.add('hidden');
-    }
+        /* === 6. 設定・履歴モーダル === */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
 
-    // 初期化
-    loadSettingsLocal();
-    buildKeyboard();
+        function openSettings() {
+            document.getElementById('opt-order').value = appSettings.questionOrder;
+            document.getElementById('opt-count').value = appSettings.questionCount;
+            document.getElementById('opt-timing').value = appSettings.instantLock ? 'B' : 'A';
+            document.getElementById('opt-autoread').checked = appSettings.autoReadWord;
+            document.getElementById('opt-show-home').checked = appSettings.showHomeBtn;
+            document.getElementById('opt-show-hint').checked = appSettings.showHint; // ヒント設定
+            document.getElementById('chk-dakuon').checked = appSettings.showDakuon;
+            document.getElementById('chk-yoon').checked = appSettings.showYoon;
 
-</script>
+            document.getElementById('f-seion').checked = appSettings.allowedTypes.seion;
+            document.getElementById('f-dakuon').checked = appSettings.allowedTypes.dakuon;
+            document.getElementById('f-yoon').checked = appSettings.allowedTypes.yoon;
+            document.getElementById('f-sokuon').checked = appSettings.allowedTypes.sokuon;
+
+            renderWordList();
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function saveSettingsAndClose() {
+            appSettings.questionOrder = document.getElementById('opt-order').value;
+            appSettings.questionCount = document.getElementById('opt-count').value;
+            appSettings.instantLock = document.getElementById('opt-timing').value === 'B';
+            appSettings.autoReadWord = document.getElementById('opt-autoread').checked;
+            appSettings.showHomeBtn = document.getElementById('opt-show-home').checked;
+            appSettings.showHint = document.getElementById('opt-show-hint').checked; // ヒント設定
+            appSettings.showDakuon = document.getElementById('chk-dakuon').checked;
+            appSettings.showYoon = document.getElementById('chk-yoon').checked;
+
+            saveSettingsLocal();
+            buildKeyboard();
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        // プレイ画面専用設定
+        function openPlaySettings() {
+            document.getElementById('play-chk-dakuon').checked = appSettings.showDakuon;
+            document.getElementById('play-chk-yoon').checked = appSettings.showYoon;
+            document.getElementById('play-settings-modal').classList.remove('hidden');
+        }
+
+        function savePlaySettingsAndClose() {
+            appSettings.showDakuon = document.getElementById('play-chk-dakuon').checked;
+            appSettings.showYoon = document.getElementById('play-chk-yoon').checked;
+            saveSettingsLocal();
+            buildKeyboard();
+            document.getElementById('play-settings-modal').classList.add('hidden');
+        }
+
+        function applyWordFilters() {
+            appSettings.allowedTypes.seion = document.getElementById('f-seion').checked;
+            appSettings.allowedTypes.dakuon = document.getElementById('f-dakuon').checked;
+            appSettings.allowedTypes.yoon = document.getElementById('f-yoon').checked;
+            appSettings.allowedTypes.sokuon = document.getElementById('f-sokuon').checked;
+
+            defaultWords.forEach(item => {
+                let shouldBeActive = true;
+                item.types.forEach(type => {
+                    if (type === "清音のみ" && !appSettings.allowedTypes.seion) shouldBeActive = false;
+                    if ((type === "濁音" || type === "半濁音") && !appSettings.allowedTypes.dakuon) shouldBeActive = false;
+                    if (type === "拗音" && !appSettings.allowedTypes.yoon) shouldBeActive = false;
+                    if (type === "促音" && !appSettings.allowedTypes.sokuon) shouldBeActive = false;
+                });
+                wordSettings[item.word].isActive = shouldBeActive;
+            });
+
+            renderWordList();
+        }
+
+        function renderWordList() {
+            const container = document.getElementById('word-list-container');
+            container.innerHTML = '';
+
+            defaultWords.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                if (!wordSettings[item.word].isActive) div.classList.add('disabled');
+
+                div.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        chk.checked = !chk.checked;
+                        chk.dispatchEvent(new Event('change'));
+                    }
+                });
+
+                const chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.checked = wordSettings[item.word].isActive;
+                chk.onchange = (e) => {
+                    wordSettings[item.word].isActive = e.target.checked;
+                    if (e.target.checked) div.classList.remove('disabled');
+                    else div.classList.add('disabled');
+                };
+
+                const label = document.createElement('span');
+                label.className = 'word-label';
+                label.innerText = `${item.emoji} ${item.word}`;
+
+                const stat = document.createElement('span');
+                stat.className = 'word-stat';
+                const wstat = wordSettings[item.word];
+                const rate = wstat.asked > 0 ? Math.round((wstat.correct / wstat.asked) * 100) : 0;
+                stat.innerText = `正答: ${wstat.correct}/${wstat.asked} (${rate}%)`;
+
+                div.appendChild(chk);
+                div.appendChild(label);
+                div.appendChild(stat);
+                container.appendChild(div);
+            });
+        }
+
+        function openHistoryModal() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+
+            if (playHistory.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888; margin-top:5vh;">まだプレイりれきがありません</p>';
+            } else {
+                playHistory.forEach(session => {
+                    const sessionDiv = document.createElement('div');
+                    sessionDiv.className = 'session-log';
+
+                    const dateHeader = document.createElement('div');
+                    dateHeader.className = 'session-date';
+                    dateHeader.innerText = session.date;
+                    sessionDiv.appendChild(dateHeader);
+
+                    session.records.forEach(rec => {
+                        const row = document.createElement('div');
+                        row.className = 'session-record';
+                        const mark = rec.correct ? '<span class="mark-ok">〇</span>' : '<span class="mark-ng">×</span>';
+                        row.innerHTML = `${mark} ${rec.word} ➔ ${rec.input}`;
+                        sessionDiv.appendChild(row);
+                    });
+                    container.appendChild(sessionDiv);
+                });
+            }
+            document.getElementById('history-modal').classList.remove('hidden');
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.add('hidden');
+        }
+
+        // 初期化
+        loadSettingsLocal();
+        buildKeyboard();
+
+    </script>
 </body>
+
 </html>

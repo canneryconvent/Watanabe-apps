@@ -1,135 +1,301 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>聞いて覚えよう</title>
     <!-- アプリアイコンの設定 -->
     <link rel="apple-touch-icon" href="img.png">
     <link rel="icon" href="img.png">
     <style>
         /* --- 共通要件：レイアウトと誤操作防止 --- */
-        :root { --vh: 1vh; }
-        body, html {
-            margin: 0; padding: 0;
+        :root {
+            --vh: 1vh;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
             height: calc(var(--vh, 1vh) * 100);
             background-color: #ffffff;
             font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-            overflow: hidden; touch-action: none;
-            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
-        * { box-sizing: border-box; }
+
+        * {
+            box-sizing: border-box;
+        }
 
         /* 画面コンテナ */
         .screen {
-            display: none; height: 100%; width: 100%; flex-direction: column; 
-            align-items: center; justify-content: center; position: relative;
+            display: none;
+            height: 100%;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
-        .screen.active { display: flex; }
+
+        .screen.active {
+            display: flex;
+        }
 
         /* ボタンデザイン */
         .btn {
-            background-color: #4A90E2; color: white; border: none; border-radius: 12px;
-            padding: 15px 35px; font-size: 28px; font-weight: bold; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;
-            width: 240px; text-align: center;
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 35px;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            width: 240px;
+            text-align: center;
         }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-outline { background-color: transparent; border: 2px solid #4A90E2; color: #4A90E2; width: auto; padding: 8px 20px;}
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid #4A90E2;
+            color: #4A90E2;
+            width: auto;
+            padding: 8px 20px;
+        }
 
         /* ホーム画面 */
-        #home-screen { padding-bottom: env(safe-area-inset-bottom); }
-        .home-menu { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        #home-screen {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .home-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
 
         /* プレイ画面 */
-        #play-screen { padding-bottom: env(safe-area-inset-bottom); padding-top: 10px; justify-content: flex-start; }
-        .top-bar { width: 100%; padding: 10px 20px; display: flex; justify-content: space-between; position: absolute; top: 0; }
-        .message-area { 
-            height: 50px; margin-top: 50px;
-            display: flex; align-items: center; justify-content: center; gap: 15px;
+        #play-screen {
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-top: 10px;
+            justify-content: flex-start;
         }
-        
+
+        .top-bar {
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            top: 0;
+        }
+
+        .message-area {
+            height: 50px;
+            margin-top: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
         /* 入力マス */
-        .boxes-container { display: flex; gap: 8px; margin: 10px 0 20px 0; max-width: 95%; flex-wrap: wrap; justify-content: center;}
-        .box {
-            width: 55px; height: 75px; background-color: white; border: 4px solid #ccc;
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            font-size: 32px; font-weight: bold; color: #333; cursor: pointer;
+        .boxes-container {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0 20px 0;
+            max-width: 95%;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-        .box.active { border-color: #FF9800; background-color: #fff3e0; }
+
+        .box {
+            width: 55px;
+            height: 75px;
+            background-color: white;
+            border: 4px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .box.active {
+            border-color: #FF9800;
+            background-color: #fff3e0;
+        }
 
         /* キーパッド */
-        .keypad-container { 
-            display: flex; flex-direction: column; gap: 15px; margin-top: 10px; width: 95%; max-width: 550px;
+        .keypad-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+            width: 95%;
+            max-width: 550px;
         }
-        .keypad-row {
-            display: flex; gap: 10px; justify-content: center; width: 100%;
-        }
-        .key {
-            background-color: white; border: 3px solid #ddd; border-radius: 12px;
-            height: 90px; flex: 1; font-size: 40px; font-weight: bold; color: #333;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer;
-            touch-action: manipulation; /* サクサク反応＆ズーム防止 */
-        }
-        .key:active { background-color: #eee; transform: translateY(2px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        .control-btn { margin-top: 30px; background-color: #FF9800; font-size: 28px; width: 200px; z-index: 10; touch-action: manipulation; }
-        
+        .keypad-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .key {
+            background-color: white;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            height: 90px;
+            flex: 1;
+            font-size: 40px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            touch-action: manipulation;
+            /* サクサク反応＆ズーム防止 */
+        }
+
+        .key:active {
+            background-color: #eee;
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .control-btn {
+            margin-top: 30px;
+            background-color: #FF9800;
+            font-size: 28px;
+            width: 200px;
+            z-index: 10;
+            touch-action: manipulation;
+        }
+
         /* 巨大⭕️❌表示用オーバーレイ */
         #mark-overlay {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 250px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 250px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
             z-index: 5;
         }
 
         /* --- 設定画面 --- */
-        #setting-screen { 
+        #setting-screen {
             /* ダブルタップ拡大をCSSレベルでも強力に禁止 */
-            touch-action: pan-y manipulation; 
-            -webkit-overflow-scrolling: touch; 
-            justify-content: flex-start; padding: 15px; 
-            padding-bottom: calc(80px + env(safe-area-inset-bottom)); overflow-y: auto; 
+            touch-action: pan-y manipulation;
+            -webkit-overflow-scrolling: touch;
+            justify-content: flex-start;
+            padding: 15px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
+            overflow-y: auto;
             display: none;
         }
+
         #setting-screen.active {
-            display: block; 
+            display: block;
         }
-        
+
         .form-container {
-            display: flex; flex-direction: column; align-items: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .form-group {
-            width: 100%; max-width: 450px;
-            border: 2px solid #e5e5ea; border-radius: 10px;
-            margin-bottom: 15px; overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            width: 100%;
+            max-width: 450px;
+            border: 2px solid #e5e5ea;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
             background-color: white;
         }
+
         .form-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 15px; border-bottom: 2px solid #e5e5ea; gap: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 2px solid #e5e5ea;
+            gap: 8px;
         }
-        .form-row:last-child { border-bottom: none; }
-        
+
+        .form-row:last-child {
+            border-bottom: none;
+        }
+
         /* 【重要】フォントサイズを16px以上にしないとiOSが勝手に強制ズームします */
-        .form-row label { font-size: 16px; font-weight: bold; color: #333; flex: 1; }
-        .form-row select, .form-row input[type="number"] { 
-            padding: 6px; 
-            font-size: 16px; /* 16px以上に修正。これでズームされません */
-            border: 2px solid #ccc; border-radius: 6px; width: 130px; text-align: center;
+        .form-row label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            flex: 1;
         }
-        .form-row input[type="range"] { flex: 1; cursor: pointer; }
+
+        .form-row select,
+        .form-row input[type="number"] {
+            padding: 6px;
+            font-size: 16px;
+            /* 16px以上に修正。これでズームされません */
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            width: 130px;
+            text-align: center;
+        }
+
+        .form-row input[type="range"] {
+            flex: 1;
+            cursor: pointer;
+        }
     </style>
-    <script src="../common/core.js"></script>
 </head>
+
 <body>
     <div id="home-screen" class="screen active">
         <div class="home-menu">
             <button class="btn" onclick="startSession()" style="touch-action: manipulation;">スタート</button>
             <div style="margin-top: 40px; text-align: center;">
-                <button class="btn" style="background-color: #78909C; font-size: 20px; padding: 12px 20px; width: 160px; margin: 0; touch-action: manipulation;" id="center-setting-btn">設定</button>
+                <button class="btn"
+                    style="background-color: #78909C; font-size: 20px; padding: 12px 20px; width: 160px; margin: 0; touch-action: manipulation;"
+                    id="center-setting-btn">設定</button>
                 <p style="font-size: 14px; color: #666; margin-top: 5px; font-weight: bold;">※トリプルタップ</p>
             </div>
         </div>
@@ -137,12 +303,14 @@
 
     <div id="play-screen" class="screen">
         <div class="top-bar">
-            <button class="btn btn-outline" style="font-size: 18px; touch-action: manipulation;" onclick="showHome()">もどる</button>
+            <button class="btn btn-outline" style="font-size: 18px; touch-action: manipulation;"
+                onclick="showHome()">もどる</button>
             <div style="font-size: 18px; font-weight: bold; color: #666;" id="question-counter">1 / 5問</div>
         </div>
-        
+
         <div class="message-area" id="message-container">
-            <button id="replay-btn" onclick="replayAudio()" style="background:none; border:none; font-size:40px; cursor:pointer; padding: 0; touch-action: manipulation;">🔈</button>
+            <button id="replay-btn" onclick="replayAudio()"
+                style="background:none; border:none; font-size:40px; cursor:pointer; padding: 0; touch-action: manipulation;">🔈</button>
         </div>
 
         <div class="boxes-container" id="boxes"></div>
@@ -159,7 +327,7 @@
     <div id="setting-screen" class="screen">
         <div class="form-container">
             <h2 style="color: #333; margin-top: 10px; margin-bottom: 15px;">設定</h2>
-            
+
             <div class="form-group">
                 <div class="form-row">
                     <label>もんだい</label>
@@ -183,26 +351,29 @@
                 <div class="form-row">
                     <label style="flex: 0.8;">スピード</label>
                     <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                        <input type="range" id="set-speed" min="0.5" max="2.0" step="0.1" value="1.0" oninput="document.getElementById('speed-val').innerText=Number(this.value).toFixed(1)">
+                        <input type="range" id="set-speed" min="0.5" max="2.0" step="0.1" value="1.0"
+                            oninput="document.getElementById('speed-val').innerText=Number(this.value).toFixed(1)">
                         <span id="speed-val" style="width:30px; text-align:right;">1.0</span>
                     </div>
                 </div>
                 <div class="form-row">
                     <label style="flex: 0.8;">間隔</label>
                     <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                        <input type="range" id="set-interval" min="0.0" max="2.0" step="0.1" value="0.0" oninput="document.getElementById('interval-val').innerText=Number(this.value).toFixed(1)">
+                        <input type="range" id="set-interval" min="0.0" max="2.0" step="0.1" value="0.0"
+                            oninput="document.getElementById('interval-val').innerText=Number(this.value).toFixed(1)">
                         <span id="interval-val" style="width:30px; text-align:right;">0.0</span>秒
                     </div>
                 </div>
                 <div class="form-row">
                     <label style="flex: 0.8;">読み上げ音量</label>
                     <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                        <input type="range" id="set-speechVolume" min="0.0" max="1.0" step="0.1" value="1.0" oninput="document.getElementById('speech-vol-val').innerText=Number(this.value).toFixed(1)">
+                        <input type="range" id="set-speechVolume" min="0.0" max="1.0" step="0.1" value="1.0"
+                            oninput="document.getElementById('speech-vol-val').innerText=Number(this.value).toFixed(1)">
                         <span id="speech-vol-val" style="width:30px; text-align:right;">1.0</span>
                     </div>
                 </div>
             </div>
-            
+
             <div class="form-group" style="border-left: 6px solid #FF9800;">
                 <div class="form-row" style="flex-direction: column; align-items: flex-start;">
                     <label style="margin-bottom: 5px;">妨害音（図地弁別）</label>
@@ -215,13 +386,16 @@
                 <div class="form-row">
                     <label style="flex: 0.8;">妨害音の音量</label>
                     <div style="display:flex; align-items:center; gap:5px; flex: 1.5;">
-                        <input type="range" id="set-noiseVolume" min="0.0" max="1.0" step="0.1" value="1.0" oninput="document.getElementById('noise-vol-val').innerText=Number(this.value).toFixed(1)">
+                        <input type="range" id="set-noiseVolume" min="0.0" max="1.0" step="0.1" value="1.0"
+                            oninput="document.getElementById('noise-vol-val').innerText=Number(this.value).toFixed(1)">
                         <span id="noise-vol-val" style="width:30px; text-align:right;">1.0</span>
                     </div>
                 </div>
             </div>
 
-            <button class="btn" style="margin-top: 10px; background-color: #333; font-size: 20px; touch-action: manipulation;" onclick="saveSettingsAndClose()">保存して戻る</button>
+            <button class="btn"
+                style="margin-top: 10px; background-color: #333; font-size: 20px; touch-action: manipulation;"
+                onclick="saveSettingsAndClose()">保存して戻る</button>
         </div>
     </div>
 
@@ -240,14 +414,14 @@
         });
 
         // ピンチズーム（2本指拡大）を防止
-        document.addEventListener('touchstart', function(event) {
+        document.addEventListener('touchstart', function (event) {
             if (event.touches.length > 1) {
                 event.preventDefault();
             }
         }, { passive: false });
 
         // ダブルタップによるズームを防止
-        document.addEventListener('dblclick', function(event) {
+        document.addEventListener('dblclick', function (event) {
             event.preventDefault();
         }, { passive: false });
 
@@ -308,29 +482,29 @@
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let isReading = false; 
+        let isReading = false;
 
         let isAudioUnlocked = false;
         function unlockAudio() {
             if (isAudioUnlocked) return;
-            
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            
+
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
             speechSynthesis.cancel();
             speechSynthesis.resume();
             let u = new SpeechSynthesisUtterance('');
             u.volume = 0;
             speechSynthesis.speak(u);
-            
+
             isAudioUnlocked = true;
         }
 
         function playTone(type) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
-            
+
             if (type === 'correct') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
                 osc.frequency.setValueAtTime(1108, audioCtx.currentTime + 0.1);
@@ -348,7 +522,7 @@
         }
 
         function playWhiteNoise(durationSeconds, volume) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * durationSeconds));
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -356,20 +530,20 @@
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.05 * volume; 
+            gain.gain.value = 0.05 * volume;
             noise.connect(gain); gain.connect(audioCtx.destination);
             noise.start();
         }
 
         function playElectronicNoise(durationSeconds, volume) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             const now = audioCtx.currentTime;
             const end = now + durationSeconds;
             osc.type = 'square';
             let time = now;
-            while(time < end) { osc.frequency.setValueAtTime(Math.random() * 1000 + 400, time); time += 0.1; }
+            while (time < end) { osc.frequency.setValueAtTime(Math.random() * 1000 + 400, time); time += 0.1; }
             gain.gain.value = 0.03 * volume;
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(now); osc.stop(end);
@@ -379,17 +553,17 @@
             return new Promise(resolve => {
                 let u = new SpeechSynthesisUtterance(text);
                 u.lang = 'ja-JP';
-                u.rate = rate; 
+                u.rate = rate;
                 u.pitch = 1.0;
                 u.volume = volume;
-                
+
                 let isResolved = false;
                 const finish = () => { if (!isResolved) { isResolved = true; resolve(); } };
-                u.onend = finish; 
+                u.onend = finish;
                 u.onerror = finish;
-                
+
                 speechSynthesis.speak(u);
-                
+
                 setTimeout(finish, (text.length * 500) / rate + 300);
             });
         }
@@ -398,23 +572,23 @@
             isReading = true;
             const currentItems = ITEMS[config.mode];
             for (let i = 0; i < questions.length; i++) {
-                if (!isReading) break; 
-                let item = currentItems[questions[i]]; 
-                
+                if (!isReading) break;
+                let item = currentItems[questions[i]];
+
                 if (config.noiseType === 'noise') playWhiteNoise(1.5 / config.speed, config.noiseVolume);
                 else if (config.noiseType === 'electronic') playElectronicNoise(1.5 / config.speed, config.noiseVolume);
-                
+
                 await speakWord(item.yomi, config.speed, config.speechVolume);
-                
+
                 if (i < questions.length - 1 && isReading) {
                     await new Promise(r => setTimeout(r, config.interval * 1000));
                 }
             }
-            if(isReading) await new Promise(r => setTimeout(r, 600));
+            if (isReading) await new Promise(r => setTimeout(r, 600));
             isReading = false;
         }
 
-        let questionIds = []; 
+        let questionIds = [];
         let userInputIds = [];
         let activeIndex = 0;
         let currentQuestionCount = 0;
@@ -423,11 +597,11 @@
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
-        function showHome() { 
-            speechSynthesis.cancel(); 
+        function showHome() {
+            speechSynthesis.cancel();
             isReading = false;
             document.getElementById('mark-overlay').style.opacity = "0";
-            switchScreen('home-screen'); 
+            switchScreen('home-screen');
         }
         function showSetting() { loadSettings(); switchScreen('setting-screen'); }
 
@@ -435,16 +609,16 @@
             const row1 = document.getElementById('keypad-row1');
             const row2 = document.getElementById('keypad-row2');
             row1.innerHTML = ''; row2.innerHTML = '';
-            
+
             const currentItems = ITEMS[config.mode];
-            const half = Math.ceil(currentItems.length / 2); 
-            
-            for(let i = 0; i < currentItems.length; i++) {
+            const half = Math.ceil(currentItems.length / 2);
+
+            for (let i = 0; i < currentItems.length; i++) {
                 let btn = document.createElement('div');
                 btn.className = 'key';
                 btn.innerText = currentItems[i].label;
                 btn.onpointerdown = (e) => {
-                    e.preventDefault(); 
+                    e.preventDefault();
                     inputNum(i);
                 };
                 if (i < half) row1.appendChild(btn); else row2.appendChild(btn);
@@ -452,7 +626,7 @@
         }
 
         function startSession() {
-            unlockAudio(); 
+            unlockAudio();
             currentQuestionCount = 0;
             startGame();
         }
@@ -460,24 +634,24 @@
         async function startGame() {
             switchScreen('play-screen');
             renderKeypad();
-            
+
             document.getElementById('mark-overlay').style.opacity = "0";
             document.getElementById('question-counter').innerText = `${currentQuestionCount + 1} / ${config.totalQuestions}問`;
-            
+
             const keypad = document.getElementById('keypad');
             const btn = document.getElementById('action-btn');
             const replayBtn = document.getElementById('replay-btn');
-            
+
             keypad.style.opacity = "0.3";
             keypad.style.pointerEvents = "none";
             btn.style.display = "none";
             replayBtn.style.opacity = "0.3";
             replayBtn.style.pointerEvents = "none";
-            
+
             questionIds = []; userInputIds = []; activeIndex = 0;
             const maxId = ITEMS[config.mode].length;
-            
-            for(let i=0; i<config.digits; i++) {
+
+            for (let i = 0; i < config.digits; i++) {
                 questionIds.push(Math.floor(Math.random() * maxId));
                 userInputIds.push(null);
             }
@@ -496,21 +670,21 @@
 
         async function replayAudio() {
             if (isReading) return;
-            
-            speechSynthesis.cancel(); 
+
+            speechSynthesis.cancel();
             speechSynthesis.resume();
             await new Promise(r => setTimeout(r, 100));
-            
+
             const keypad = document.getElementById('keypad');
             const replayBtn = document.getElementById('replay-btn');
-            
+
             keypad.style.opacity = "0.3";
             keypad.style.pointerEvents = "none";
             replayBtn.style.opacity = "0.3";
             replayBtn.style.pointerEvents = "none";
-            
+
             await readQuestions(questionIds);
-            
+
             keypad.style.opacity = "1";
             keypad.style.pointerEvents = "auto";
             replayBtn.style.opacity = "1";
@@ -522,13 +696,13 @@
             container.innerHTML = '';
             const currentItems = ITEMS[config.mode];
 
-            for(let i=0; i<config.digits; i++) {
+            for (let i = 0; i < config.digits; i++) {
                 let div = document.createElement('div');
                 div.className = `box ${i === activeIndex ? 'active' : ''}`;
                 div.innerText = userInputIds[i] !== null ? currentItems[userInputIds[i]].label : "";
-                
+
                 div.onpointerdown = () => {
-                    if(document.getElementById('keypad').style.pointerEvents === 'auto') {
+                    if (document.getElementById('keypad').style.pointerEvents === 'auto') {
                         activeIndex = i;
                         renderBoxes();
                     }
@@ -543,13 +717,13 @@
                 let nextEmpty = userInputIds.indexOf(null);
                 activeIndex = nextEmpty !== -1 ? nextEmpty : config.digits - 1;
                 renderBoxes();
-                
+
                 if (userInputIds.every(v => v !== null)) {
                     document.getElementById('keypad').style.pointerEvents = "none";
                     document.getElementById('keypad').style.opacity = "0.5";
                     document.getElementById('replay-btn').style.pointerEvents = "none";
                     document.getElementById('action-btn').onclick = checkAnswer;
-                    setTimeout(checkAnswer, 400); 
+                    setTimeout(checkAnswer, 400);
                 }
             }
         }
@@ -558,48 +732,48 @@
             const keypad = document.getElementById('keypad');
             const btn = document.getElementById('action-btn');
             const mark = document.getElementById('mark-overlay');
-            
+
             let isCorrectAll = true;
-            for(let i=0; i<config.digits; i++) {
-                if(questionIds[i] !== userInputIds[i]) isCorrectAll = false;
+            for (let i = 0; i < config.digits; i++) {
+                if (questionIds[i] !== userInputIds[i]) isCorrectAll = false;
             }
 
             if (isCorrectAll) {
                 playTone('correct');
                 mark.innerText = "⭕️";
-                mark.style.color = "#FF3B30"; 
+                mark.style.color = "#FF3B30";
                 mark.style.opacity = "1";
-                
+
                 currentQuestionCount++;
 
                 if (currentQuestionCount >= config.totalQuestions) {
                     btn.innerText = "ホームへ";
-                    btn.onclick = showHome; 
+                    btn.onclick = showHome;
                 } else {
                     btn.innerText = "つぎへ";
-                    btn.onclick = startGame; 
+                    btn.onclick = startGame;
                 }
                 btn.style.display = "block";
-                
+
             } else {
                 playTone('wrong');
                 mark.innerText = "❌";
-                mark.style.color = "#007AFF"; 
+                mark.style.color = "#007AFF";
                 mark.style.opacity = "1";
-                
+
                 setTimeout(async () => {
                     if (!document.getElementById('play-screen').classList.contains('active')) return;
-                    
+
                     mark.style.opacity = "0";
                     userInputIds = userInputIds.map((v, i) => questionIds[i] === v ? v : null);
                     activeIndex = userInputIds.indexOf(null);
-                    
+
                     renderBoxes();
-                    
+
                     await readQuestions(questionIds);
-                    
+
                     if (!document.getElementById('play-screen').classList.contains('active')) return;
-                    
+
                     keypad.style.opacity = "1";
                     keypad.style.pointerEvents = "auto";
                     document.getElementById('replay-btn').style.pointerEvents = "auto";
@@ -610,4 +784,5 @@
         window.onload = loadSettings;
     </script>
 </body>
+
 </html>

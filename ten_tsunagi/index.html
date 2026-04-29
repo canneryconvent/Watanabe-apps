@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -8,11 +18,17 @@
     <title>点つなぎ</title>
     <style>
         /* 共通要件: 画面高さの確実な取得とスワイプ防止 */
-        :root { --vh: 1vh; }
-        html, body {
-            margin: 0; padding: 0;
+        :root {
+            --vh: 1vh;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
             height: calc(var(--vh, 1vh) * 100);
-            overflow: hidden; /* 全体スワイプ防止 */
+            overflow: hidden;
+            /* 全体スワイプ防止 */
             background-color: #f5f5f5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #333;
@@ -29,9 +45,13 @@
             flex-direction: column;
             box-sizing: border-box;
             position: absolute;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
         }
-        .screen.active { display: flex; }
+
+        .screen.active {
+            display: flex;
+        }
 
         /* ボタン共通スタイル */
         button {
@@ -47,23 +67,62 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        button:active { opacity: 0.7; }
-        button:disabled { background-color: #ccc; pointer-events: none; }
+
+        button:active {
+            opacity: 0.7;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            pointer-events: none;
+        }
 
         /* ホーム画面 */
-        #home-screen { align-items: center; justify-content: center; gap: 40px; }
-        .setting-btn-wrapper { position: relative; }
+        #home-screen {
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .setting-btn-wrapper {
+            position: relative;
+        }
+
         .setting-hint {
-            position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
-            font-size: 0.9rem; color: #aaa; white-space: nowrap; pointer-events: none;
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #aaa;
+            white-space: nowrap;
+            pointer-events: none;
         }
 
         /* プレイ画面 */
-        #play-screen { padding: 5px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; height: 50px; }
-        .back-btn { background-color: transparent; color: #888; font-size: 1.5rem; padding: 5px; }
-        .score { font-size: 1.5rem; }
-        
+        #play-screen {
+            padding: 5px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            height: 50px;
+        }
+
+        .back-btn {
+            background-color: transparent;
+            color: #888;
+            font-size: 1.5rem;
+            padding: 5px;
+        }
+
+        .score {
+            font-size: 1.5rem;
+        }
+
         .play-area-container {
             flex: 1;
             display: flex;
@@ -75,20 +134,45 @@
             padding: 0 5px;
             box-sizing: border-box;
         }
-        
+
         /* 共通要件: 局所的なタッチ操作無効化 */
         .canvas-wrapper {
             position: relative;
             background-color: white;
             border: 8px solid #888;
-            touch-action: none; 
-            width: 48%; max-width: 500px; aspect-ratio: 1/1;
+            touch-action: none;
+            width: 48%;
+            max-width: 500px;
+            aspect-ratio: 1/1;
         }
-        #drawing-wrapper { border-color: #007aff; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .footer { height: 90px; display: flex; justify-content: center; align-items: center; }
-        .action-btn { background-color: #ffcc00; color: #333; font-size: 2rem; border-radius: 40px; padding: 15px 50px; }
+        #drawing-wrapper {
+            border-color: #007aff;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .footer {
+            height: 90px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-btn {
+            background-color: #ffcc00;
+            color: #333;
+            font-size: 2rem;
+            border-radius: 40px;
+            padding: 15px 50px;
+        }
+
         #red-circle-overlay {
             display: none;
             position: absolute;
@@ -105,8 +189,10 @@
 
         /* 設定画面 */
         #setting-screen {
-            background-color: white; z-index: 10;
+            background-color: white;
+            z-index: 10;
         }
+
         /* 共通要件: スクロール領域の最適化とセーフエリア */
         .scrollable {
             overflow-y: auto;
@@ -114,670 +200,737 @@
             padding: 20px;
             padding-bottom: calc(80px + env(safe-area-inset-bottom));
         }
-        .setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; font-size: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .setting-controls { display: flex; align-items: center; gap: 15px; }
-        .setting-controls button { font-size: 1.5rem; padding: 5px 20px; border-radius: 10px; }
-        select { font-size: 1.2rem; padding: 5px; }
-        .close-btn { width: 100%; margin-top: 20px; background-color: #34c759; }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .setting-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .setting-controls button {
+            font-size: 1.5rem;
+            padding: 5px 20px;
+            border-radius: 10px;
+        }
+
+        select {
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+
+        .close-btn {
+            width: 100%;
+            margin-top: 20px;
+            background-color: #34c759;
+        }
 
         /* トグルスイッチ */
-        .toggle { position: relative; width: 60px; height: 34px; }
-        .toggle input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #34c759; }
-        input:checked + .slider:before { transform: translateX(26px); }
+        .toggle {
+            position: relative;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #34c759;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
     </style>
-    <script src="../common/core.js"></script>
 </head>
+
 <body>
 
-<div id="app">
-    <!-- ホーム画面 -->
-    <div id="home-screen" class="screen active">
-        <button id="start-btn" style="font-size: 3rem; padding: 20px 60px; border-radius: 40px; background-color: #007aff;">スタート</button>
-        <div class="setting-btn-wrapper">
-            <button id="settings-btn" style="background-color: #007aff;">設定</button>
-            <div class="setting-hint">トリプルタップ</div>
+    <div id="app">
+        <!-- ホーム画面 -->
+        <div id="home-screen" class="screen active">
+            <button id="start-btn"
+                style="font-size: 3rem; padding: 20px 60px; border-radius: 40px; background-color: #007aff;">スタート</button>
+            <div class="setting-btn-wrapper">
+                <button id="settings-btn" style="background-color: #007aff;">設定</button>
+                <div class="setting-hint">トリプルタップ</div>
+            </div>
+        </div>
+
+        <!-- プレイ画面 -->
+        <div id="play-screen" class="screen">
+            <div class="header">
+                <button id="back-btn" class="back-btn">もどる</button>
+                <div id="score-display" class="score">×:0 ○:0</div>
+            </div>
+
+            <div class="play-area-container" id="play-area-container">
+                <div id="sample-wrapper" class="canvas-wrapper">
+                    <canvas id="sample-canvas"></canvas>
+                </div>
+                <div id="drawing-wrapper" class="canvas-wrapper">
+                    <canvas id="drawing-canvas"></canvas>
+                </div>
+                <div id="red-circle-overlay"></div>
+            </div>
+
+            <div class="footer">
+                <button id="action-btn" class="action-btn">できた</button>
+            </div>
+        </div>
+
+        <!-- 設定画面 -->
+        <div id="setting-screen" class="screen scrollable">
+            <h1 style="text-align: center;">設定</h1>
+
+            <div class="setting-item">
+                <span>横</span>
+                <div class="setting-controls">
+                    <button onclick="changeSetting('cols', -1)">-</button>
+                    <span id="set-cols">3</span>
+                    <button onclick="changeSetting('cols', 1)">+</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <span>縦</span>
+                <div class="setting-controls">
+                    <button onclick="changeSetting('rows', -1)">-</button>
+                    <span id="set-rows">3</span>
+                    <button onclick="changeSetting('rows', 1)">+</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <span>線の数</span>
+                <div class="setting-controls">
+                    <button onclick="changeSetting('lines', -1)">-</button>
+                    <span id="set-lines">5</span>
+                    <button onclick="changeSetting('lines', 1)">+</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <span>問題数</span>
+                <div class="setting-controls">
+                    <button onclick="changeSetting('questions', -1)">-</button>
+                    <span id="set-questions">10</span>
+                    <button onclick="changeSetting('questions', 1)">+</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <span>斜め線を使用する</span>
+                <label class="toggle">
+                    <input type="checkbox" id="set-diagonal">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span>左利き</span>
+                <label class="toggle">
+                    <input type="checkbox" id="set-lefthanded">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span>戻るボタンを表示する</span>
+                <label class="toggle">
+                    <input type="checkbox" id="set-backbtn">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span>間違えた時</span>
+                <select id="set-whenwrong">
+                    <option value="0">そのまま</option>
+                    <option value="1">間違えた箇所を赤くする</option>
+                    <option value="2">間違えた箇所を消す</option>
+                    <option value="3">全部消す</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <span>自動採点</span>
+                <select id="set-autocheck">
+                    <option value="0">しない</option>
+                    <option value="1">する（簡単：正解のみ引ける）</option>
+                    <option value="2">する（普通：間違いも引ける）</option>
+                </select>
+            </div>
+
+            <button class="close-btn" onclick="closeSettings()">閉じる</button>
         </div>
     </div>
 
-    <!-- プレイ画面 -->
-    <div id="play-screen" class="screen">
-        <div class="header">
-            <button id="back-btn" class="back-btn">もどる</button>
-            <div id="score-display" class="score">×:0 ○:0</div>
-        </div>
-        
-        <div class="play-area-container" id="play-area-container">
-            <div id="sample-wrapper" class="canvas-wrapper">
-                <canvas id="sample-canvas"></canvas>
-            </div>
-            <div id="drawing-wrapper" class="canvas-wrapper">
-                <canvas id="drawing-canvas"></canvas>
-            </div>
-            <div id="red-circle-overlay"></div>
-        </div>
+    <script>
+        /* =========================================================
+           共通要件1: 確実な画面高さの取得 (リサイズデバウンス付き)
+           ========================================================= */
+        const setVh = () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                setVh();
+                if (currentScreen === 'play') drawAll();
+            }, 100);
+        });
+        setVh();
 
-        <div class="footer">
-            <button id="action-btn" class="action-btn">できた</button>
-        </div>
-    </div>
+        /* =========================================================
+           状態管理 (LocalStorageによる永続化)
+           ========================================================= */
+        const defaultSettings = {
+            rows: 3, cols: 3, lines: 5, questions: 10,
+            diagonal: false, leftHanded: false, backBtn: true, whenWrong: 1, autoCheck: 0
+        };
+        let savedSettings = JSON.parse(localStorage.getItem('appSettings'));
+        // 旧バージョンのboolean設定を数値(0, 1)にマイグレーション
+        if (savedSettings && typeof savedSettings.autoCheck === 'boolean') {
+            savedSettings.autoCheck = savedSettings.autoCheck ? 1 : 0;
+        }
+        let settings = savedSettings || defaultSettings;
+        const saveSettings = () => { localStorage.setItem('appSettings', JSON.stringify(settings)); };
 
-    <!-- 設定画面 -->
-    <div id="setting-screen" class="screen scrollable">
-        <h1 style="text-align: center;">設定</h1>
-        
-        <div class="setting-item">
-            <span>横</span>
-            <div class="setting-controls">
-                <button onclick="changeSetting('cols', -1)">-</button>
-                <span id="set-cols">3</span>
-                <button onclick="changeSetting('cols', 1)">+</button>
-            </div>
-        </div>
-        <div class="setting-item">
-            <span>縦</span>
-            <div class="setting-controls">
-                <button onclick="changeSetting('rows', -1)">-</button>
-                <span id="set-rows">3</span>
-                <button onclick="changeSetting('rows', 1)">+</button>
-            </div>
-        </div>
-        <div class="setting-item">
-            <span>線の数</span>
-            <div class="setting-controls">
-                <button onclick="changeSetting('lines', -1)">-</button>
-                <span id="set-lines">5</span>
-                <button onclick="changeSetting('lines', 1)">+</button>
-            </div>
-        </div>
-        <div class="setting-item">
-            <span>問題数</span>
-            <div class="setting-controls">
-                <button onclick="changeSetting('questions', -1)">-</button>
-                <span id="set-questions">10</span>
-                <button onclick="changeSetting('questions', 1)">+</button>
-            </div>
-        </div>
-        <div class="setting-item">
-            <span>斜め線を使用する</span>
-            <label class="toggle">
-                <input type="checkbox" id="set-diagonal">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="setting-item">
-            <span>左利き</span>
-            <label class="toggle">
-                <input type="checkbox" id="set-lefthanded">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="setting-item">
-            <span>戻るボタンを表示する</span>
-            <label class="toggle">
-                <input type="checkbox" id="set-backbtn">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="setting-item">
-            <span>間違えた時</span>
-            <select id="set-whenwrong">
-                <option value="0">そのまま</option>
-                <option value="1">間違えた箇所を赤くする</option>
-                <option value="2">間違えた箇所を消す</option>
-                <option value="3">全部消す</option>
-            </select>
-        </div>
-        <div class="setting-item">
-            <span>自動採点</span>
-            <select id="set-autocheck">
-                <option value="0">しない</option>
-                <option value="1">する（簡単：正解のみ引ける）</option>
-                <option value="2">する（普通：間違いも引ける）</option>
-            </select>
-        </div>
+        let currentScreen = 'home';
+        let gameState = {
+            corrects: 0, wrongs: 0, isPlaying: false,
+            dots: [], sampleLines: [], userLines: [], wrongLines: [],
+            activeDot: -1, currentPos: null, currentPhase: 'draw' // 'draw' または 'next'
+        };
 
-        <button class="close-btn" onclick="closeSettings()">閉じる</button>
-    </div>
-</div>
+        /* =========================================================
+           効果音 (Web Audio API)
+           ========================================================= */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-<script>
-    /* =========================================================
-       共通要件1: 確実な画面高さの取得 (リサイズデバウンス付き)
-       ========================================================= */
-    const setVh = () => {
-        let vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            setVh();
-            if (currentScreen === 'play') drawAll();
-        }, 100);
-    });
-    setVh();
-
-    /* =========================================================
-       状態管理 (LocalStorageによる永続化)
-       ========================================================= */
-    const defaultSettings = {
-        rows: 3, cols: 3, lines: 5, questions: 10,
-        diagonal: false, leftHanded: false, backBtn: true, whenWrong: 1, autoCheck: 0
-    };
-    let savedSettings = JSON.parse(localStorage.getItem('appSettings'));
-    // 旧バージョンのboolean設定を数値(0, 1)にマイグレーション
-    if (savedSettings && typeof savedSettings.autoCheck === 'boolean') {
-        savedSettings.autoCheck = savedSettings.autoCheck ? 1 : 0;
-    }
-    let settings = savedSettings || defaultSettings;
-    const saveSettings = () => { localStorage.setItem('appSettings', JSON.stringify(settings)); };
-
-    let currentScreen = 'home';
-    let gameState = {
-        corrects: 0, wrongs: 0, isPlaying: false,
-        dots: [], sampleLines: [], userLines: [], wrongLines: [],
-        activeDot: -1, currentPos: null, currentPhase: 'draw' // 'draw' または 'next'
-    };
-
-    /* =========================================================
-       効果音 (Web Audio API)
-       ========================================================= */
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    const playTone = (type) => {
-        if (type === 'correct') {
-            // ピンポンピンポンピンポン風
-            const playPingPong = (delay) => {
+        const playTone = (type) => {
+            if (type === 'correct') {
+                // ピンポンピンポンピンポン風
+                const playPingPong = (delay) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + delay);
+                    osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + delay + 0.1);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + 0.3);
+                    osc.start(audioCtx.currentTime + delay);
+                    osc.stop(audioCtx.currentTime + delay + 0.3);
+                };
+                playPingPong(0);
+                playPingPong(0.2);
+                playPingPong(0.4);
+            } else if (type === 'wrong') {
+                // ブブー風
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + delay);
-                osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + delay + 0.1);
-                gain.gain.setValueAtTime(0.5, audioCtx.currentTime + delay);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + 0.3);
-                osc.start(audioCtx.currentTime + delay);
-                osc.stop(audioCtx.currentTime + delay + 0.3);
-            };
-            playPingPong(0);
-            playPingPong(0.2);
-            playPingPong(0.4);
-        } else if (type === 'wrong') {
-            // ブブー風
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(140, audioCtx.currentTime + 0.2);
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-        }
-    };
-
-    /* =========================================================
-       画面遷移・設定画面ロジック
-       ========================================================= */
-    const showScreen = (id) => {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(`${id}-screen`).classList.add('active');
-        currentScreen = id;
-    };
-
-    document.getElementById('start-btn').addEventListener('click', () => {
-        audioCtx.resume();
-        gameState.corrects = 0; gameState.wrongs = 0;
-        updateScore();
-        document.getElementById('back-btn').style.visibility = settings.backBtn ? 'visible' : 'hidden';
-        document.getElementById('play-area-container').style.flexDirection = settings.leftHanded ? 'row-reverse' : 'row';
-        showScreen('play');
-        initGame();
-    });
-
-    document.getElementById('back-btn').addEventListener('click', () => showScreen('home'));
-
-    /* トリプルタップ設定 */
-    let tapCount = 0;
-    let tapTimer;
-    document.getElementById('settings-btn').addEventListener('pointerup', (e) => {
-        e.preventDefault();
-        tapCount++;
-        if (tapCount === 1) {
-            tapTimer = setTimeout(() => { tapCount = 0; }, 600);
-        } else if (tapCount === 3) {
-            clearTimeout(tapTimer);
-            tapCount = 0;
-            openSettings();
-        }
-    });
-
-    const openSettings = () => {
-        document.getElementById('set-cols').innerText = settings.cols;
-        document.getElementById('set-rows').innerText = settings.rows;
-        document.getElementById('set-lines').innerText = settings.lines;
-        document.getElementById('set-questions').innerText = settings.questions;
-        document.getElementById('set-diagonal').checked = settings.diagonal;
-        document.getElementById('set-lefthanded').checked = settings.leftHanded;
-        document.getElementById('set-backbtn').checked = settings.backBtn;
-        document.getElementById('set-whenwrong').value = settings.whenWrong;
-        document.getElementById('set-autocheck').value = settings.autoCheck;
-        showScreen('setting');
-    };
-
-    const closeSettings = () => {
-        settings.diagonal = document.getElementById('set-diagonal').checked;
-        settings.leftHanded = document.getElementById('set-lefthanded').checked;
-        settings.backBtn = document.getElementById('set-backbtn').checked;
-        settings.whenWrong = parseInt(document.getElementById('set-whenwrong').value);
-        settings.autoCheck = parseInt(document.getElementById('set-autocheck').value);
-        saveSettings();
-        showScreen('home');
-    };
-
-    const changeSetting = (key, delta) => {
-        if (key === 'cols') settings.cols = Math.max(1, Math.min(10, settings.cols + delta));
-        if (key === 'rows') settings.rows = Math.max(1, Math.min(10, settings.rows + delta));
-        if (settings.cols === 1 && settings.rows === 1) settings.cols = 2; // 1x1防止
-        
-        if (key === 'questions') settings.questions = Math.max(1, Math.min(50, settings.questions + delta));
-        
-        const maxLines = settings.diagonal 
-            ? ((settings.cols - 1) * (settings.rows - 1) * 4 + settings.cols + settings.rows - 2)
-            : ((settings.cols - 1) * (settings.rows - 1) * 2 + settings.cols + settings.rows - 2);
-        
-        if (key === 'lines') settings.lines = Math.max(1, Math.min(maxLines, settings.lines + delta));
-        if (settings.lines > maxLines) settings.lines = Math.max(1, maxLines);
-        
-        document.getElementById(`set-${key}`).innerText = settings[key];
-        document.getElementById('set-lines').innerText = settings.lines;
-    };
-
-    /* =========================================================
-       ゲームロジック・描画
-       ========================================================= */
-    const sampleCanvas = document.getElementById('sample-canvas');
-    const drawingCanvas = document.getElementById('drawing-canvas');
-    const sampleCtx = sampleCanvas.getContext('2d');
-    const drawCtx = drawingCanvas.getContext('2d');
-
-    const updateScore = () => {
-        document.getElementById('score-display').innerText = `×:${gameState.wrongs} ○:${gameState.corrects}`;
-    };
-
-    const initGame = () => {
-        gameState.userLines = [];
-        gameState.wrongLines = [];
-        generateSampleLines();
-        changePhase('draw');
-        resizeCanvas();
-    };
-
-    const resizeCanvas = () => {
-        const wrap = document.getElementById('sample-wrapper');
-        const size = wrap.clientWidth;
-        sampleCanvas.width = size; sampleCanvas.height = size;
-        drawingCanvas.width = size; drawingCanvas.height = size;
-        
-        gameState.dots = [];
-        const padding = size * 0.15;
-        const usableSize = size - padding * 2;
-        const stepX = settings.cols > 1 ? usableSize / (settings.cols - 1) : 0;
-        const stepY = settings.rows > 1 ? usableSize / (settings.rows - 1) : 0;
-        
-        for (let r = 0; r < settings.rows; r++) {
-            for (let c = 0; c < settings.cols; c++) {
-                gameState.dots.push({
-                    x: padding + c * stepX,
-                    y: padding + r * stepY,
-                    id: r * settings.cols + c
-                });
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(140, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
             }
-        }
-        drawAll();
-    };
+        };
 
-    // 基本的な線のルール（隣接、斜めの可否など）を判定
-    const isValidBasicLine = (id1, id2) => {
-        if (id1 === id2) return false;
-        const c1 = id1 % settings.cols, r1 = Math.floor(id1 / settings.cols);
-        const c2 = id2 % settings.cols, r2 = Math.floor(id2 / settings.cols);
-        const dc = Math.abs(c1 - c2), dr = Math.abs(r1 - r2);
-        
-        if (dc > 1 || dr > 1) return false;
-        if (!settings.diagonal && dc === 1 && dr === 1) return false;
-        
-        return true;
-    };
+        /* =========================================================
+           画面遷移・設定画面ロジック
+           ========================================================= */
+        const showScreen = (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`${id}-screen`).classList.add('active');
+            currentScreen = id;
+        };
 
-    // すでに同じ線が存在するか判定
-    const checkLineExists = (id1, id2, linesArr) => {
-        const lineStr1 = `${id1}-${id2}`, lineStr2 = `${id2}-${id1}`;
-        return linesArr.includes(lineStr1) || linesArr.includes(lineStr2);
-    };
-
-    // 線を配列から削除する関数
-    const removeLine = (id1, id2, linesArr) => {
-        const lineStr1 = `${id1}-${id2}`, lineStr2 = `${id2}-${id1}`;
-        return linesArr.filter(l => l !== lineStr1 && l !== lineStr2);
-    };
-
-    const generateSampleLines = () => {
-        gameState.sampleLines = [];
-        let attempts = 0;
-        const totalDots = settings.cols * settings.rows;
-        while (gameState.sampleLines.length < settings.lines && attempts < 1000) {
-            let id1 = Math.floor(Math.random() * totalDots);
-            let id2 = Math.floor(Math.random() * totalDots);
-            if (isValidBasicLine(id1, id2) && !checkLineExists(id1, id2, gameState.sampleLines)) {
-                gameState.sampleLines.push(`${id1}-${id2}`);
-            }
-            attempts++;
-        }
-    };
-
-    const drawGrid = (ctx, activeId = -1) => {
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        // 点をさらに10%大きくする (元の0.05から0.055へ)
-        const dotRadius = Math.max(13.2, ctx.canvas.width * 0.055);
-        
-        gameState.dots.forEach(dot => {
-            ctx.beginPath();
-            ctx.arc(dot.x, dot.y, dotRadius, 0, Math.PI * 2);
-            ctx.fillStyle = (dot.id === activeId) ? '#ff3b30' : '#333';
-            ctx.fill();
+        document.getElementById('start-btn').addEventListener('click', () => {
+            audioCtx.resume();
+            gameState.corrects = 0; gameState.wrongs = 0;
+            updateScore();
+            document.getElementById('back-btn').style.visibility = settings.backBtn ? 'visible' : 'hidden';
+            document.getElementById('play-area-container').style.flexDirection = settings.leftHanded ? 'row-reverse' : 'row';
+            showScreen('play');
+            initGame();
         });
-    };
 
-    const drawLineList = (ctx, linesArr, color, width) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.lineCap = 'round';
-        linesArr.forEach(lineStr => {
-            const [id1, id2] = lineStr.split('-').map(Number);
-            const p1 = gameState.dots[id1], p2 = gameState.dots[id2];
-            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-        });
-    };
+        document.getElementById('back-btn').addEventListener('click', () => showScreen('home'));
 
-    const drawAll = () => {
-        if (!sampleCanvas.width) return;
-        const lw = Math.max(6, sampleCanvas.width * 0.03);
-        
-        drawGrid(sampleCtx);
-        drawLineList(sampleCtx, gameState.sampleLines, '#333', lw);
-        
-        drawGrid(drawCtx, gameState.activeDot);
-        const normalLines = gameState.userLines.filter(l => !gameState.wrongLines.includes(l));
-        drawLineList(drawCtx, normalLines, '#333', lw);
-        
-        if (settings.whenWrong === 1) { 
-            drawLineList(drawCtx, gameState.wrongLines, '#ff3b30', lw);
-        }
-        
-        if (gameState.activeDot !== -1 && gameState.currentPos) {
-            const p1 = gameState.dots[gameState.activeDot];
-            drawCtx.strokeStyle = '#ff3b30';
-            drawCtx.lineWidth = lw;
-            drawCtx.beginPath();
-            drawCtx.moveTo(p1.x, p1.y);
-            drawCtx.lineTo(gameState.currentPos.x, gameState.currentPos.y);
-            drawCtx.stroke();
-        }
-    };
-
-    /* =========================================================
-       タッチ/マウス操作
-       ========================================================= */
-    const getPos = (e) => {
-        const rect = drawingCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    };
-
-    const getNearestDot = (pos) => {
-        // 判定範囲を点そのものの大きさと一致させる
-        const threshold = Math.max(13.2, drawingCanvas.width * 0.055);
-        for (let dot of gameState.dots) {
-            if (Math.hypot(dot.x - pos.x, dot.y - pos.y) <= threshold) return dot.id;
-        }
-        return -1;
-    };
-
-    // 線分と点の距離を計算（タップ消去用）
-    const sqr = x => x * x;
-    const dist2 = (v, w) => sqr(v.x - w.x) + sqr(v.y - w.y);
-    const distToSegmentSquared = (p, v, w) => {
-        let l2 = dist2(v, w);
-        if (l2 === 0) return dist2(p, v);
-        let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-        t = Math.max(0, Math.min(1, t));
-        return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
-    };
-
-    const tryDeleteLine = (pos) => {
-        const threshold = drawingCanvas.width * 0.08; // 消去の判定閾値
-        let min_d = Infinity;
-        let lineToRemove = null;
-
-        gameState.userLines.forEach(lineStr => {
-            const [id1, id2] = lineStr.split('-').map(Number);
-            const p1 = gameState.dots[id1];
-            const p2 = gameState.dots[id2];
-            const d = Math.sqrt(distToSegmentSquared(pos, p1, p2));
-            if (d < min_d && d < threshold) {
-                min_d = d;
-                lineToRemove = lineStr;
+        /* トリプルタップ設定 */
+        let tapCount = 0;
+        let tapTimer;
+        document.getElementById('settings-btn').addEventListener('pointerup', (e) => {
+            e.preventDefault();
+            tapCount++;
+            if (tapCount === 1) {
+                tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+            } else if (tapCount === 3) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                openSettings();
             }
         });
 
-        if (lineToRemove) {
-            gameState.userLines = gameState.userLines.filter(l => l !== lineToRemove);
-            gameState.wrongLines = gameState.wrongLines.filter(l => l !== lineToRemove);
+        const openSettings = () => {
+            document.getElementById('set-cols').innerText = settings.cols;
+            document.getElementById('set-rows').innerText = settings.rows;
+            document.getElementById('set-lines').innerText = settings.lines;
+            document.getElementById('set-questions').innerText = settings.questions;
+            document.getElementById('set-diagonal').checked = settings.diagonal;
+            document.getElementById('set-lefthanded').checked = settings.leftHanded;
+            document.getElementById('set-backbtn').checked = settings.backBtn;
+            document.getElementById('set-whenwrong').value = settings.whenWrong;
+            document.getElementById('set-autocheck').value = settings.autoCheck;
+            showScreen('setting');
+        };
+
+        const closeSettings = () => {
+            settings.diagonal = document.getElementById('set-diagonal').checked;
+            settings.leftHanded = document.getElementById('set-lefthanded').checked;
+            settings.backBtn = document.getElementById('set-backbtn').checked;
+            settings.whenWrong = parseInt(document.getElementById('set-whenwrong').value);
+            settings.autoCheck = parseInt(document.getElementById('set-autocheck').value);
+            saveSettings();
+            showScreen('home');
+        };
+
+        const changeSetting = (key, delta) => {
+            if (key === 'cols') settings.cols = Math.max(1, Math.min(10, settings.cols + delta));
+            if (key === 'rows') settings.rows = Math.max(1, Math.min(10, settings.rows + delta));
+            if (settings.cols === 1 && settings.rows === 1) settings.cols = 2; // 1x1防止
+
+            if (key === 'questions') settings.questions = Math.max(1, Math.min(50, settings.questions + delta));
+
+            const maxLines = settings.diagonal
+                ? ((settings.cols - 1) * (settings.rows - 1) * 4 + settings.cols + settings.rows - 2)
+                : ((settings.cols - 1) * (settings.rows - 1) * 2 + settings.cols + settings.rows - 2);
+
+            if (key === 'lines') settings.lines = Math.max(1, Math.min(maxLines, settings.lines + delta));
+            if (settings.lines > maxLines) settings.lines = Math.max(1, maxLines);
+
+            document.getElementById(`set-${key}`).innerText = settings[key];
+            document.getElementById('set-lines').innerText = settings.lines;
+        };
+
+        /* =========================================================
+           ゲームロジック・描画
+           ========================================================= */
+        const sampleCanvas = document.getElementById('sample-canvas');
+        const drawingCanvas = document.getElementById('drawing-canvas');
+        const sampleCtx = sampleCanvas.getContext('2d');
+        const drawCtx = drawingCanvas.getContext('2d');
+
+        const updateScore = () => {
+            document.getElementById('score-display').innerText = `×:${gameState.wrongs} ○:${gameState.corrects}`;
+        };
+
+        const initGame = () => {
+            gameState.userLines = [];
+            gameState.wrongLines = [];
+            generateSampleLines();
+            changePhase('draw');
+            resizeCanvas();
+        };
+
+        const resizeCanvas = () => {
+            const wrap = document.getElementById('sample-wrapper');
+            const size = wrap.clientWidth;
+            sampleCanvas.width = size; sampleCanvas.height = size;
+            drawingCanvas.width = size; drawingCanvas.height = size;
+
+            gameState.dots = [];
+            const padding = size * 0.15;
+            const usableSize = size - padding * 2;
+            const stepX = settings.cols > 1 ? usableSize / (settings.cols - 1) : 0;
+            const stepY = settings.rows > 1 ? usableSize / (settings.rows - 1) : 0;
+
+            for (let r = 0; r < settings.rows; r++) {
+                for (let c = 0; c < settings.cols; c++) {
+                    gameState.dots.push({
+                        x: padding + c * stepX,
+                        y: padding + r * stepY,
+                        id: r * settings.cols + c
+                    });
+                }
+            }
             drawAll();
+        };
+
+        // 基本的な線のルール（隣接、斜めの可否など）を判定
+        const isValidBasicLine = (id1, id2) => {
+            if (id1 === id2) return false;
+            const c1 = id1 % settings.cols, r1 = Math.floor(id1 / settings.cols);
+            const c2 = id2 % settings.cols, r2 = Math.floor(id2 / settings.cols);
+            const dc = Math.abs(c1 - c2), dr = Math.abs(r1 - r2);
+
+            if (dc > 1 || dr > 1) return false;
+            if (!settings.diagonal && dc === 1 && dr === 1) return false;
+
             return true;
-        }
-        return false;
-    };
+        };
 
-    const startDraw = (e) => {
-        if (gameState.currentPhase !== 'draw') return;
-        const pos = getPos(e);
-        gameState.touchStartPos = pos;
-        gameState.hasMoved = false;
+        // すでに同じ線が存在するか判定
+        const checkLineExists = (id1, id2, linesArr) => {
+            const lineStr1 = `${id1}-${id2}`, lineStr2 = `${id2}-${id1}`;
+            return linesArr.includes(lineStr1) || linesArr.includes(lineStr2);
+        };
 
-        gameState.activeDot = getNearestDot(pos);
-        if (gameState.activeDot !== -1) {
-            gameState.currentPos = pos;
-            drawAll();
-        }
-    };
+        // 線を配列から削除する関数
+        const removeLine = (id1, id2, linesArr) => {
+            const lineStr1 = `${id1}-${id2}`, lineStr2 = `${id2}-${id1}`;
+            return linesArr.filter(l => l !== lineStr1 && l !== lineStr2);
+        };
 
-    const moveDraw = (e) => {
-        if (gameState.currentPhase !== 'draw') return;
-        gameState.hasMoved = true;
-        if (gameState.activeDot === -1) return;
-        
-        gameState.currentPos = getPos(e);
-        const hoverDot = getNearestDot(gameState.currentPos);
-        
-        if (hoverDot !== -1 && hoverDot !== gameState.activeDot) {
-            if (isValidBasicLine(gameState.activeDot, hoverDot)) {
-                const newLine = `${gameState.activeDot}-${hoverDot}`;
-                const exists = checkLineExists(gameState.activeDot, hoverDot, gameState.userLines);
-                
-                if (settings.autoCheck === 1) {
-                    // 自動採点（簡単）: 正解の線のみ追加可能、間違いは無視
-                    if (!exists && gameState.sampleLines.some(sLine => isMatch(newLine, sLine))) {
-                        gameState.userLines.push(newLine);
-                        gameState.activeDot = hoverDot;
-                        checkAutoClear();
-                    }
-                } else {
-                    // 通常モード or 自動採点（普通）
-                    if (!exists) {
-                        // 新しく線を引く
-                        gameState.userLines.push(newLine);
-                        gameState.activeDot = hoverDot;
-                        if (settings.autoCheck === 2) {
-                            checkAutoClear(); // 自動採点（普通）の判定を実行
+        const generateSampleLines = () => {
+            gameState.sampleLines = [];
+            let attempts = 0;
+            const totalDots = settings.cols * settings.rows;
+            while (gameState.sampleLines.length < settings.lines && attempts < 1000) {
+                let id1 = Math.floor(Math.random() * totalDots);
+                let id2 = Math.floor(Math.random() * totalDots);
+                if (isValidBasicLine(id1, id2) && !checkLineExists(id1, id2, gameState.sampleLines)) {
+                    gameState.sampleLines.push(`${id1}-${id2}`);
+                }
+                attempts++;
+            }
+        };
+
+        const drawGrid = (ctx, activeId = -1) => {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            // 点をさらに10%大きくする (元の0.05から0.055へ)
+            const dotRadius = Math.max(13.2, ctx.canvas.width * 0.055);
+
+            gameState.dots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dotRadius, 0, Math.PI * 2);
+                ctx.fillStyle = (dot.id === activeId) ? '#ff3b30' : '#333';
+                ctx.fill();
+            });
+        };
+
+        const drawLineList = (ctx, linesArr, color, width) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            linesArr.forEach(lineStr => {
+                const [id1, id2] = lineStr.split('-').map(Number);
+                const p1 = gameState.dots[id1], p2 = gameState.dots[id2];
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+            });
+        };
+
+        const drawAll = () => {
+            if (!sampleCanvas.width) return;
+            const lw = Math.max(6, sampleCanvas.width * 0.03);
+
+            drawGrid(sampleCtx);
+            drawLineList(sampleCtx, gameState.sampleLines, '#333', lw);
+
+            drawGrid(drawCtx, gameState.activeDot);
+            const normalLines = gameState.userLines.filter(l => !gameState.wrongLines.includes(l));
+            drawLineList(drawCtx, normalLines, '#333', lw);
+
+            if (settings.whenWrong === 1) {
+                drawLineList(drawCtx, gameState.wrongLines, '#ff3b30', lw);
+            }
+
+            if (gameState.activeDot !== -1 && gameState.currentPos) {
+                const p1 = gameState.dots[gameState.activeDot];
+                drawCtx.strokeStyle = '#ff3b30';
+                drawCtx.lineWidth = lw;
+                drawCtx.beginPath();
+                drawCtx.moveTo(p1.x, p1.y);
+                drawCtx.lineTo(gameState.currentPos.x, gameState.currentPos.y);
+                drawCtx.stroke();
+            }
+        };
+
+        /* =========================================================
+           タッチ/マウス操作
+           ========================================================= */
+        const getPos = (e) => {
+            const rect = drawingCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        };
+
+        const getNearestDot = (pos) => {
+            // 判定範囲を点そのものの大きさと一致させる
+            const threshold = Math.max(13.2, drawingCanvas.width * 0.055);
+            for (let dot of gameState.dots) {
+                if (Math.hypot(dot.x - pos.x, dot.y - pos.y) <= threshold) return dot.id;
+            }
+            return -1;
+        };
+
+        // 線分と点の距離を計算（タップ消去用）
+        const sqr = x => x * x;
+        const dist2 = (v, w) => sqr(v.x - w.x) + sqr(v.y - w.y);
+        const distToSegmentSquared = (p, v, w) => {
+            let l2 = dist2(v, w);
+            if (l2 === 0) return dist2(p, v);
+            let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+        };
+
+        const tryDeleteLine = (pos) => {
+            const threshold = drawingCanvas.width * 0.08; // 消去の判定閾値
+            let min_d = Infinity;
+            let lineToRemove = null;
+
+            gameState.userLines.forEach(lineStr => {
+                const [id1, id2] = lineStr.split('-').map(Number);
+                const p1 = gameState.dots[id1];
+                const p2 = gameState.dots[id2];
+                const d = Math.sqrt(distToSegmentSquared(pos, p1, p2));
+                if (d < min_d && d < threshold) {
+                    min_d = d;
+                    lineToRemove = lineStr;
+                }
+            });
+
+            if (lineToRemove) {
+                gameState.userLines = gameState.userLines.filter(l => l !== lineToRemove);
+                gameState.wrongLines = gameState.wrongLines.filter(l => l !== lineToRemove);
+                drawAll();
+                return true;
+            }
+            return false;
+        };
+
+        const startDraw = (e) => {
+            if (gameState.currentPhase !== 'draw') return;
+            const pos = getPos(e);
+            gameState.touchStartPos = pos;
+            gameState.hasMoved = false;
+
+            gameState.activeDot = getNearestDot(pos);
+            if (gameState.activeDot !== -1) {
+                gameState.currentPos = pos;
+                drawAll();
+            }
+        };
+
+        const moveDraw = (e) => {
+            if (gameState.currentPhase !== 'draw') return;
+            gameState.hasMoved = true;
+            if (gameState.activeDot === -1) return;
+
+            gameState.currentPos = getPos(e);
+            const hoverDot = getNearestDot(gameState.currentPos);
+
+            if (hoverDot !== -1 && hoverDot !== gameState.activeDot) {
+                if (isValidBasicLine(gameState.activeDot, hoverDot)) {
+                    const newLine = `${gameState.activeDot}-${hoverDot}`;
+                    const exists = checkLineExists(gameState.activeDot, hoverDot, gameState.userLines);
+
+                    if (settings.autoCheck === 1) {
+                        // 自動採点（簡単）: 正解の線のみ追加可能、間違いは無視
+                        if (!exists && gameState.sampleLines.some(sLine => isMatch(newLine, sLine))) {
+                            gameState.userLines.push(newLine);
+                            gameState.activeDot = hoverDot;
+                            checkAutoClear();
                         }
                     } else {
-                        // 既に線がある場合は、なぞるだけ（消さない）
-                        gameState.activeDot = hoverDot;
+                        // 通常モード or 自動採点（普通）
+                        if (!exists) {
+                            // 新しく線を引く
+                            gameState.userLines.push(newLine);
+                            gameState.activeDot = hoverDot;
+                            if (settings.autoCheck === 2) {
+                                checkAutoClear(); // 自動採点（普通）の判定を実行
+                            }
+                        } else {
+                            // 既に線がある場合は、なぞるだけ（消さない）
+                            gameState.activeDot = hoverDot;
+                        }
                     }
                 }
             }
-        }
-        drawAll();
-    };
+            drawAll();
+        };
 
-    const endDraw = (e) => {
-        if (gameState.currentPhase !== 'draw') return;
+        const endDraw = (e) => {
+            if (gameState.currentPhase !== 'draw') return;
 
-        const pos = getPos(e);
-        // 移動距離が小さい場合はタップとみなして線を消す
-        if (gameState.touchStartPos) {
-            const dist = Math.hypot(pos.x - gameState.touchStartPos.x, pos.y - gameState.touchStartPos.y);
-            if (!gameState.hasMoved || dist < 10) {
-                tryDeleteLine(pos);
+            const pos = getPos(e);
+            // 移動距離が小さい場合はタップとみなして線を消す
+            if (gameState.touchStartPos) {
+                const dist = Math.hypot(pos.x - gameState.touchStartPos.x, pos.y - gameState.touchStartPos.y);
+                if (!gameState.hasMoved || dist < 10) {
+                    tryDeleteLine(pos);
+                }
             }
-        }
 
-        gameState.activeDot = -1;
-        gameState.currentPos = null;
-        gameState.touchStartPos = null;
-        drawAll();
-    };
+            gameState.activeDot = -1;
+            gameState.currentPos = null;
+            gameState.touchStartPos = null;
+            drawAll();
+        };
 
-    drawingCanvas.addEventListener('pointerdown', (e) => { e.preventDefault(); startDraw(e); });
-    drawingCanvas.addEventListener('pointermove', (e) => { e.preventDefault(); moveDraw(e); });
-    drawingCanvas.addEventListener('pointerup', endDraw);
-    drawingCanvas.addEventListener('pointercancel', endDraw);
+        drawingCanvas.addEventListener('pointerdown', (e) => { e.preventDefault(); startDraw(e); });
+        drawingCanvas.addEventListener('pointermove', (e) => { e.preventDefault(); moveDraw(e); });
+        drawingCanvas.addEventListener('pointerup', endDraw);
+        drawingCanvas.addEventListener('pointercancel', endDraw);
 
-    /* =========================================================
-       判定ロジック
-       ========================================================= */
-    const actionBtn = document.getElementById('action-btn');
+        /* =========================================================
+           判定ロジック
+           ========================================================= */
+        const actionBtn = document.getElementById('action-btn');
 
-    const changePhase = (phase) => {
-        gameState.currentPhase = phase;
-        if (phase === 'draw') {
-            document.getElementById('red-circle-overlay').style.display = 'none';
-            if (settings.autoCheck > 0) {
-                actionBtn.style.display = 'none';
-            } else {
-                actionBtn.innerText = 'できた';
+        const changePhase = (phase) => {
+            gameState.currentPhase = phase;
+            if (phase === 'draw') {
+                document.getElementById('red-circle-overlay').style.display = 'none';
+                if (settings.autoCheck > 0) {
+                    actionBtn.style.display = 'none';
+                } else {
+                    actionBtn.innerText = 'できた';
+                    actionBtn.style.display = 'block';
+                }
+            } else if (phase === 'next') {
+                document.getElementById('red-circle-overlay').style.display = 'block';
+                actionBtn.innerText = 'つぎへ';
+                actionBtn.style.display = 'block';
+            } else if (phase === 'finish') {
+                document.getElementById('red-circle-overlay').style.display = 'block';
+                actionBtn.innerText = 'ホームへ';
                 actionBtn.style.display = 'block';
             }
-        } else if (phase === 'next') {
-            document.getElementById('red-circle-overlay').style.display = 'block';
-            actionBtn.innerText = 'つぎへ';
-            actionBtn.style.display = 'block';
-        } else if (phase === 'finish') {
-            document.getElementById('red-circle-overlay').style.display = 'block';
-            actionBtn.innerText = 'ホームへ';
-            actionBtn.style.display = 'block';
-        }
-    };
+        };
 
-    const isMatch = (lineA, lineB) => {
-        const [a1, a2] = lineA.split('-');
-        const [b1, b2] = lineB.split('-');
-        return (a1 === b1 && a2 === b2) || (a1 === b2 && a2 === b1);
-    };
+        const isMatch = (lineA, lineB) => {
+            const [a1, a2] = lineA.split('-');
+            const [b1, b2] = lineB.split('-');
+            return (a1 === b1 && a2 === b2) || (a1 === b2 && a2 === b1);
+        };
 
-    // 自動採点モード時のクリアチェック
-    const checkAutoClear = () => {
-        let correctsFound = 0;
-        let wrongsFound = 0;
+        // 自動採点モード時のクリアチェック
+        const checkAutoClear = () => {
+            let correctsFound = 0;
+            let wrongsFound = 0;
 
-        gameState.userLines.forEach(uLine => {
-            if (gameState.sampleLines.some(sLine => isMatch(uLine, sLine))) {
-                correctsFound++;
+            gameState.userLines.forEach(uLine => {
+                if (gameState.sampleLines.some(sLine => isMatch(uLine, sLine))) {
+                    correctsFound++;
+                } else {
+                    wrongsFound++;
+                }
+            });
+
+            // 正解の線が全て引かれており、かつ間違った線が1本もなければクリア
+            if (correctsFound === gameState.sampleLines.length && wrongsFound === 0) {
+                playTone('correct');
+                gameState.corrects++;
+                updateScore();
+                gameState.activeDot = -1;
+                gameState.currentPos = null;
+                drawAll();
+
+                if (gameState.corrects >= settings.questions) {
+                    changePhase('finish');
+                } else {
+                    changePhase('next');
+                }
+            }
+        };
+
+        // 通常モード時の「できた」ボタン判定
+        const checkAnswer = () => {
+            gameState.wrongLines = [];
+            let correctsFound = 0;
+
+            gameState.userLines.forEach(uLine => {
+                if (gameState.sampleLines.some(sLine => isMatch(uLine, sLine))) {
+                    correctsFound++;
+                } else {
+                    gameState.wrongLines.push(uLine);
+                }
+            });
+
+            const isClear = (gameState.wrongLines.length === 0 && correctsFound === gameState.sampleLines.length);
+
+            if (isClear) {
+                playTone('correct');
+                gameState.corrects++;
+                updateScore();
+                gameState.activeDot = -1;
+                gameState.currentPos = null;
+                drawAll();
+
+                if (gameState.corrects >= settings.questions) {
+                    changePhase('finish');
+                } else {
+                    changePhase('next');
+                }
             } else {
-                wrongsFound++;
+                playTone('wrong');
+                gameState.wrongs++;
+                updateScore();
+
+                if (settings.whenWrong === 2) {
+                    gameState.userLines = gameState.userLines.filter(l => !gameState.wrongLines.includes(l));
+                    gameState.wrongLines = [];
+                } else if (settings.whenWrong === 3) {
+                    gameState.userLines = [];
+                    gameState.wrongLines = [];
+                }
+                drawAll();
+            }
+        };
+
+        actionBtn.addEventListener('click', () => {
+            if (gameState.currentPhase === 'draw') {
+                checkAnswer();
+            } else if (gameState.currentPhase === 'next') {
+                initGame();
+            } else if (gameState.currentPhase === 'finish') {
+                showScreen('home');
             }
         });
-        
-        // 正解の線が全て引かれており、かつ間違った線が1本もなければクリア
-        if (correctsFound === gameState.sampleLines.length && wrongsFound === 0) {
-            playTone('correct');
-            gameState.corrects++;
-            updateScore();
-            gameState.activeDot = -1;
-            gameState.currentPos = null;
-            drawAll();
-            
-            if (gameState.corrects >= settings.questions) {
-                changePhase('finish');
-            } else {
-                changePhase('next');
-            }
-        }
-    };
 
-    // 通常モード時の「できた」ボタン判定
-    const checkAnswer = () => {
-        gameState.wrongLines = [];
-        let correctsFound = 0;
-        
-        gameState.userLines.forEach(uLine => {
-            if (gameState.sampleLines.some(sLine => isMatch(uLine, sLine))) {
-                correctsFound++;
-            } else {
-                gameState.wrongLines.push(uLine);
-            }
-        });
-
-        const isClear = (gameState.wrongLines.length === 0 && correctsFound === gameState.sampleLines.length);
-
-        if (isClear) {
-            playTone('correct');
-            gameState.corrects++;
-            updateScore();
-            gameState.activeDot = -1;
-            gameState.currentPos = null;
-            drawAll();
-            
-            if (gameState.corrects >= settings.questions) {
-                changePhase('finish');
-            } else {
-                changePhase('next');
-            }
-        } else {
-            playTone('wrong');
-            gameState.wrongs++;
-            updateScore();
-
-            if (settings.whenWrong === 2) {
-                gameState.userLines = gameState.userLines.filter(l => !gameState.wrongLines.includes(l));
-                gameState.wrongLines = [];
-            } else if (settings.whenWrong === 3) {
-                gameState.userLines = [];
-                gameState.wrongLines = [];
-            }
-            drawAll();
-        }
-    };
-
-    actionBtn.addEventListener('click', () => {
-        if (gameState.currentPhase === 'draw') {
-            checkAnswer();
-        } else if (gameState.currentPhase === 'next') {
-            initGame();
-        } else if (gameState.currentPhase === 'finish') {
-            showScreen('home');
-        }
-    });
-
-</script>
+    </script>
 </body>
+
 </html>

@@ -1,574 +1,620 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>形探し</title>
-<style>
-    /* ========== 共通設定・誤操作防止 ========== */
-    :root {
-        --vh: 1vh;
-        --bg-color: #ffffff;
-    }
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
 
-    * {
-        box-sizing: border-box;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Maru Gothic ProN', sans-serif;
-    }
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>形探し</title>
+    <style>
+        /* ========== 共通設定・誤操作防止 ========== */
+        :root {
+            --vh: 1vh;
+            --bg-color: #ffffff;
+        }
 
-    html, body {
-        margin: 0;
-        padding: 0;
-        height: calc(var(--vh, 1vh) * 100);
-        overflow: hidden;
-        background-color: var(--bg-color);
-    }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Maru Gothic ProN', sans-serif;
+        }
 
-    /* ========== プレイ領域 ========== */
-    #play-area {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        touch-action: none;
-        overflow: hidden;
-    }
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: calc(var(--vh, 1vh) * 100);
+            overflow: hidden;
+            background-color: var(--bg-color);
+        }
 
-    #score-display {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        font-size: 28px;
-        font-weight: bold;
-        color: #888;
-        z-index: 100;
-        pointer-events: none;
-    }
+        /* ========== プレイ領域 ========== */
+        #play-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            overflow: hidden;
+        }
 
-    .shape-container {
-        position: absolute;
-        transform: translate(-50%, -50%);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+        #score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #888;
+            z-index: 100;
+            pointer-events: none;
+        }
 
-    /* 枠線とノイズの設定 */
-    .shape-line svg {
-        width: 100%;
-        height: 100%;
-        fill: none;
-        stroke: #000;
-        stroke-width: 5;
-        overflow: visible;
-    }
+        .shape-container {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    /* ドラッグするピース */
-    .piece {
-        cursor: grab;
-    }
-    .piece:active {
-        cursor: grabbing;
-    }
-    .piece svg {
-        width: 100%;
-        height: 100%;
-        overflow: visible;
-    }
-    .piece.fitted {
-        pointer-events: none;
-        transition: left 0.1s, top 0.1s;
-    }
+        /* 枠線とノイズの設定 */
+        .shape-line svg {
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: #000;
+            stroke-width: 5;
+            overflow: visible;
+        }
 
-    /* ========== 画面レイヤー (ホーム, 設定, クリア) ========== */
-    .overlay-screen {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: calc(var(--vh, 1vh) * 100);
-        background: var(--bg-color);
-        z-index: 3000;
-        display: none;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
+        /* ドラッグするピース */
+        .piece {
+            cursor: grab;
+        }
 
-    /* ホーム（スタート）画面 */
-    #start-screen {
-        display: flex;
-    }
-    
-    .btn-primary {
-        padding: 20px 60px;
-        font-size: 32px;
-        font-weight: bold;
-        background: #ff9800;
-        color: white;
-        border: none;
-        border-radius: 50px;
-        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        cursor: pointer;
-        margin-bottom: 60px; /* 設定ボタンとの間隔をあける */
-    }
-    
-    .btn-secondary {
-        padding: 15px 40px;
-        font-size: 24px;
-        font-weight: bold;
-        background: #e0e0e0;
-        color: #555;
-        border: none;
-        border-radius: 30px;
-        cursor: pointer;
-        touch-action: manipulation; /* ダブルタップズーム防止 */
-    }
+        .piece:active {
+            cursor: grabbing;
+        }
 
-    /* トリプルタップの薄い文字 */
-    .triple-tap-hint {
-        font-size: 14px;
-        color: #aaa; /* 薄いグレー */
-        text-align: center;
-        margin-top: 8px;
-        pointer-events: none; /* テキスト自体はタップに反応しない */
-    }
+        .piece svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
 
-    /* 設定モーダル */
-    #settings-modal {
-        background: rgba(255, 255, 255, 0.98);
-        z-index: 4000;
-        justify-content: flex-start;
-        padding: 40px 20px;
-        padding-bottom: calc(80px + env(safe-area-inset-bottom));
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
+        .piece.fitted {
+            pointer-events: none;
+            transition: left 0.1s, top 0.1s;
+        }
 
-    .settings-content {
-        max-width: 500px;
-        margin: 0 auto;
-        width: 100%;
-    }
+        /* ========== 画面レイヤー (ホーム, 設定, クリア) ========== */
+        .overlay-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(var(--vh, 1vh) * 100);
+            background: var(--bg-color);
+            z-index: 3000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .settings-content h2 {
-        text-align: center;
-        color: #333;
-        font-size: 28px;
-        margin-bottom: 30px;
-    }
+        /* ホーム（スタート）画面 */
+        #start-screen {
+            display: flex;
+        }
 
-    .setting-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 0;
-        border-bottom: 2px solid #eee;
-        font-size: 22px;
-        color: #555;
-        font-weight: bold;
-    }
+        .btn-primary {
+            padding: 20px 60px;
+            font-size: 32px;
+            font-weight: bold;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            margin-bottom: 60px;
+            /* 設定ボタンとの間隔をあける */
+        }
 
-    .setting-input {
-        width: 80px;
-        font-size: 24px;
-        padding: 5px;
-        text-align: center;
-        border: 2px solid #ccc;
-        border-radius: 8px;
-    }
+        .btn-secondary {
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            background: #e0e0e0;
+            color: #555;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            touch-action: manipulation;
+            /* ダブルタップズーム防止 */
+        }
 
-    /* トグルスイッチ */
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 70px;
-        height: 40px;
-    }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-        position: absolute; cursor: pointer;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-color: #ccc; transition: .4s; border-radius: 40px;
-    }
-    .slider:before {
-        position: absolute; content: "";
-        height: 32px; width: 32px; left: 4px; bottom: 4px;
-        background-color: white; transition: .4s; border-radius: 50%;
-    }
-    input:checked + .slider { background-color: #4CAF50; }
-    input:checked + .slider:before { transform: translateX(30px); }
+        /* トリプルタップの薄い文字 */
+        .triple-tap-hint {
+            font-size: 14px;
+            color: #aaa;
+            /* 薄いグレー */
+            text-align: center;
+            margin-top: 8px;
+            pointer-events: none;
+            /* テキスト自体はタップに反応しない */
+        }
 
-    .close-btn {
-        display: block;
-        width: 100%;
-        padding: 20px;
-        margin-top: 40px;
-        background: #2196F3;
-        color: white;
-        text-align: center;
-        border-radius: 12px;
-        font-size: 24px;
-        font-weight: bold;
-        cursor: pointer;
-    }
+        /* 設定モーダル */
+        #settings-modal {
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 4000;
+            justify-content: flex-start;
+            padding: 40px 20px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
-    /* クリア画面 */
-    #clear-text {
-        font-size: 48px;
-        font-weight: bold;
-        color: #ff5722;
-        margin-bottom: 40px;
-    }
+        .settings-content {
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
 
-</style>
-<script src="../common/core.js"></script>
+        .settings-content h2 {
+            text-align: center;
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #eee;
+            font-size: 22px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .setting-input {
+            width: 80px;
+            font-size: 24px;
+            padding: 5px;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+        }
+
+        /* トグルスイッチ */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 70px;
+            height: 40px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 40px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 32px;
+            width: 32px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(30px);
+        }
+
+        .close-btn {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-top: 40px;
+            background: #2196F3;
+            color: white;
+            text-align: center;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* クリア画面 */
+        #clear-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff5722;
+            margin-bottom: 40px;
+        }
+    </style>
 </head>
+
 <body>
 
-<div id="start-screen" class="overlay-screen">
-    <button id="start-btn" class="btn-primary">スタート</button>
-    
-    <div>
-        <button id="open-settings-btn" class="btn-secondary">⚙️ 設定</button>
-        <div class="triple-tap-hint">トリプルタップ</div>
+    <div id="start-screen" class="overlay-screen">
+        <button id="start-btn" class="btn-primary">スタート</button>
+
+        <div>
+            <button id="open-settings-btn" class="btn-secondary">⚙️ 設定</button>
+            <div class="triple-tap-hint">トリプルタップ</div>
+        </div>
     </div>
-</div>
 
-<div id="score-display">0 / 0</div>
-<div id="play-area"></div>
+    <div id="score-display">0 / 0</div>
+    <div id="play-area"></div>
 
-<div id="clear-screen" class="overlay-screen">
-    <div id="clear-text">よくできました！</div>
-    <button id="home-btn" class="btn-primary">ホームにもどる</button>
-</div>
-
-<div id="settings-modal" class="overlay-screen">
-    <div class="settings-content">
-        <h2>設定</h2>
-        <div class="setting-row">
-            <span>サウンド (音)</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="set-sound">
-                <span class="slider"></span>
-            </label>
-        </div>
-        <div class="setting-row">
-            <span>問題数（何問で終わるか）</span>
-            <div><input type="number" id="set-maxq" class="setting-input" min="1" max="50"> 問</div>
-        </div>
-        <div class="setting-row">
-            <span>最初の四角（ノイズ）の数</span>
-            <div><input type="number" id="set-init" class="setting-input" min="0" max="50"> 個</div>
-        </div>
-        <div class="setting-row">
-            <span>１問ごとに増える四角の数</span>
-            <div><input type="number" id="set-step" class="setting-input" min="0" max="20"> 個</div>
-        </div>
-        <div class="close-btn" id="close-settings-btn">とじる (保存)</div>
+    <div id="clear-screen" class="overlay-screen">
+        <div id="clear-text">よくできました！</div>
+        <button id="home-btn" class="btn-primary">ホームにもどる</button>
     </div>
-</div>
 
-<script>
-/**
- * 1. 画面高さの確実な取得
- */
-let resizeTimer;
-const setVh = () => {
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-};
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(setVh, 200);
-});
-setVh();
+    <div id="settings-modal" class="overlay-screen">
+        <div class="settings-content">
+            <h2>設定</h2>
+            <div class="setting-row">
+                <span>サウンド (音)</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="set-sound">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span>問題数（何問で終わるか）</span>
+                <div><input type="number" id="set-maxq" class="setting-input" min="1" max="50"> 問</div>
+            </div>
+            <div class="setting-row">
+                <span>最初の四角（ノイズ）の数</span>
+                <div><input type="number" id="set-init" class="setting-input" min="0" max="50"> 個</div>
+            </div>
+            <div class="setting-row">
+                <span>１問ごとに増える四角の数</span>
+                <div><input type="number" id="set-step" class="setting-input" min="0" max="20"> 個</div>
+            </div>
+            <div class="close-btn" id="close-settings-btn">とじる (保存)</div>
+        </div>
+    </div>
 
-/**
- * 2. 設定の管理 (localStorage)
- */
-const defaultSettings = {
-    sound: true,
-    maxQuestions: 5,
-    initialRects: 10,
-    rectsIncrement: 5
-};
-let settings = { ...defaultSettings };
+    <script>
+        /**
+         * 1. 画面高さの確実な取得
+         */
+        let resizeTimer;
+        const setVh = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(setVh, 200);
+        });
+        setVh();
 
-function loadSettings() {
-    const saved = localStorage.getItem('appSettings_Shape');
-    if (saved) {
-        settings = { ...settings, ...JSON.parse(saved) };
-    }
-    document.getElementById('set-sound').checked = settings.sound;
-    document.getElementById('set-maxq').value = settings.maxQuestions;
-    document.getElementById('set-init').value = settings.initialRects;
-    document.getElementById('set-step').value = settings.rectsIncrement;
-}
+        /**
+         * 2. 設定の管理 (localStorage)
+         */
+        const defaultSettings = {
+            sound: true,
+            maxQuestions: 5,
+            initialRects: 10,
+            rectsIncrement: 5
+        };
+        let settings = { ...defaultSettings };
 
-function saveSettings() {
-    settings.sound = document.getElementById('set-sound').checked;
-    settings.maxQuestions = parseInt(document.getElementById('set-maxq').value) || 1;
-    settings.initialRects = parseInt(document.getElementById('set-init').value) || 0;
-    settings.rectsIncrement = parseInt(document.getElementById('set-step').value) || 0;
-    localStorage.setItem('appSettings_Shape', JSON.stringify(settings));
-}
+        function loadSettings() {
+            const saved = localStorage.getItem('appSettings_Shape');
+            if (saved) {
+                settings = { ...settings, ...JSON.parse(saved) };
+            }
+            document.getElementById('set-sound').checked = settings.sound;
+            document.getElementById('set-maxq').value = settings.maxQuestions;
+            document.getElementById('set-init').value = settings.initialRects;
+            document.getElementById('set-step').value = settings.rectsIncrement;
+        }
 
-// 起動時に設定を読み込む
-loadSettings();
+        function saveSettings() {
+            settings.sound = document.getElementById('set-sound').checked;
+            settings.maxQuestions = parseInt(document.getElementById('set-maxq').value) || 1;
+            settings.initialRects = parseInt(document.getElementById('set-init').value) || 0;
+            settings.rectsIncrement = parseInt(document.getElementById('set-step').value) || 0;
+            localStorage.setItem('appSettings_Shape', JSON.stringify(settings));
+        }
 
-/**
- * 3. 設定画面のトリプルタップ起動 (ホーム画面用)
- */
-let settingsTapTimestamps = [];
-document.getElementById('open-settings-btn').addEventListener('pointerdown', (e) => {
-    const now = Date.now();
-    settingsTapTimestamps.push(now);
-    
-    if (settingsTapTimestamps.length > 3) {
-        settingsTapTimestamps.shift();
-    }
-    
-    if (settingsTapTimestamps.length === 3 && (now - settingsTapTimestamps[0]) <= 600) {
+        // 起動時に設定を読み込む
         loadSettings();
-        document.getElementById('settings-modal').style.display = 'flex';
-        settingsTapTimestamps = []; 
-    }
-});
 
-document.getElementById('close-settings-btn').addEventListener('click', () => {
-    saveSettings();
-    document.getElementById('settings-modal').style.display = 'none';
-});
+        /**
+         * 3. 設定画面のトリプルタップ起動 (ホーム画面用)
+         */
+        let settingsTapTimestamps = [];
+        document.getElementById('open-settings-btn').addEventListener('pointerdown', (e) => {
+            const now = Date.now();
+            settingsTapTimestamps.push(now);
+
+            if (settingsTapTimestamps.length > 3) {
+                settingsTapTimestamps.shift();
+            }
+
+            if (settingsTapTimestamps.length === 3 && (now - settingsTapTimestamps[0]) <= 600) {
+                loadSettings();
+                document.getElementById('settings-modal').style.display = 'flex';
+                settingsTapTimestamps = [];
+            }
+        });
+
+        document.getElementById('close-settings-btn').addEventListener('click', () => {
+            saveSettings();
+            document.getElementById('settings-modal').style.display = 'none';
+        });
 
 
-/**
- * 4. Web Audio API (効果音) と iOS無音アンロック処理
- */
-let audioCtx;
-function initAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+        /**
+         * 4. Web Audio API (効果音) と iOS無音アンロック処理
+         */
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    gain.gain.value = 0; 
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(0);
-    osc.stop(audioCtx.currentTime + 0.1);
-}
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(0);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
 
-function playChime() {
-    if (!audioCtx || !settings.sound) return;
-    const osc1 = audioCtx.createOscillator();
-    const osc2 = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    
-    osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
-    
-    osc1.type = 'sine'; osc2.type = 'sine';
-    osc1.frequency.setValueAtTime(783.99, audioCtx.currentTime); 
-    osc2.frequency.setValueAtTime(987.77, audioCtx.currentTime); 
-    
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-    
-    osc1.start(audioCtx.currentTime); osc2.start(audioCtx.currentTime);
-    osc1.stop(audioCtx.currentTime + 0.6); osc2.stop(audioCtx.currentTime + 0.6);
-}
+        function playChime() {
+            if (!audioCtx || !settings.sound) return;
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
 
-/**
- * 5. 画面遷移とゲーム管理
- */
-document.getElementById('start-btn').addEventListener('pointerdown', () => {
-    initAudio();
-    document.getElementById('start-screen').style.display = 'none';
-    
-    numOfClear = 0;
-    currentRectCount = settings.initialRects;
-    startGame();
-});
+            osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
 
-document.getElementById('home-btn').addEventListener('click', () => {
-    document.getElementById('clear-screen').style.display = 'none';
-    document.getElementById('start-screen').style.display = 'flex';
-});
+            osc1.type = 'sine'; osc2.type = 'sine';
+            osc1.frequency.setValueAtTime(783.99, audioCtx.currentTime);
+            osc2.frequency.setValueAtTime(987.77, audioCtx.currentTime);
 
-/**
- * 6. ゲームロジック
- */
-const playArea = document.getElementById('play-area');
-const scoreDisplay = document.getElementById('score-display');
-let numOfClear = 0;
-let currentRectCount = 0;
-let zIndexCounter = 20;
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
 
-const sizeMap = { circle: 300, triangle: 300, star: 350, rect: 300 };
-const colorMap = { circle: 'red', triangle: 'green', star: 'yellow' };
+            osc1.start(audioCtx.currentTime); osc2.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.6); osc2.stop(audioCtx.currentTime + 0.6);
+        }
 
-function getStarPoints(size) {
-    let points = [];
-    const center = size / 2;
-    const outerRadius = size / 2;
-    const innerRadius = outerRadius * 0.5;
-    for (let i = 0; i < 10; i++) {
-        const angle = (i * 36 - 90) * Math.PI / 180;
-        const radius = i % 2 === 0 ? outerRadius : innerRadius;
-        const x = center + Math.cos(angle) * radius;
-        const y = center + Math.sin(angle) * radius;
-        points.push(`${x},${y}`);
-    }
-    return points.join(' ');
-}
+        /**
+         * 5. 画面遷移とゲーム管理
+         */
+        document.getElementById('start-btn').addEventListener('pointerdown', () => {
+            initAudio();
+            document.getElementById('start-screen').style.display = 'none';
 
-const shapes = {
-    circle: `<svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="147.5"/></svg>`,
-    triangle: `<svg viewBox="0 0 300 300"><polygon points="150,2.5 297.5,297.5 2.5,297.5" stroke-linejoin="round"/></svg>`,
-    star: `<svg viewBox="0 0 350 350"><polygon points="${getStarPoints(350)}" stroke-linejoin="round"/></svg>`,
-    rect: `<svg viewBox="0 0 300 300"><rect x="2.5" y="2.5" width="295" height="295"/></svg>`
-};
+            numOfClear = 0;
+            currentRectCount = settings.initialRects;
+            startGame();
+        });
 
-function createEl(className, html, x, y, type, color = null, initialZIndex = 1) {
-    const el = document.createElement('div');
-    el.className = `shape-container ${className}`;
-    el.innerHTML = html;
-    
-    const size = sizeMap[type];
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    el.style.zIndex = initialZIndex;
+        document.getElementById('home-btn').addEventListener('click', () => {
+            document.getElementById('clear-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+        });
 
-    if (color) {
-        const svgElement = el.querySelector('svg *');
-        svgElement.style.fill = color;
-        svgElement.style.stroke = 'none';
-    }
+        /**
+         * 6. ゲームロジック
+         */
+        const playArea = document.getElementById('play-area');
+        const scoreDisplay = document.getElementById('score-display');
+        let numOfClear = 0;
+        let currentRectCount = 0;
+        let zIndexCounter = 20;
 
-    playArea.appendChild(el);
-    return el;
-}
+        const sizeMap = { circle: 300, triangle: 300, star: 350, rect: 300 };
+        const colorMap = { circle: 'red', triangle: 'green', star: 'yellow' };
 
-function getRandomPos(type) {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const half = sizeMap[type] / 2;
-    const minX = half;
-    const maxX = Math.max(half, w - half);
-    const minY = half;
-    const maxY = Math.max(half, h - half - 250); 
-    return {
-        x: minX + Math.random() * (maxX - minX),
-        y: minY + Math.random() * (maxY - minY)
-    };
-}
+        function getStarPoints(size) {
+            let points = [];
+            const center = size / 2;
+            const outerRadius = size / 2;
+            const innerRadius = outerRadius * 0.5;
+            for (let i = 0; i < 10; i++) {
+                const angle = (i * 36 - 90) * Math.PI / 180;
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const x = center + Math.cos(angle) * radius;
+                const y = center + Math.sin(angle) * radius;
+                points.push(`${x},${y}`);
+            }
+            return points.join(' ');
+        }
 
-let piecesState = {};
-
-function startGame() {
-    playArea.innerHTML = '';
-    scoreDisplay.innerText = `${numOfClear} / ${settings.maxQuestions}`;
-    piecesState = {};
-
-    // 背景ノイズ (Z-index: 1)
-    for (let i = 0; i < currentRectCount; i++) {
-        const pos = getRandomPos('rect');
-        createEl('shape-line distraction', shapes.rect, pos.x, pos.y, 'rect', null, 1);
-    }
-
-    const shapeTypes = ['circle', 'triangle', 'star'];
-    const startY = window.innerHeight - 200; 
-    const stepX = window.innerWidth / 4;     
-
-    shapeTypes.forEach((type, index) => {
-        // 正解の枠線ターゲット (Z-index: 5)
-        const targetPos = getRandomPos(type);
-        createEl('shape-line target-shape', shapes[type], targetPos.x, targetPos.y, type, null, 5);
-
-        // 動かすピース (Z-index: 20〜)
-        const startX = stepX * (index + 1);
-        const pieceEl = createEl('piece', shapes[type], startX, startY, type, colorMap[type], zIndexCounter++);
-
-        piecesState[type] = {
-            el: pieceEl,
-            targetPos: targetPos,
-            isFit: false
+        const shapes = {
+            circle: `<svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="147.5"/></svg>`,
+            triangle: `<svg viewBox="0 0 300 300"><polygon points="150,2.5 297.5,297.5 2.5,297.5" stroke-linejoin="round"/></svg>`,
+            star: `<svg viewBox="0 0 350 350"><polygon points="${getStarPoints(350)}" stroke-linejoin="round"/></svg>`,
+            rect: `<svg viewBox="0 0 300 300"><rect x="2.5" y="2.5" width="295" height="295"/></svg>`
         };
 
-        attachDrag(pieceEl, type);
-    });
-}
+        function createEl(className, html, x, y, type, color = null, initialZIndex = 1) {
+            const el = document.createElement('div');
+            el.className = `shape-container ${className}`;
+            el.innerHTML = html;
 
-function attachDrag(el, type) {
-    let isDragging = false;
-    let offset = { x: 0, y: 0 };
+            const size = sizeMap[type];
+            el.style.width = `${size}px`;
+            el.style.height = `${size}px`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.zIndex = initialZIndex;
 
-    el.addEventListener('pointerdown', (e) => {
-        if (piecesState[type].isFit) return;
-        isDragging = true;
-        el.setPointerCapture(e.pointerId);
-        
-        const rect = el.getBoundingClientRect();
-        offset.x = e.clientX - (rect.left + rect.width / 2);
-        offset.y = e.clientY - (rect.top + rect.height / 2);
-        
-        // ドラッグ中は最前面へ
-        el.style.zIndex = zIndexCounter++;
-    });
-
-    el.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        const newX = e.clientX - offset.x;
-        const marginY = e.clientY - offset.y;
-        el.style.left = `${newX}px`;
-        el.style.top = `${marginY}px`;
-    });
-
-    el.addEventListener('pointerup', (e) => {
-        if (!isDragging) return;
-        isDragging = false;
-        el.releasePointerCapture(e.pointerId);
-
-        const currentX = parseFloat(el.style.left);
-        const currentY = parseFloat(el.style.top);
-        const target = piecesState[type].targetPos;
-
-        const dx = currentX - target.x;
-        const dy = currentY - target.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist <= 50) {
-            el.style.left = `${target.x}px`;
-            el.style.top = `${target.y}px`;
-            el.classList.add('fitted');
-            piecesState[type].isFit = true;
-            
-            // ★最背面に送る（ノイズの z-index:1 よりも後ろの 0 に設定）
-            el.style.zIndex = 0; 
-
-            checkClear();
-        }
-    });
-}
-
-function checkClear() {
-    const allFit = Object.values(piecesState).every(p => p.isFit);
-    if (allFit) {
-        playChime(); 
-        setTimeout(() => {
-            numOfClear++;
-            if (numOfClear >= settings.maxQuestions) {
-                scoreDisplay.innerText = `${numOfClear} / ${settings.maxQuestions}`;
-                document.getElementById('clear-screen').style.display = 'flex';
-            } else {
-                currentRectCount += settings.rectsIncrement;
-                startGame();
+            if (color) {
+                const svgElement = el.querySelector('svg *');
+                svgElement.style.fill = color;
+                svgElement.style.stroke = 'none';
             }
-        }, 1000); 
-    }
-}
-</script>
+
+            playArea.appendChild(el);
+            return el;
+        }
+
+        function getRandomPos(type) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const half = sizeMap[type] / 2;
+            const minX = half;
+            const maxX = Math.max(half, w - half);
+            const minY = half;
+            const maxY = Math.max(half, h - half - 250);
+            return {
+                x: minX + Math.random() * (maxX - minX),
+                y: minY + Math.random() * (maxY - minY)
+            };
+        }
+
+        let piecesState = {};
+
+        function startGame() {
+            playArea.innerHTML = '';
+            scoreDisplay.innerText = `${numOfClear} / ${settings.maxQuestions}`;
+            piecesState = {};
+
+            // 背景ノイズ (Z-index: 1)
+            for (let i = 0; i < currentRectCount; i++) {
+                const pos = getRandomPos('rect');
+                createEl('shape-line distraction', shapes.rect, pos.x, pos.y, 'rect', null, 1);
+            }
+
+            const shapeTypes = ['circle', 'triangle', 'star'];
+            const startY = window.innerHeight - 200;
+            const stepX = window.innerWidth / 4;
+
+            shapeTypes.forEach((type, index) => {
+                // 正解の枠線ターゲット (Z-index: 5)
+                const targetPos = getRandomPos(type);
+                createEl('shape-line target-shape', shapes[type], targetPos.x, targetPos.y, type, null, 5);
+
+                // 動かすピース (Z-index: 20〜)
+                const startX = stepX * (index + 1);
+                const pieceEl = createEl('piece', shapes[type], startX, startY, type, colorMap[type], zIndexCounter++);
+
+                piecesState[type] = {
+                    el: pieceEl,
+                    targetPos: targetPos,
+                    isFit: false
+                };
+
+                attachDrag(pieceEl, type);
+            });
+        }
+
+        function attachDrag(el, type) {
+            let isDragging = false;
+            let offset = { x: 0, y: 0 };
+
+            el.addEventListener('pointerdown', (e) => {
+                if (piecesState[type].isFit) return;
+                isDragging = true;
+                el.setPointerCapture(e.pointerId);
+
+                const rect = el.getBoundingClientRect();
+                offset.x = e.clientX - (rect.left + rect.width / 2);
+                offset.y = e.clientY - (rect.top + rect.height / 2);
+
+                // ドラッグ中は最前面へ
+                el.style.zIndex = zIndexCounter++;
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const newX = e.clientX - offset.x;
+                const marginY = e.clientY - offset.y;
+                el.style.left = `${newX}px`;
+                el.style.top = `${marginY}px`;
+            });
+
+            el.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                el.releasePointerCapture(e.pointerId);
+
+                const currentX = parseFloat(el.style.left);
+                const currentY = parseFloat(el.style.top);
+                const target = piecesState[type].targetPos;
+
+                const dx = currentX - target.x;
+                const dy = currentY - target.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist <= 50) {
+                    el.style.left = `${target.x}px`;
+                    el.style.top = `${target.y}px`;
+                    el.classList.add('fitted');
+                    piecesState[type].isFit = true;
+
+                    // ★最背面に送る（ノイズの z-index:1 よりも後ろの 0 に設定）
+                    el.style.zIndex = 0;
+
+                    checkClear();
+                }
+            });
+        }
+
+        function checkClear() {
+            const allFit = Object.values(piecesState).every(p => p.isFit);
+            if (allFit) {
+                playChime();
+                setTimeout(() => {
+                    numOfClear++;
+                    if (numOfClear >= settings.maxQuestions) {
+                        scoreDisplay.innerText = `${numOfClear} / ${settings.maxQuestions}`;
+                        document.getElementById('clear-screen').style.display = 'flex';
+                    } else {
+                        currentRectCount += settings.rectsIncrement;
+                        startGame();
+                    }
+                }, 1000);
+            }
+        }
+    </script>
 </body>
+
 </html>

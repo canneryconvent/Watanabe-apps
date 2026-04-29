@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4T10JYJ9XC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-4T10JYJ9XC');
+    </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>平仮名なぞり・写し書き</title>
-    
+
     <style>
         /* =========================================
            0. ローカルフォントの読み込み
@@ -31,64 +42,198 @@
             -webkit-font-smoothing: antialiased;
             font-synthesis: none !important;
         }
-        
-        html, body {
-            margin: 0; padding: 0; 
-            width: 100vw; 
-            height: calc(var(--vh, 1vh) * 100); 
-            background-color: #fff; color: #333; 
-            overflow: hidden; 
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: calc(var(--vh, 1vh) * 100);
+            background-color: #fff;
+            color: #333;
+            overflow: hidden;
         }
 
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; min-height: 0; }
-        .screen.active { display: flex; }
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .screen.active {
+            display: flex;
+        }
 
         /* =========================================
            ホーム画面 (文字選択)
         ========================================= */
         .setting-wrapper {
-            position: absolute; right: 10px; top: 5px; 
-            display: flex; flex-direction: column; align-items: center; z-index: 100;
+            position: absolute;
+            right: 10px;
+            top: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
         }
-        .setting-btn { font-size: 26px; color: #aaa; padding: 5px; cursor: pointer; }
-        .setting-hint { font-size: 9px; color: #ccc; margin-top: -5px; }
 
-        .tabs { display: flex; justify-content: center; padding-top: 10px; margin-bottom: 5px; flex-shrink: 0; }
-        .tab-btn { 
-            padding: 8px 25px; font-size: 18px; background: #eee; border: 2px solid #ccc; 
-            border-radius: 12px 12px 0 0; margin: 0 4px; cursor: pointer; white-space: nowrap; 
+        .setting-btn {
+            font-size: 26px;
+            color: #aaa;
+            padding: 5px;
+            cursor: pointer;
         }
-        .tab-btn.active { background: #fff; border-bottom: none; }
-        
+
+        .setting-hint {
+            font-size: 9px;
+            color: #ccc;
+            margin-top: -5px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            padding-top: 10px;
+            margin-bottom: 5px;
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            padding: 8px 25px;
+            font-size: 18px;
+            background: #eee;
+            border: 2px solid #ccc;
+            border-radius: 12px 12px 0 0;
+            margin: 0 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            border-bottom: none;
+        }
+
         .keyboard-wrapper {
-            display: flex; flex-direction: row; gap: 15px; padding: 5px 15px; 
-            flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            padding: 5px 15px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             justify-content: center;
         }
-        @media (max-width: 768px) { .keyboard-wrapper { flex-direction: column; } }
-        
-        .keyboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-content: start; }
-        .key-btn { 
-            font-size: clamp(24px, 6vw, 36px); border: 2px solid #ddd; border-radius: 10px; 
-            background: #fafafa; width: clamp(45px, 15vw, 65px); aspect-ratio: 1; 
-            display: flex; justify-content: center; align-items: center; cursor: pointer;
-        }
-        .key-btn:active { background: #e0e0e0; transform: scale(0.95); }
-        .key-btn.empty { visibility: hidden; pointer-events: none; }
 
-        .bottom-bar { 
-            padding: 10px 15px calc(10px + env(safe-area-inset-bottom)) 15px; 
-            background: #f8f8f8; border-top: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0;
+        @media (max-width: 768px) {
+            .keyboard-wrapper {
+                flex-direction: column;
+            }
         }
-        .selected-text-container { display: flex; align-items: center; gap: 10px; min-height: 35px; font-size: 24px;}
-        .del-btn { font-size: 24px; color: #ff5252; padding: 5px 15px; border: 2px solid #ff5252; border-radius: 8px; background: #fff; cursor: pointer;}
-        .start-btn { font-size: 20px; padding: 10px 50px; border-radius: 30px; background: #4CAF50; color: white; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);}
-        .start-btn:disabled { background: #ccc; box-shadow: none; pointer-events: none;}
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            align-content: start;
+        }
+
+        .key-btn {
+            font-size: clamp(24px, 6vw, 36px);
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fafafa;
+            width: clamp(45px, 15vw, 65px);
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .key-btn:active {
+            background: #e0e0e0;
+            transform: scale(0.95);
+        }
+
+        .key-btn.empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .bottom-bar {
+            padding: 10px 15px calc(10px + env(safe-area-inset-bottom)) 15px;
+            background: #f8f8f8;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .selected-text-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 35px;
+            font-size: 24px;
+        }
+
+        .del-btn {
+            font-size: 24px;
+            color: #ff5252;
+            padding: 5px 15px;
+            border: 2px solid #ff5252;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .start-btn {
+            font-size: 20px;
+            padding: 10px 50px;
+            border-radius: 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-btn:disabled {
+            background: #ccc;
+            box-shadow: none;
+            pointer-events: none;
+        }
 
         /* かきおわったもじ履歴（一時表示） */
-        .saved-images-container { padding: 5px 15px; background: #eaeaea; overflow-x: auto; border-top: 1px solid #ccc; width: 100%; flex-shrink: 0; -webkit-overflow-scrolling: touch;}
-        .saved-images-list { display: flex; gap: 8px; }
-        .saved-image-item { height: 45px; width: auto; border: 1px solid #999; background: #fff; object-fit: contain; cursor: pointer;}
+        .saved-images-container {
+            padding: 5px 15px;
+            background: #eaeaea;
+            overflow-x: auto;
+            border-top: 1px solid #ccc;
+            width: 100%;
+            flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .saved-images-list {
+            display: flex;
+            gap: 8px;
+        }
+
+        .saved-image-item {
+            height: 45px;
+            width: auto;
+            border: 1px solid #999;
+            background: #fff;
+            object-fit: contain;
+            cursor: pointer;
+        }
 
         /* =========================================
            練習画面 (完全上詰め ＆ 重ね配置)
@@ -96,87 +241,255 @@
         .practice-header {
             position: relative;
             width: 100%;
-            height: auto; /* 文字サイズに合わせて自動で高さが確保される（被り防止） */
+            height: auto;
+            /* 文字サイズに合わせて自動で高さが確保される（被り防止） */
             min-height: 60px;
-            display: flex; justify-content: center; align-items: flex-start;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
             background: #fff;
-            padding-top: 5px; /* 上詰め */
+            padding-top: 5px;
+            /* 上詰め */
             padding-bottom: 5px;
             flex-shrink: 0;
         }
 
         /* 背面のお手本文字 */
-        .main-letter { 
-            font-size: clamp(80px, 20vh, 250px); 
-            line-height: 1; 
-            margin: 0; padding: 0;
-            color: #333; z-index: 1; cursor: pointer;
+        .main-letter {
+            font-size: clamp(80px, 20vh, 250px);
+            line-height: 1;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            z-index: 1;
+            cursor: pointer;
         }
 
         /* 前面のツールバー (絶対配置で上に被せる) */
         .practice-toolbar {
-            position: absolute; top: 5px; left: 0; width: 100%;
+            position: absolute;
+            top: 5px;
+            left: 0;
+            width: 100%;
             padding: 0 10px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            z-index: 10; pointer-events: none; 
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 10;
+            pointer-events: none;
         }
-        .practice-toolbar button { pointer-events: auto; } 
 
-        .tool-btn { font-size: 28px; padding: 6px 12px; border-radius: 12px; border: 2px solid transparent; background: rgba(240,240,240,0.8); opacity: 0.6; cursor: pointer;}
-        .tool-btn.active { border-color: #ff5252; opacity: 1; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
-        
-        .done-btn { font-size: 20px; padding: 8px 25px; border-radius: 30px; border: 2px solid #ccc; background: rgba(255,255,255,0.9); color: #888; cursor: pointer; transition: 0.3s;}
-        .done-btn.active { border-color: #4CAF50; color: #4CAF50; background: #fff; box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);}
+        .practice-toolbar button {
+            pointer-events: auto;
+        }
+
+        .tool-btn {
+            font-size: 28px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            background: rgba(240, 240, 240, 0.8);
+            opacity: 0.6;
+            cursor: pointer;
+        }
+
+        .tool-btn.active {
+            border-color: #ff5252;
+            opacity: 1;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .done-btn {
+            font-size: 20px;
+            padding: 8px 25px;
+            border-radius: 30px;
+            border: 2px solid #ccc;
+            background: rgba(255, 255, 255, 0.9);
+            color: #888;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .done-btn.active {
+            border-color: #4CAF50;
+            color: #4CAF50;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
 
         /* 練習エリア */
-        .canvas-container { 
-            flex-grow: 1; display: flex; flex-direction: column; 
-            justify-content: flex-start; /* 表を上に詰める */
-            align-items: center; 
-            padding: 10px 10px calc(20px + env(safe-area-inset-bottom)); 
-            width: 100%; overflow: hidden; touch-action: none; 
+        .canvas-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            /* 表を上に詰める */
+            align-items: center;
+            padding: 10px 10px calc(20px + env(safe-area-inset-bottom));
+            width: 100%;
+            overflow: hidden;
+            touch-action: none;
         }
-        
+
         /* 罫線のデザイン */
-        .grid { 
-            display: grid; gap: 2px; background-color: #333; border: 3px solid #333; 
-            margin: 0 auto; 
+        .grid {
+            display: grid;
+            gap: 2px;
+            background-color: #333;
+            border: 3px solid #333;
+            margin: 0 auto;
             /* 幅や高さ、grid-template設定はJavaScriptで動的にピクセル指定します */
         }
-        .cell { 
-            position: relative; background: #fff; display: flex; justify-content: center; align-items: center; overflow: hidden;
+
+        .cell {
+            position: relative;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
+
         /* 枠内の薄い文字 */
-        .cell-text { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #ddd; pointer-events: none; transition: opacity 0.3s ease; 
-            line-height: 1; display: block; margin: 0; padding: 0;
+        .cell-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ddd;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            line-height: 1;
+            display: block;
+            margin: 0;
+            padding: 0;
         }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair;}
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
 
         /* =========================================
            設定画面・プレビューモーダル
         ========================================= */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-        .modal { background: #fff; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; }
-        
-        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 20px; }
-        .stepper { display: flex; align-items: center; gap: 10px; }
-        .step-btn { width: 45px; height: 45px; font-size: 24px; border-radius: 50%; border: none; background: #e0e0e0; cursor: pointer; display: flex; justify-content: center; align-items: center;}
-        .step-val { font-size: 24px; width: 40px; text-align: center; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
 
-        .sample-grid-wrapper { display: flex; justify-content: center; background: #f5f5f5; padding: 10px; border-radius: 8px; height: 120px;}
-        .sample-grid { display: grid; gap: 1px; background: #666; border: 1px solid #666; height: 100%; }
-        .sample-cell { background: #fff; display: flex; justify-content: center; align-items: center; }
-        .sample-cell span { font-size: 16px; color: #aaa; }
+        .modal {
+            background: #fff;
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-        .close-modal-btn { font-size: 20px; padding: 12px; margin-top: 10px; background: #333; color: #fff; border-radius: 10px; border: none; cursor: pointer;}
-        
-        #modal-image-view .modal { width: auto; max-width: 95vw; padding: 15px; align-items: center; }
-        #large-image { max-width: 100%; max-height: 60vh; border: 1px solid #ccc; object-fit: contain;}
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 24px;
+            border-radius: 50%;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .step-val {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .sample-grid-wrapper {
+            display: flex;
+            justify-content: center;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 8px;
+            height: 120px;
+        }
+
+        .sample-grid {
+            display: grid;
+            gap: 1px;
+            background: #666;
+            border: 1px solid #666;
+            height: 100%;
+        }
+
+        .sample-cell {
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .sample-cell span {
+            font-size: 16px;
+            color: #aaa;
+        }
+
+        .close-modal-btn {
+            font-size: 20px;
+            padding: 12px;
+            margin-top: 10px;
+            background: #333;
+            color: #fff;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #modal-image-view .modal {
+            width: auto;
+            max-width: 95vw;
+            padding: 15px;
+            align-items: center;
+        }
+
+        #large-image {
+            max-width: 100%;
+            max-height: 60vh;
+            border: 1px solid #ccc;
+            object-fit: contain;
+        }
     </style>
-    <script src="../common/core.js"></script>
 </head>
+
 <body>
 
     <!-- =====================================
@@ -187,27 +500,28 @@
             <div id="setting-trigger" class="setting-btn">⚙️</div>
             <span class="setting-hint">トリプルタップ</span>
         </div>
-        
+
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab(0)">ひらがな</div>
             <div class="tab-btn" onclick="switchTab(1)">カタカナ</div>
             <div class="tab-btn" onclick="switchTab(2)">数字</div>
         </div>
-        
+
         <div class="keyboard-wrapper">
             <div id="keyboard-left" class="keyboard"></div>
             <div id="keyboard-right" class="keyboard"></div>
         </div>
-        
+
         <div class="saved-images-container" id="saved-images-container" style="display: none;">
             <div style="font-size: 11px; color: #666; margin-bottom: 2px;">かきおわったもじ</div>
             <div class="saved-images-list" id="saved-images-list"></div>
         </div>
-        
+
         <div class="bottom-bar">
             <div class="selected-text-container">
                 <div id="selected-letters" style="color:#666; font-weight:bold;"></div>
-                <button class="del-btn" style="color:red; background:none; border:none; font-size:24px;" onclick="removeLastLetter()">⌫</button>
+                <button class="del-btn" style="color:red; background:none; border:none; font-size:24px;"
+                    onclick="removeLastLetter()">⌫</button>
             </div>
             <button id="start-btn" class="start-btn" disabled onclick="startPractice()">スタート</button>
         </div>
@@ -219,7 +533,7 @@
     <div id="screen-practice" class="screen">
         <div class="practice-header">
             <div id="main-letter" class="main-letter" onclick="speakCurrentLetter()">あ</div>
-            
+
             <div class="practice-toolbar">
                 <div style="display:flex; gap:10px;">
                     <button id="tool-pen" class="tool-btn active" onclick="setTool('pen')">✏️</button>
@@ -228,7 +542,7 @@
                 <button id="done-btn" class="done-btn" onclick="nextLetter()">できた</button>
             </div>
         </div>
-        
+
         <div class="canvas-container" id="canvas-container">
             <div id="canvas-grid" class="grid"></div>
         </div>
@@ -241,13 +555,31 @@
         <div class="modal">
             <h2 style="margin:0; text-align:center;">設定</h2>
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">行の数 <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('rows', -1)">-</button><span id="val-rows">2</span><button onclick="updateSetting('rows', 1)">+</button></div></div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">列の数 <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('cols', -1)">-</button><span id="val-cols">5</span><button onclick="updateSetting('cols', 1)">+</button></div></div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">フェードなぞり <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('fade', -1)">-</button><span id="val-fade">3</span><button onclick="updateSetting('fade', 1)">+</button></div></div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">見本なし <div style="display:flex; align-items:center; gap:10px;"><button onclick="updateSetting('practice', -1)">-</button><span id="val-practice">2</span><button onclick="updateSetting('practice', 1)">+</button></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">行の数 <div
+                        style="display:flex; align-items:center; gap:10px;"><button
+                            onclick="updateSetting('rows', -1)">-</button><span id="val-rows">2</span><button
+                            onclick="updateSetting('rows', 1)">+</button></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">列の数 <div
+                        style="display:flex; align-items:center; gap:10px;"><button
+                            onclick="updateSetting('cols', -1)">-</button><span id="val-cols">5</span><button
+                            onclick="updateSetting('cols', 1)">+</button></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">フェードなぞり <div
+                        style="display:flex; align-items:center; gap:10px;"><button
+                            onclick="updateSetting('fade', -1)">-</button><span id="val-fade">3</span><button
+                            onclick="updateSetting('fade', 1)">+</button></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">見本なし <div
+                        style="display:flex; align-items:center; gap:10px;"><button
+                            onclick="updateSetting('practice', -1)">-</button><span id="val-practice">2</span><button
+                            onclick="updateSetting('practice', 1)">+</button></div>
+                </div>
             </div>
             <div style="font-size: 14px; text-align: center; color: #666; margin-top: 10px;">サンプルビュー</div>
-            <div class="sample-grid-wrapper"><div id="sample-grid" class="sample-grid"></div></div>
+            <div class="sample-grid-wrapper">
+                <div id="sample-grid" class="sample-grid"></div>
+            </div>
             <button class="close-modal-btn" onclick="closeSetting()">閉じる</button>
         </div>
     </div>
@@ -259,486 +591,488 @@
         <div class="modal" style="background:transparent; box-shadow:none;">
             <img id="large-image" src="" alt="保存画像">
             <div style="display:flex; gap:15px; margin-top:10px;">
-                <button class="close-modal-btn" style="flex:1; background:#ff5252;" onclick="deleteCurrentImage()">さくじょ</button>
+                <button class="close-modal-btn" style="flex:1; background:#ff5252;"
+                    onclick="deleteCurrentImage()">さくじょ</button>
                 <button class="close-modal-btn" style="flex:1;" onclick="closeImageView()">閉じる</button>
             </div>
         </div>
     </div>
 
-<script>
-/* ===================================================================
-   iOS 100vh対策 (画面の高さ計算)
-=================================================================== */
-function setVh() {
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-setVh();
-window.addEventListener('resize', () => { 
-    setVh(); 
-    if (document.getElementById('screen-practice').classList.contains('active')) fixGridSize(); 
-});
-window.addEventListener('orientationchange', () => {
-    setTimeout(() => { setVh(); fixGridSize(); }, 100);
-    setTimeout(() => { setVh(); fixGridSize(); }, 300); 
-});
-
-/* ===================================================================
-   グリッドサイズを「1:1の正方形」かつピクセル単位で絶対固定する関数
-=================================================================== */
-function fixGridSize() {
-    const grid = document.getElementById('canvas-grid');
-    if (!grid) return;
-    
-    const { rows, cols } = state.settings;
-    
-    // ヘッダーの実際の高さを取得 (これで被りを100%防ぐ)
-    const header = document.querySelector('.practice-header');
-    const headerH = header ? header.offsetHeight : 0;
-    
-    // 利用可能領域を計算 (余白分を引く)
-    const availW = window.innerWidth - 20; 
-    const availH = window.innerHeight - headerH - 50; 
-    
-    if (availW <= 0 || availH <= 0) return;
-
-    const gap = 2; // グリッドの隙間(px)
-    
-    // 画面からはみ出さない最大のセルの一辺の長さを計算
-    const maxCellW = Math.floor((availW - (cols - 1) * gap) / cols);
-    const maxCellH = Math.floor((availH - (rows - 1) * gap) / rows);
-    
-    // 正方形(1:1)を維持するため、小さい方を採用
-    const cellSize = Math.min(maxCellW, maxCellH);
-    
-    // 全体の幅と高さを計算 (セルの合計 ＋ 隙間の合計 ＋ 外枠のボーダー分6px)
-    const gridW = (cellSize * cols) + (gap * (cols - 1)) + 6;
-    const gridH = (cellSize * rows) + (gap * (rows - 1)) + 6;
-    
-    // 計算した値をCSSに直接書き込んで完全固定
-    grid.style.width = `${gridW}px`;
-    grid.style.height = `${gridH}px`;
-    grid.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
-    grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
-    
-    // 枠内の薄い文字のサイズをセルの90%に設定
-    const fontSize = Math.floor(cellSize * 0.9);
-    document.querySelectorAll('.cell-text').forEach(t => t.style.fontSize = `${fontSize}px`);
-
-    // キャンバスの解像度を再設定して再描画
-    grid.querySelectorAll('canvas').forEach((canvas, index) => {
-        setCanvasSize(canvas);
-        redrawCanvas(canvas, index);
-    });
-}
-
-/* ===================================================================
-   データ定義
-=================================================================== */
-const hiraLeft = ["あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ","ま","み","む","め","も","や","","ゆ","","よ","ら","り","る","れ","ろ","わ","","を","","ん"];
-const hiraRight = ["ゃ","ゅ","ょ","っ","","が","ぎ","ぐ","げ","ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で","ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ","ぽ"];
-const kataLeft = ["ア","イ","ウ","エ","オ","カ","キ","ク","ケ","コ","サ","シ","ス","セ","ソ","タ","チ","ツ","テ","ト","ナ","ニ","ヌ","ネ","ノ","ハ","ヒ","フ","ヘ","ホ","マ","ミ","ム","メ","モ","ヤ","","ユ","","ヨ","ラ","リ","ル","レ","ロ","ワ","","ヲ","","ン"];
-const kataRight = ["ャ","ュ","ョ","ッ","","ガ","ギ","グ","ゲ","ゴ","ザ","ジ","ズ","ゼ","ゾ","ダ","ヂ","ヅ","デ","ド","バ","ビ","ブ","ベ","ボ","パ","ピ","プ","ペ","ポ"];
-const numsLeft = ["1","2","3","4","5","6","7","8","9","0"];
-
-/* ===================================================================
-   状態管理
-=================================================================== */
-let state = {
-    settings: { rows: 2, cols: 5, fade: 3, practice: 2 },
-    selectedText: [],
-    currentTextIndex: 0,
-    currentTool: 'pen',
-    cellsStatus: [], 
-    strokes: [],      
-    savedImages: [], 
-    currentImageIndex: -1
-};
-
-// 練習設定のみLocalStorageから読み込み・保存する
-const savedSettings = localStorage.getItem('nazoriSettingsFinal');
-if (savedSettings) state.settings = JSON.parse(savedSettings);
-
-function saveSettings() {
-    localStorage.setItem('nazoriSettingsFinal', JSON.stringify(state.settings));
-}
-
-/* ===================================================================
-   トリプルタップ判定
-=================================================================== */
-let tapTimes = [];
-document.getElementById('setting-trigger').addEventListener('pointerdown', () => {
-    const now = Date.now();
-    tapTimes.push(now);
-    tapTimes = tapTimes.filter(t => now - t <= 600);
-    if (tapTimes.length >= 3) {
-        document.getElementById('modal-setting').style.display = 'flex';
-        renderSettingValues();
-        tapTimes = [];
-    }
-});
-
-/* ===================================================================
-   音声読み上げ機能
-=================================================================== */
-const synth = window.speechSynthesis;
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-document.body.addEventListener('pointerdown', () => {
-    if (!audioCtx) audioCtx = new AudioContext();
-}, { once: true });
-
-function speak(text) {
-    if (synth.speaking) synth.cancel();
-    const ut = new SpeechSynthesisUtterance(text);
-    ut.lang = 'ja-JP'; ut.pitch = 1.1; ut.rate = 0.8;
-    synth.speak(ut);
-}
-
-/* ===================================================================
-   ホーム画面 UI ロジック
-=================================================================== */
-function switchTab(index) {
-    document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
-    const leftArr = index === 0 ? hiraLeft : index === 1 ? kataLeft : numsLeft;
-    const rightArr = index === 0 ? hiraRight : index === 1 ? kataRight : [];
-    renderKeyboard('keyboard-left', leftArr);
-    renderKeyboard('keyboard-right', rightArr);
-}
-
-function renderKeyboard(id, arr) {
-    const kb = document.getElementById(id);
-    kb.innerHTML = '';
-    if (arr.length === 0) { kb.style.display = 'none'; return; }
-    kb.style.display = 'grid';
-    arr.forEach(char => {
-        const btn = document.createElement('div');
-        btn.className = 'key-btn' + (char === "" ? ' empty' : '');
-        btn.textContent = char;
-        if (char !== "") btn.onclick = () => { state.selectedText.push(char); renderSelectedText(); };
-        kb.appendChild(btn);
-    });
-}
-
-function renderSelectedText() {
-    document.getElementById('selected-letters').textContent = state.selectedText.join(' ');
-    document.getElementById('start-btn').disabled = state.selectedText.length === 0;
-}
-
-function removeLastLetter() {
-    state.selectedText.pop();
-    renderSelectedText();
-}
-
-function startPractice() {
-    state.currentTextIndex = 0;
-    state.savedImages = []; 
-    document.getElementById('screen-home').classList.remove('active');
-    document.getElementById('screen-practice').classList.add('active');
-    initPracticeScreen();
-}
-
-/* 一時履歴画像の表示 */
-function renderSavedImages() {
-    const container = document.getElementById('saved-images-container');
-    const list = document.getElementById('saved-images-list');
-    list.innerHTML = '';
-    if (state.savedImages.length === 0) { container.style.display = 'none'; return; }
-    container.style.display = 'block';
-    state.savedImages.forEach((imgData, index) => {
-        const img = document.createElement('img');
-        img.src = imgData;
-        img.className = 'saved-image-item';
-        img.onclick = () => openImageView(index);
-        list.appendChild(img);
-    });
-}
-
-function openImageView(index) {
-    state.currentImageIndex = index;
-    document.getElementById('large-image').src = state.savedImages[index];
-    document.getElementById('modal-image-view').style.display = 'flex';
-}
-
-function closeImageView() {
-    document.getElementById('modal-image-view').style.display = 'none';
-}
-
-function deleteCurrentImage() {
-    if (state.currentImageIndex >= 0) {
-        state.savedImages.splice(state.currentImageIndex, 1);
-        renderSavedImages();
-        closeImageView();
-    }
-}
-
-/* ===================================================================
-   設定画面ロジック
-=================================================================== */
-function renderSettingValues() {
-    document.getElementById('val-rows').textContent = state.settings.rows;
-    document.getElementById('val-cols').textContent = state.settings.cols;
-    document.getElementById('val-fade').textContent = state.settings.fade;
-    document.getElementById('val-practice').textContent = state.settings.practice;
-    renderSampleGrid();
-}
-
-function updateSetting(key, delta) {
-    let val = state.settings[key] + delta;
-    if (key === 'rows' && (val < 1 || val > 5)) return;
-    if (key === 'cols' && (val < 1 || val > 10)) return;
-    const total = (key === 'rows' ? val : state.settings.rows) * (key === 'cols' ? val : state.settings.cols);
-    if (key === 'fade' || key === 'practice') { if (val < 0) return; if (val > total) val = total; }
-    
-    state.settings[key] = val;
-    
-    if (state.settings.fade + state.settings.practice > total) {
-        const excess = (state.settings.fade + state.settings.practice) - total;
-        if (state.settings.practice >= excess) {
-            state.settings.practice -= excess;
-        } else {
-            state.settings.practice = 0;
-            state.settings.fade = Math.max(0, state.settings.fade - excess);
+    <script>
+        /* ===================================================================
+           iOS 100vh対策 (画面の高さ計算)
+        =================================================================== */
+        function setVh() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
         }
-    }
-    saveSettings();
-    renderSettingValues();
-}
+        setVh();
+        window.addEventListener('resize', () => {
+            setVh();
+            if (document.getElementById('screen-practice').classList.contains('active')) fixGridSize();
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => { setVh(); fixGridSize(); }, 100);
+            setTimeout(() => { setVh(); fixGridSize(); }, 300);
+        });
 
-function renderSampleGrid() {
-    const grid = document.getElementById('sample-grid');
-    const { rows, cols, fade, practice } = state.settings;
-    const total = rows * cols;
-    grid.innerHTML = '';
-    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-    for (let i = 0; i < total; i++) {
-        const isPractice = i >= total - practice;
-        const isFade = (total - fade - practice <= i) && (i < total - practice);
-        const cell = document.createElement('div');
-        cell.className = 'sample-cell';
-        const txt = document.createElement('span');
-        txt.textContent = 'あ';
-        txt.style.opacity = isPractice ? '0' : (isFade ? '0.4' : '1');
-        cell.appendChild(txt);
-        grid.appendChild(cell);
-    }
-}
+        /* ===================================================================
+           グリッドサイズを「1:1の正方形」かつピクセル単位で絶対固定する関数
+        =================================================================== */
+        function fixGridSize() {
+            const grid = document.getElementById('canvas-grid');
+            if (!grid) return;
 
-function closeSetting() {
-    document.getElementById('modal-setting').style.display = 'none';
-    if (document.getElementById('screen-practice').classList.contains('active')) {
-        initPracticeScreen(); 
-    }
-}
+            const { rows, cols } = state.settings;
 
-/* ===================================================================
-   練習画面ロジック (キャンバス描画)
-=================================================================== */
-function setTool(tool) {
-    state.currentTool = tool;
-    document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
-    document.getElementById('tool-eraser').classList.toggle('active', tool === 'eraser');
-}
+            // ヘッダーの実際の高さを取得 (これで被りを100%防ぐ)
+            const header = document.querySelector('.practice-header');
+            const headerH = header ? header.offsetHeight : 0;
 
-function speakCurrentLetter() {
-    speak(state.selectedText[state.currentTextIndex]);
-}
+            // 利用可能領域を計算 (余白分を引く)
+            const availW = window.innerWidth - 20;
+            const availH = window.innerHeight - headerH - 50;
 
-function initPracticeScreen() {
-    const letter = state.selectedText[state.currentTextIndex];
-    document.getElementById('main-letter').textContent = letter;
-    speak(letter); 
-    
-    const grid = document.getElementById('canvas-grid');
-    grid.innerHTML = '';
-    
-    const { rows, cols, fade, practice } = state.settings;
-    const total = rows * cols;
-    
-    state.cellsStatus = Array(total).fill(false);
-    state.strokes = Array.from({length: total}, () => []); 
-    checkDone();
-    
-    for (let i = 0; i < total; i++) {
-        const isPractice = i >= total - practice;
-        const isFade = (total - fade - practice <= i) && (i < total - practice);
-        
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        
-        const textSpan = document.createElement('span');
-        textSpan.className = 'cell-text';
-        textSpan.textContent = letter;
-        textSpan.style.opacity = isPractice ? "0" : (isFade ? "0.3" : "1");
-        textSpan.id = `cell-text-${i}`;
-        
-        const canvas = document.createElement('canvas');
-        setupCanvas(canvas, i, isFade);
-        
-        cell.appendChild(textSpan);
-        cell.appendChild(canvas);
-        grid.appendChild(cell);
-    }
-    // DOM構築直後にサイズ固定計算を走らせる
-    setTimeout(fixGridSize, 10);
-}
+            if (availW <= 0 || availH <= 0) return;
 
-function setCanvasSize(canvas) {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    const ctx = canvas.getContext('2d');
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-}
+            const gap = 2; // グリッドの隙間(px)
 
-function redrawCanvas(canvas, index) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    state.strokes[index].forEach(stroke => {
-        if (stroke.tool === 'pen') {
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 12;
-        } else {
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.lineWidth = 30;
+            // 画面からはみ出さない最大のセルの一辺の長さを計算
+            const maxCellW = Math.floor((availW - (cols - 1) * gap) / cols);
+            const maxCellH = Math.floor((availH - (rows - 1) * gap) / rows);
+
+            // 正方形(1:1)を維持するため、小さい方を採用
+            const cellSize = Math.min(maxCellW, maxCellH);
+
+            // 全体の幅と高さを計算 (セルの合計 ＋ 隙間の合計 ＋ 外枠のボーダー分6px)
+            const gridW = (cellSize * cols) + (gap * (cols - 1)) + 6;
+            const gridH = (cellSize * rows) + (gap * (rows - 1)) + 6;
+
+            // 計算した値をCSSに直接書き込んで完全固定
+            grid.style.width = `${gridW}px`;
+            grid.style.height = `${gridH}px`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+            grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+
+            // 枠内の薄い文字のサイズをセルの90%に設定
+            const fontSize = Math.floor(cellSize * 0.9);
+            document.querySelectorAll('.cell-text').forEach(t => t.style.fontSize = `${fontSize}px`);
+
+            // キャンバスの解像度を再設定して再描画
+            grid.querySelectorAll('canvas').forEach((canvas, index) => {
+                setCanvasSize(canvas);
+                redrawCanvas(canvas, index);
+            });
         }
-        if (stroke.points.length === 0) return;
-        ctx.beginPath();
-        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-        for (let i = 1; i < stroke.points.length; i++) {
-            ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+
+        /* ===================================================================
+           データ定義
+        =================================================================== */
+        const hiraLeft = ["あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ", "し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に", "ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ", "ま", "み", "む", "め", "も", "や", "", "ゆ", "", "よ", "ら", "り", "る", "れ", "ろ", "わ", "", "を", "", "ん"];
+        const hiraRight = ["ゃ", "ゅ", "ょ", "っ", "", "が", "ぎ", "ぐ", "げ", "ご", "ざ", "じ", "ず", "ぜ", "ぞ", "だ", "ぢ", "づ", "で", "ど", "ば", "び", "ぶ", "べ", "ぼ", "ぱ", "ぴ", "ぷ", "ぺ", "ぽ"];
+        const kataLeft = ["ア", "イ", "ウ", "エ", "オ", "カ", "キ", "ク", "ケ", "コ", "サ", "シ", "ス", "セ", "ソ", "タ", "チ", "ツ", "テ", "ト", "ナ", "ニ", "ヌ", "ネ", "ノ", "ハ", "ヒ", "フ", "ヘ", "ホ", "マ", "ミ", "ム", "メ", "モ", "ヤ", "", "ユ", "", "ヨ", "ラ", "リ", "ル", "レ", "ロ", "ワ", "", "ヲ", "", "ン"];
+        const kataRight = ["ャ", "ュ", "ョ", "ッ", "", "ガ", "ギ", "グ", "ゲ", "ゴ", "ザ", "ジ", "ズ", "ゼ", "ゾ", "ダ", "ヂ", "ヅ", "デ", "ド", "バ", "ビ", "ブ", "ベ", "ボ", "パ", "ピ", "プ", "ペ", "ポ"];
+        const numsLeft = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+
+        /* ===================================================================
+           状態管理
+        =================================================================== */
+        let state = {
+            settings: { rows: 2, cols: 5, fade: 3, practice: 2 },
+            selectedText: [],
+            currentTextIndex: 0,
+            currentTool: 'pen',
+            cellsStatus: [],
+            strokes: [],
+            savedImages: [],
+            currentImageIndex: -1
+        };
+
+        // 練習設定のみLocalStorageから読み込み・保存する
+        const savedSettings = localStorage.getItem('nazoriSettingsFinal');
+        if (savedSettings) state.settings = JSON.parse(savedSettings);
+
+        function saveSettings() {
+            localStorage.setItem('nazoriSettingsFinal', JSON.stringify(state.settings));
         }
-        ctx.stroke();
-    });
-}
 
-function setupCanvas(canvas, index, isFade) {
-    setTimeout(() => setCanvasSize(canvas), 0);
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false, hasMoved = false, startX = 0, startY = 0, currentStroke = null;
-    
-    const getPos = (e) => {
-        const r = canvas.getBoundingClientRect();
-        return { x: e.clientX - r.left, y: e.clientY - r.top };
-    };
+        /* ===================================================================
+           トリプルタップ判定
+        =================================================================== */
+        let tapTimes = [];
+        document.getElementById('setting-trigger').addEventListener('pointerdown', () => {
+            const now = Date.now();
+            tapTimes.push(now);
+            tapTimes = tapTimes.filter(t => now - t <= 600);
+            if (tapTimes.length >= 3) {
+                document.getElementById('modal-setting').style.display = 'flex';
+                renderSettingValues();
+                tapTimes = [];
+            }
+        });
 
-    canvas.addEventListener('pointerdown', (e) => {
-        isDrawing = true; hasMoved = false; canvas.setPointerCapture(e.pointerId);
-        const pos = getPos(e); startX = pos.x; startY = pos.y;
-        currentStroke = { tool: state.currentTool, points: [{x: pos.x, y: pos.y}] };
-        
-        if (state.currentTool === 'pen') {
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.strokeStyle = '#000'; ctx.lineWidth = 12;
-        } else {
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.lineWidth = 30;
+        /* ===================================================================
+           音声読み上げ機能
+        =================================================================== */
+        const synth = window.speechSynthesis;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        document.body.addEventListener('pointerdown', () => {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }, { once: true });
+
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const ut = new SpeechSynthesisUtterance(text);
+            ut.lang = 'ja-JP'; ut.pitch = 1.1; ut.rate = 0.8;
+            synth.speak(ut);
         }
-        ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
-        
-        if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0';
-    });
 
-    canvas.addEventListener('pointermove', (e) => {
-        if (!isDrawing) return;
-        const pos = getPos(e);
-        if (!hasMoved && Math.hypot(pos.x - startX, pos.y - startY) > 5) hasMoved = true;
-        currentStroke.points.push({x: pos.x, y: pos.y});
-        ctx.lineTo(pos.x, pos.y); ctx.stroke();
-    });
-
-    canvas.addEventListener('pointerup', (e) => {
-        if (!isDrawing) return;
-        isDrawing = false; canvas.releasePointerCapture(e.pointerId);
-        
-        if (hasMoved) {
-            state.strokes[index].push(currentStroke);
-        } else if (e.type === 'pointerup' && state.strokes[index].length > 0) {
-            state.strokes[index].pop(); 
+        /* ===================================================================
+           ホーム画面 UI ロジック
+        =================================================================== */
+        function switchTab(index) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
+            const leftArr = index === 0 ? hiraLeft : index === 1 ? kataLeft : numsLeft;
+            const rightArr = index === 0 ? hiraRight : index === 1 ? kataRight : [];
+            renderKeyboard('keyboard-left', leftArr);
+            renderKeyboard('keyboard-right', rightArr);
         }
-        
-        redrawCanvas(canvas, index);
-        
-        state.cellsStatus[index] = state.strokes[index].some(s => s.tool === 'pen');
-        checkDone();
-        
-        if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0.3';
-    });
-    
-    canvas.addEventListener('pointercancel', () => {
-        if (isDrawing) {
-            isDrawing = false;
-            redrawCanvas(canvas, index);
+
+        function renderKeyboard(id, arr) {
+            const kb = document.getElementById(id);
+            kb.innerHTML = '';
+            if (arr.length === 0) { kb.style.display = 'none'; return; }
+            kb.style.display = 'grid';
+            arr.forEach(char => {
+                const btn = document.createElement('div');
+                btn.className = 'key-btn' + (char === "" ? ' empty' : '');
+                btn.textContent = char;
+                if (char !== "") btn.onclick = () => { state.selectedText.push(char); renderSelectedText(); };
+                kb.appendChild(btn);
+            });
         }
-    });
-}
 
-function checkDone() {
-    const isAllDrawn = state.cellsStatus.every(s => s === true);
-    const btn = document.getElementById('done-btn');
-    if (isAllDrawn && state.cellsStatus.length > 0) {
-        btn.classList.add('active');
-    } else {
-        btn.classList.remove('active');
-    }
-}
-
-function captureGrid() {
-    const grid = document.getElementById('canvas-grid');
-    const rect = grid.getBoundingClientRect();
-    const canvas = document.createElement('canvas');
-    const scale = 2; 
-    canvas.width = rect.width * scale; canvas.height = rect.height * scale;
-    const ctx = canvas.getContext('2d');
-    ctx.scale(scale, scale);
-    
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, rect.width, rect.height);
-    
-    grid.querySelectorAll('.cell').forEach((cell) => {
-        const r = cell.getBoundingClientRect();
-        const x = r.left - rect.left, y = r.top - rect.top, w = r.width, h = r.height;
-        ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
-        
-        const textSpan = cell.querySelector('.cell-text');
-        if (parseFloat(textSpan.style.opacity || 1) > 0) {
-             ctx.fillStyle = `rgba(170, 170, 170, ${textSpan.style.opacity})`;
-             const style = window.getComputedStyle(textSpan);
-             ctx.font = `normal ${style.fontSize} ${style.fontFamily}`;
-             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-             ctx.fillText(textSpan.textContent, x + w/2, y + h/2); 
+        function renderSelectedText() {
+            document.getElementById('selected-letters').textContent = state.selectedText.join(' ');
+            document.getElementById('start-btn').disabled = state.selectedText.length === 0;
         }
-        
-        const cellCanvas = cell.querySelector('canvas');
-        if (cellCanvas) ctx.drawImage(cellCanvas, x, y, w, h);
-    });
-    
-    return canvas.toDataURL('image/jpeg', 0.8);
-}
 
-function nextLetter() {
-    if (!state.cellsStatus.every(s => s === true)) return;
-    
-    state.savedImages.push(captureGrid());
-    
-    state.currentTextIndex++;
-    if (state.currentTextIndex < state.selectedText.length) {
-        initPracticeScreen();
-    } else {
-        state.selectedText = []; 
-        renderSelectedText(); 
-        renderSavedImages();
-        document.getElementById('screen-practice').classList.remove('active');
-        document.getElementById('screen-home').classList.add('active');
+        function removeLastLetter() {
+            state.selectedText.pop();
+            renderSelectedText();
+        }
+
+        function startPractice() {
+            state.currentTextIndex = 0;
+            state.savedImages = [];
+            document.getElementById('screen-home').classList.remove('active');
+            document.getElementById('screen-practice').classList.add('active');
+            initPracticeScreen();
+        }
+
+        /* 一時履歴画像の表示 */
+        function renderSavedImages() {
+            const container = document.getElementById('saved-images-container');
+            const list = document.getElementById('saved-images-list');
+            list.innerHTML = '';
+            if (state.savedImages.length === 0) { container.style.display = 'none'; return; }
+            container.style.display = 'block';
+            state.savedImages.forEach((imgData, index) => {
+                const img = document.createElement('img');
+                img.src = imgData;
+                img.className = 'saved-image-item';
+                img.onclick = () => openImageView(index);
+                list.appendChild(img);
+            });
+        }
+
+        function openImageView(index) {
+            state.currentImageIndex = index;
+            document.getElementById('large-image').src = state.savedImages[index];
+            document.getElementById('modal-image-view').style.display = 'flex';
+        }
+
+        function closeImageView() {
+            document.getElementById('modal-image-view').style.display = 'none';
+        }
+
+        function deleteCurrentImage() {
+            if (state.currentImageIndex >= 0) {
+                state.savedImages.splice(state.currentImageIndex, 1);
+                renderSavedImages();
+                closeImageView();
+            }
+        }
+
+        /* ===================================================================
+           設定画面ロジック
+        =================================================================== */
+        function renderSettingValues() {
+            document.getElementById('val-rows').textContent = state.settings.rows;
+            document.getElementById('val-cols').textContent = state.settings.cols;
+            document.getElementById('val-fade').textContent = state.settings.fade;
+            document.getElementById('val-practice').textContent = state.settings.practice;
+            renderSampleGrid();
+        }
+
+        function updateSetting(key, delta) {
+            let val = state.settings[key] + delta;
+            if (key === 'rows' && (val < 1 || val > 5)) return;
+            if (key === 'cols' && (val < 1 || val > 10)) return;
+            const total = (key === 'rows' ? val : state.settings.rows) * (key === 'cols' ? val : state.settings.cols);
+            if (key === 'fade' || key === 'practice') { if (val < 0) return; if (val > total) val = total; }
+
+            state.settings[key] = val;
+
+            if (state.settings.fade + state.settings.practice > total) {
+                const excess = (state.settings.fade + state.settings.practice) - total;
+                if (state.settings.practice >= excess) {
+                    state.settings.practice -= excess;
+                } else {
+                    state.settings.practice = 0;
+                    state.settings.fade = Math.max(0, state.settings.fade - excess);
+                }
+            }
+            saveSettings();
+            renderSettingValues();
+        }
+
+        function renderSampleGrid() {
+            const grid = document.getElementById('sample-grid');
+            const { rows, cols, fade, practice } = state.settings;
+            const total = rows * cols;
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            for (let i = 0; i < total; i++) {
+                const isPractice = i >= total - practice;
+                const isFade = (total - fade - practice <= i) && (i < total - practice);
+                const cell = document.createElement('div');
+                cell.className = 'sample-cell';
+                const txt = document.createElement('span');
+                txt.textContent = 'あ';
+                txt.style.opacity = isPractice ? '0' : (isFade ? '0.4' : '1');
+                cell.appendChild(txt);
+                grid.appendChild(cell);
+            }
+        }
+
+        function closeSetting() {
+            document.getElementById('modal-setting').style.display = 'none';
+            if (document.getElementById('screen-practice').classList.contains('active')) {
+                initPracticeScreen();
+            }
+        }
+
+        /* ===================================================================
+           練習画面ロジック (キャンバス描画)
+        =================================================================== */
+        function setTool(tool) {
+            state.currentTool = tool;
+            document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
+            document.getElementById('tool-eraser').classList.toggle('active', tool === 'eraser');
+        }
+
+        function speakCurrentLetter() {
+            speak(state.selectedText[state.currentTextIndex]);
+        }
+
+        function initPracticeScreen() {
+            const letter = state.selectedText[state.currentTextIndex];
+            document.getElementById('main-letter').textContent = letter;
+            speak(letter);
+
+            const grid = document.getElementById('canvas-grid');
+            grid.innerHTML = '';
+
+            const { rows, cols, fade, practice } = state.settings;
+            const total = rows * cols;
+
+            state.cellsStatus = Array(total).fill(false);
+            state.strokes = Array.from({ length: total }, () => []);
+            checkDone();
+
+            for (let i = 0; i < total; i++) {
+                const isPractice = i >= total - practice;
+                const isFade = (total - fade - practice <= i) && (i < total - practice);
+
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'cell-text';
+                textSpan.textContent = letter;
+                textSpan.style.opacity = isPractice ? "0" : (isFade ? "0.3" : "1");
+                textSpan.id = `cell-text-${i}`;
+
+                const canvas = document.createElement('canvas');
+                setupCanvas(canvas, i, isFade);
+
+                cell.appendChild(textSpan);
+                cell.appendChild(canvas);
+                grid.appendChild(cell);
+            }
+            // DOM構築直後にサイズ固定計算を走らせる
+            setTimeout(fixGridSize, 10);
+        }
+
+        function setCanvasSize(canvas) {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        }
+
+        function redrawCanvas(canvas, index) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            state.strokes[index].forEach(stroke => {
+                if (stroke.tool === 'pen') {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 12;
+                } else {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = 30;
+                }
+                if (stroke.points.length === 0) return;
+                ctx.beginPath();
+                ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                for (let i = 1; i < stroke.points.length; i++) {
+                    ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+                }
+                ctx.stroke();
+            });
+        }
+
+        function setupCanvas(canvas, index, isFade) {
+            setTimeout(() => setCanvasSize(canvas), 0);
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false, hasMoved = false, startX = 0, startY = 0, currentStroke = null;
+
+            const getPos = (e) => {
+                const r = canvas.getBoundingClientRect();
+                return { x: e.clientX - r.left, y: e.clientY - r.top };
+            };
+
+            canvas.addEventListener('pointerdown', (e) => {
+                isDrawing = true; hasMoved = false; canvas.setPointerCapture(e.pointerId);
+                const pos = getPos(e); startX = pos.x; startY = pos.y;
+                currentStroke = { tool: state.currentTool, points: [{ x: pos.x, y: pos.y }] };
+
+                if (state.currentTool === 'pen') {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = '#000'; ctx.lineWidth = 12;
+                } else {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = 30;
+                }
+                ctx.beginPath(); ctx.moveTo(pos.x, pos.y);
+
+                if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0';
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                if (!hasMoved && Math.hypot(pos.x - startX, pos.y - startY) > 5) hasMoved = true;
+                currentStroke.points.push({ x: pos.x, y: pos.y });
+                ctx.lineTo(pos.x, pos.y); ctx.stroke();
+            });
+
+            canvas.addEventListener('pointerup', (e) => {
+                if (!isDrawing) return;
+                isDrawing = false; canvas.releasePointerCapture(e.pointerId);
+
+                if (hasMoved) {
+                    state.strokes[index].push(currentStroke);
+                } else if (e.type === 'pointerup' && state.strokes[index].length > 0) {
+                    state.strokes[index].pop();
+                }
+
+                redrawCanvas(canvas, index);
+
+                state.cellsStatus[index] = state.strokes[index].some(s => s.tool === 'pen');
+                checkDone();
+
+                if (isFade) document.getElementById(`cell-text-${index}`).style.opacity = '0.3';
+            });
+
+            canvas.addEventListener('pointercancel', () => {
+                if (isDrawing) {
+                    isDrawing = false;
+                    redrawCanvas(canvas, index);
+                }
+            });
+        }
+
+        function checkDone() {
+            const isAllDrawn = state.cellsStatus.every(s => s === true);
+            const btn = document.getElementById('done-btn');
+            if (isAllDrawn && state.cellsStatus.length > 0) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        function captureGrid() {
+            const grid = document.getElementById('canvas-grid');
+            const rect = grid.getBoundingClientRect();
+            const canvas = document.createElement('canvas');
+            const scale = 2;
+            canvas.width = rect.width * scale; canvas.height = rect.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, rect.width, rect.height);
+
+            grid.querySelectorAll('.cell').forEach((cell) => {
+                const r = cell.getBoundingClientRect();
+                const x = r.left - rect.left, y = r.top - rect.top, w = r.width, h = r.height;
+                ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+
+                const textSpan = cell.querySelector('.cell-text');
+                if (parseFloat(textSpan.style.opacity || 1) > 0) {
+                    ctx.fillStyle = `rgba(170, 170, 170, ${textSpan.style.opacity})`;
+                    const style = window.getComputedStyle(textSpan);
+                    ctx.font = `normal ${style.fontSize} ${style.fontFamily}`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(textSpan.textContent, x + w / 2, y + h / 2);
+                }
+
+                const cellCanvas = cell.querySelector('canvas');
+                if (cellCanvas) ctx.drawImage(cellCanvas, x, y, w, h);
+            });
+
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        function nextLetter() {
+            if (!state.cellsStatus.every(s => s === true)) return;
+
+            state.savedImages.push(captureGrid());
+
+            state.currentTextIndex++;
+            if (state.currentTextIndex < state.selectedText.length) {
+                initPracticeScreen();
+            } else {
+                state.selectedText = [];
+                renderSelectedText();
+                renderSavedImages();
+                document.getElementById('screen-practice').classList.remove('active');
+                document.getElementById('screen-home').classList.add('active');
+                switchTab(0);
+            }
+        }
+
         switchTab(0);
-    }
-}
-
-switchTab(0);
-document.addEventListener('contextmenu', e => e.preventDefault());
-</script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
 </body>
+
 </html>
