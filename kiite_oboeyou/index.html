@@ -70,10 +70,11 @@
             height: 90px; flex: 1; font-size: 40px; font-weight: bold; color: #333;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer;
+            touch-action: manipulation; /* サクサク反応させるため */
         }
         .key:active { background-color: #eee; transform: translateY(2px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        .control-btn { margin-top: 30px; background-color: #FF9800; font-size: 28px; width: 200px; z-index: 10; }
+        .control-btn { margin-top: 30px; background-color: #FF9800; font-size: 28px; width: 200px; z-index: 10; touch-action: manipulation; }
         
         /* 巨大⭕️❌表示用オーバーレイ */
         #mark-overlay {
@@ -119,9 +120,10 @@
 <body>
     <div id="home-screen" class="screen active">
         <div class="home-menu">
-            <button class="btn" onpointerdown="startSession()">スタート</button>
+            <!-- スタートボタンはclickに変更 -->
+            <button class="btn" onclick="startSession()" style="touch-action: manipulation;">スタート</button>
             <div style="margin-top: 40px; text-align: center;">
-                <button class="btn" style="background-color: #78909C; font-size: 20px; padding: 12px 20px; width: 160px; margin: 0;" id="center-setting-btn">設定</button>
+                <button class="btn" style="background-color: #78909C; font-size: 20px; padding: 12px 20px; width: 160px; margin: 0; touch-action: manipulation;" id="center-setting-btn">設定</button>
                 <p style="font-size: 14px; color: #666; margin-top: 5px; font-weight: bold;">※トリプルタップ</p>
             </div>
         </div>
@@ -129,13 +131,14 @@
 
     <div id="play-screen" class="screen">
         <div class="top-bar">
-            <button class="btn btn-outline" style="font-size: 18px;" onpointerdown="showHome()">もどる</button>
+            <!-- もどるボタンはclickに変更 -->
+            <button class="btn btn-outline" style="font-size: 18px; touch-action: manipulation;" onclick="showHome()">もどる</button>
             <div style="font-size: 18px; font-weight: bold; color: #666;" id="question-counter">1 / 5問</div>
         </div>
         
         <div class="message-area" id="message-container">
             <span id="message" style="width: 250px; text-align: center;">よくきいてね...</span>
-            <button id="replay-btn" onpointerdown="replayAudio()" style="background:none; border:none; font-size:40px; cursor:pointer; padding: 0;">🔈</button>
+            <button id="replay-btn" onclick="replayAudio()" style="background:none; border:none; font-size:40px; cursor:pointer; padding: 0; touch-action: manipulation;">🔈</button>
         </div>
 
         <div class="boxes-container" id="boxes"></div>
@@ -214,7 +217,8 @@
                 </div>
             </div>
 
-            <button class="btn" style="margin-top: 10px; background-color: #333; font-size: 20px;" onpointerdown="saveSettingsAndClose()">保存して戻る</button>
+            <!-- 保存ボタンはclickに変更 -->
+            <button class="btn" style="margin-top: 10px; background-color: #333; font-size: 20px; touch-action: manipulation;" onclick="saveSettingsAndClose()">保存して戻る</button>
         </div>
     </div>
 
@@ -226,7 +230,8 @@
 
         let tapCount = 0;
         let tapTimer = null;
-        document.getElementById('center-setting-btn').addEventListener('pointerdown', (e) => {
+        // 設定ボタンはclickに変更
+        document.getElementById('center-setting-btn').addEventListener('click', (e) => {
             tapCount++;
             if (tapCount === 1) { tapTimer = setTimeout(() => { tapCount = 0; }, 600); }
             if (tapCount >= 3) { clearTimeout(tapTimer); tapCount = 0; showSetting(); }
@@ -291,29 +296,21 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let isReading = false; 
 
-        // ★ iOSの音声ロックを確実に突破するための魔法の処理 ★
+        // ★ iOSの音声ロック解除処理
         let isAudioUnlocked = false;
         function unlockAudio() {
             if (isAudioUnlocked) return;
             
-            // Web Audio API のロック解除
             if(audioCtx.state === 'suspended') audioCtx.resume();
             
-            // Web Speech API のロック解除
-            // 【重要】ボタンに触れたその瞬間のプログラム内で同期的に実行する必要があります
             speechSynthesis.cancel();
             speechSynthesis.resume();
-            let u = new SpeechSynthesisUtterance(''); // 何も喋らない無音の音声
+            let u = new SpeechSynthesisUtterance('');
             u.volume = 0;
             speechSynthesis.speak(u);
             
             isAudioUnlocked = true;
         }
-
-        // 画面内のどこかをタッチした瞬間に、念のためロック解除を仕込んでおく
-        ['pointerdown', 'touchstart', 'click'].forEach(evt => {
-            document.addEventListener(evt, unlockAudio, { once: true });
-        });
 
         function playTone(type) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -380,7 +377,6 @@
                 
                 speechSynthesis.speak(u);
                 
-                // 万が一再生完了イベントが発火しなかった場合の安全装置
                 setTimeout(finish, (text.length * 500) / rate + 300);
             });
         }
@@ -434,6 +430,7 @@
                 let btn = document.createElement('div');
                 btn.className = 'key';
                 btn.innerText = currentItems[i].label;
+                // キー入力はサクサク反応させるため onpointerdown のまま
                 btn.onpointerdown = (e) => {
                     e.preventDefault(); 
                     inputNum(i);
@@ -442,9 +439,9 @@
             }
         }
 
-        // 「スタート」ボタンがタップされた瞬間に同期的に実行される関数
+        // スタートボタン（onclick）から呼ばれる
         function startSession() {
-            unlockAudio(); // ここで無音を再生し、OSに音声利用を許可させる
+            unlockAudio(); // ここで無音再生し、OSに許可させる
             currentQuestionCount = 0;
             startGame();
         }
@@ -478,7 +475,6 @@
             }
             renderBoxes();
 
-            // 画面が切り替わってから少しだけ間を空けて読み上げ開始（ロック解除済みなので音が鳴る）
             await new Promise(r => setTimeout(r, 600));
 
             await readQuestions(questionIds);
@@ -491,8 +487,13 @@
             renderBoxes();
         }
 
+        // スピーカーボタン（onclick）から呼ばれる
         async function replayAudio() {
             if (isReading) return;
+            
+            speechSynthesis.cancel(); 
+            speechSynthesis.resume();
+            await new Promise(r => setTimeout(r, 100));
             
             const msg = document.getElementById('message');
             const keypad = document.getElementById('keypad');
@@ -523,6 +524,7 @@
                 div.className = `box ${i === activeIndex ? 'active' : ''}`;
                 div.innerText = userInputIds[i] !== null ? currentItems[userInputIds[i]].label : "";
                 
+                // マス目もサクサク反応させるため onpointerdown のまま
                 div.onpointerdown = () => {
                     if(document.getElementById('keypad').style.pointerEvents === 'auto') {
                         activeIndex = i;
@@ -544,7 +546,8 @@
                     document.getElementById('keypad').style.pointerEvents = "none";
                     document.getElementById('keypad').style.opacity = "0.5";
                     document.getElementById('replay-btn').style.pointerEvents = "none";
-                    document.getElementById('action-btn').onpointerdown = checkAnswer;
+                    // アクションボタンはclickに変更
+                    document.getElementById('action-btn').onclick = checkAnswer;
                     setTimeout(checkAnswer, 400); 
                 }
             }
@@ -572,10 +575,10 @@
 
                 if (currentQuestionCount >= config.totalQuestions) {
                     btn.innerText = "ホームへ";
-                    btn.onpointerdown = showHome;
+                    btn.onclick = showHome; // onclickに変更
                 } else {
                     btn.innerText = "つぎへ";
-                    btn.onpointerdown = startGame;
+                    btn.onclick = startGame; // onclickに変更
                 }
                 btn.style.display = "block";
                 
