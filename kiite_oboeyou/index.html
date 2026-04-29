@@ -82,7 +82,7 @@
             z-index: 5;
         }
 
-        /* --- 設定画面（余白を詰めたコンパクト版） --- */
+        /* --- 設定画面 --- */
         #setting-screen { 
             touch-action: pan-y; -webkit-overflow-scrolling: touch; 
             justify-content: flex-start; padding: 15px; 
@@ -100,13 +100,13 @@
         .form-group {
             width: 100%; max-width: 450px;
             border: 2px solid #e5e5ea; border-radius: 10px;
-            margin-bottom: 15px; overflow: hidden; /* 25pxから15pxへ縮小 */
+            margin-bottom: 15px; overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             background-color: white;
         }
         .form-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 15px; border-bottom: 2px solid #e5e5ea; gap: 8px; /* 余白を縮小 */
+            padding: 10px 15px; border-bottom: 2px solid #e5e5ea; gap: 8px;
         }
         .form-row:last-child { border-bottom: none; }
         .form-row label { font-size: 15px; font-weight: bold; color: #333; flex: 1; }
@@ -117,7 +117,6 @@
     </style>
 </head>
 <body>
-    <!-- ホーム画面 -->
     <div id="home-screen" class="screen active">
         <div class="home-menu">
             <button class="btn" onpointerdown="startSession()">スタート</button>
@@ -128,7 +127,6 @@
         </div>
     </div>
 
-    <!-- プレイ画面 -->
     <div id="play-screen" class="screen">
         <div class="top-bar">
             <button class="btn btn-outline" style="font-size: 18px;" onpointerdown="showHome()">もどる</button>
@@ -140,9 +138,7 @@
             <button id="replay-btn" onpointerdown="replayAudio()" style="background:none; border:none; font-size:40px; cursor:pointer; padding: 0;">🔈</button>
         </div>
 
-        <div class="boxes-container" id="boxes">
-            <!-- JSでマスを生成 -->
-        </div>
+        <div class="boxes-container" id="boxes"></div>
 
         <div class="keypad-container" id="keypad" style="opacity: 0.3; pointer-events: none;">
             <div class="keypad-row" id="keypad-row1"></div>
@@ -153,12 +149,10 @@
         <button class="btn control-btn" id="action-btn" style="display: none;"></button>
     </div>
 
-    <!-- 設定画面 -->
     <div id="setting-screen" class="screen">
         <div class="form-container">
             <h2 style="color: #333; margin-top: 10px; margin-bottom: 15px;">設定</h2>
             
-            <!-- 基本設定グループ -->
             <div class="form-group">
                 <div class="form-row">
                     <label>もんだい</label>
@@ -178,7 +172,6 @@
                 </div>
             </div>
 
-            <!-- 読み上げ設定グループ -->
             <div class="form-group">
                 <div class="form-row">
                     <label style="flex: 0.8;">スピード</label>
@@ -203,7 +196,6 @@
                 </div>
             </div>
             
-            <!-- 妨害音設定グループ -->
             <div class="form-group" style="border-left: 6px solid #FF9800;">
                 <div class="form-row" style="flex-direction: column; align-items: flex-start;">
                     <label style="margin-bottom: 5px;">妨害音（図地弁別）</label>
@@ -227,13 +219,11 @@
     </div>
 
     <script>
-        // --- 1. 共通要件：画面高さ固定 ---
         const setVh = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
         window.addEventListener('resize', setVh);
         window.addEventListener('orientationchange', () => setTimeout(setVh, 100));
         setVh();
 
-        // --- 2. 共通要件：中央ボタンのトリプルタップ検知 ---
         let tapCount = 0;
         let tapTimer = null;
         document.getElementById('center-setting-btn').addEventListener('pointerdown', (e) => {
@@ -242,7 +232,6 @@
             if (tapCount >= 3) { clearTimeout(tapTimer); tapCount = 0; showSetting(); }
         });
 
-        // --- 3. 出題データ ---
         const ITEMS = {
             number: [
                 { id: 0, label: "0", yomi: "ゼロ" }, { id: 1, label: "1", yomi: "いち" },
@@ -266,11 +255,9 @@
             ]
         };
 
-        // --- 4. 設定管理 ---
         let config = { mode: 'number', digits: 3, totalQuestions: 5, speed: 1.0, interval: 0.0, noiseType: 'none', speechVolume: 1.0, noiseVolume: 1.0 };
         function loadSettings() {
-            // バージョンをv6に更新し初期値を確実に反映
-            const saved = localStorage.getItem('memAppConfig_v6');
+            const saved = localStorage.getItem('memAppConfig_v8');
             if (saved) { config = JSON.parse(saved); }
             updateSettingUI();
         }
@@ -278,18 +265,13 @@
             document.getElementById('set-mode').value = config.mode;
             document.getElementById('set-digits').value = config.digits;
             document.getElementById('set-totalQuestions').value = config.totalQuestions;
-            
             document.getElementById('set-speed').value = config.speed;
             document.getElementById('speed-val').innerText = Number(config.speed).toFixed(1);
-            
             document.getElementById('set-interval').value = config.interval;
             document.getElementById('interval-val').innerText = Number(config.interval).toFixed(1);
-            
             document.getElementById('set-speechVolume').value = config.speechVolume !== undefined ? config.speechVolume : 1.0;
             document.getElementById('speech-vol-val').innerText = Number(config.speechVolume !== undefined ? config.speechVolume : 1.0).toFixed(1);
-            
             document.getElementById('set-noiseType').value = config.noiseType;
-            
             document.getElementById('set-noiseVolume').value = config.noiseVolume !== undefined ? config.noiseVolume : 1.0;
             document.getElementById('noise-vol-val').innerText = Number(config.noiseVolume !== undefined ? config.noiseVolume : 1.0).toFixed(1);
         }
@@ -302,14 +284,13 @@
             config.speechVolume = parseFloat(document.getElementById('set-speechVolume').value);
             config.noiseType = document.getElementById('set-noiseType').value;
             config.noiseVolume = parseFloat(document.getElementById('set-noiseVolume').value);
-            localStorage.setItem('memAppConfig_v6', JSON.stringify(config));
+            localStorage.setItem('memAppConfig_v8', JSON.stringify(config));
             showHome();
         }
 
-        // --- 5. 音声生成（Web Audio API & SpeechSynthesis） ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let isReading = false; // 読み上げ中フラグ
-        
+        let isReading = false; 
+
         function playTone(type) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
@@ -341,7 +322,6 @@
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
             const gain = audioCtx.createGain();
-            // 音量設定を反映
             gain.gain.value = 0.05 * volume; 
             noise.connect(gain); gain.connect(audioCtx.destination);
             noise.start();
@@ -356,37 +336,25 @@
             osc.type = 'square';
             let time = now;
             while(time < end) { osc.frequency.setValueAtTime(Math.random() * 1000 + 400, time); time += 0.1; }
-            // 音量設定を反映
             gain.gain.value = 0.03 * volume;
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(now); osc.stop(end);
         }
 
-        function getVoices() {
-            return new Promise(resolve => {
-                let voices = speechSynthesis.getVoices();
-                if (voices.length) { resolve(voices); return; }
-                speechSynthesis.onvoiceschanged = () => { resolve(speechSynthesis.getVoices()); };
-            });
-        }
-
         function speakWord(text, rate, volume) {
-            return new Promise(async resolve => {
-                const voices = await getVoices();
-                const jpVoices = voices.filter(v => v.lang.includes('ja'));
+            return new Promise(resolve => {
                 let u = new SpeechSynthesisUtterance(text);
+                u.lang = 'ja-JP';
                 u.rate = rate; 
                 u.pitch = 1.0;
-                // 音量設定を反映
                 u.volume = volume;
-                if(jpVoices.length > 0) u.voice = jpVoices[0];
                 
                 let isResolved = false;
                 const finish = () => { if (!isResolved) { isResolved = true; resolve(); } };
-                u.onend = finish; u.onerror = finish;
-                speechSynthesis.speak(u);
+                u.onend = finish; 
+                u.onerror = finish;
                 
-                // 安全装置
+                speechSynthesis.speak(u);
                 setTimeout(finish, (text.length * 500) / rate + 300);
             });
         }
@@ -395,7 +363,7 @@
             isReading = true;
             const currentItems = ITEMS[config.mode];
             for (let i = 0; i < questions.length; i++) {
-                if (!isReading) break; // 中断された場合
+                if (!isReading) break; 
                 let item = currentItems[questions[i]]; 
                 
                 if (config.noiseType === 'noise') playWhiteNoise(1.5 / config.speed, config.noiseVolume);
@@ -411,7 +379,6 @@
             isReading = false;
         }
 
-        // --- 6. アプリ状態とゲームロジック ---
         let questionIds = []; 
         let userInputIds = [];
         let activeIndex = 0;
@@ -422,7 +389,8 @@
             document.getElementById(id).classList.add('active');
         }
         function showHome() { 
-            speechSynthesis.cancel(); isReading = false;
+            speechSynthesis.cancel(); 
+            isReading = false;
             document.getElementById('mark-overlay').style.opacity = "0";
             switchScreen('home-screen'); 
         }
@@ -449,13 +417,13 @@
         }
 
         function startSession() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
             currentQuestionCount = 0;
             startGame();
         }
 
         async function startGame() {
             switchScreen('play-screen');
-            if(audioCtx.state === 'suspended') audioCtx.resume();
             renderKeypad();
             
             document.getElementById('mark-overlay').style.opacity = "0";
@@ -474,7 +442,6 @@
             replayBtn.style.opacity = "0.3";
             replayBtn.style.pointerEvents = "none";
             
-            // 問題生成
             questionIds = []; userInputIds = []; activeIndex = 0;
             const maxId = ITEMS[config.mode].length;
             
@@ -486,7 +453,6 @@
 
             await readQuestions(questionIds);
 
-            // 入力受付開始
             msg.innerText = "にゅうりょく してね";
             keypad.style.opacity = "1";
             keypad.style.pointerEvents = "auto";
@@ -495,10 +461,8 @@
             renderBoxes();
         }
 
-        // 再度読み上げ機能
         async function replayAudio() {
             if (isReading) return;
-            speechSynthesis.cancel(); 
             
             const msg = document.getElementById('message');
             const keypad = document.getElementById('keypad');
@@ -546,7 +510,6 @@
                 activeIndex = nextEmpty !== -1 ? nextEmpty : config.digits - 1;
                 renderBoxes();
                 
-                // 自動採点
                 if (userInputIds.every(v => v !== null)) {
                     document.getElementById('keypad').style.pointerEvents = "none";
                     document.getElementById('keypad').style.opacity = "0.5";
