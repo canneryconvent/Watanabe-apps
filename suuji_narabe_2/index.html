@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>数字ならべ（◯ずつ増える）</title>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+    /* 共通要件: 確実な画面高さの取得とスクロール制御 */
+    :root {
+        --vh: 1vh;
+        --primary-color: #007AFF;
+        --bg-color: #ffffff;
+        --side-padding: 24px;
+    }
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: calc(var(--vh, 1vh) * 100);
+        overflow: hidden;
+        /* UDデジタル教科書体を最優先、次にKlee Oneを指定 */
+        font-family: "UD Digi Kyokasho NK-R", "UD Digi Kyokasho NP-R", "UD Digital Kyokasho NK-R", "UD Digital Kyokasho NP-R", "UD Digi Kyokasho", "Klee One", -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg-color);
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    /* 画面コンテナ */
+    .screen {
+        display: none;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        flex-direction: column;
+    }
+    .screen.active {
+        display: flex;
+    }
+
+    /* ボタン共通スタイル */
+    .btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 15px 30px;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        touch-action: manipulation;
+        font-family: inherit;
+    }
+    .btn:active {
+        transform: scale(0.95);
+    }
+
+    /* ホーム画面 */
+    #home-screen {
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+    }
+    #home-screen .btn {
+        width: 200px;
+        text-align: center;
+    }
+
+    /* 設定画面 */
+    #setting-screen {
+        background-color: var(--bg-color);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .setting-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 20px;
+        background-color: white;
+        border-bottom: 1px solid #ccc;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .setting-header h1 {
+        margin: 0;
+        font-size: 20px;
+    }
+    .setting-group {
+        background-color: white;
+        margin: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        font-size: 18px;
+    }
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+    .setting-item label {
+        flex: 1;
+    }
+    /* ピッカーの文字切れ改善 */
+    .setting-item input[type="number"] {
+        font-size: 18px;
+        padding: 5px;
+        width: 80px;
+        text-align: right;
+        font-family: inherit;
+    }
+    .setting-item select {
+        font-size: 18px;
+        padding: 5px;
+        min-width: 130px;
+        text-align: right;
+        font-family: inherit;
+    }
+    .setting-item input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* サンプルビューのスタイル */
+    .sample-view-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        width: 100%;
+        margin-top: 10px;
+    }
+    .sample-cell {
+        width: 32px;
+        height: 32px;
+        border: 2px solid #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    .sample-cell.locked {
+        background-color: #32CD32;
+        color: #000;
+    }
+    .sample-cell.empty {
+        background-color: white;
+    }
+
+    /* プレイ画面 */
+    #play-screen {
+        touch-action: none; 
+        position: relative;
+    }
+
+    .question-label {
+        position: absolute;
+        top: 10px;
+        right: var(--side-padding);
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        z-index: 5;
+    }
+    .back-btn {
+        position: absolute;
+        top: 10px;
+        left: var(--side-padding);
+        padding: 8px 15px;
+        font-size: 16px;
+        background-color: #FF3B30;
+        z-index: 5;
+    }
+
+    /* 正解時のマル表示 */
+    #correct-mark {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        font-size: clamp(150px, 40vw, 300px);
+        color: #FF3B30;
+        font-weight: bold;
+        z-index: 100;
+        pointer-events: none;
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+    }
+    #correct-mark.show {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+
+    /* プレイエリアのフレキシブルコンテナ */
+    #play-content {
+        display: flex;
+        flex: 1;
+        width: 100%;
+        margin-top: 50px; 
+        padding: 10px var(--side-padding);
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+        align-items: center; 
+        justify-content: center;
+    }
+
+    /* 自動レイアウト：上下分割パターン */
+    #play-content.layout-vertical {
+        flex-direction: column;
+        gap: 30px; 
+    }
+    #play-content.layout-vertical #grid-container { order: 1; }
+    #play-content.layout-vertical #tray-container { 
+        order: 2; 
+        margin-bottom: calc(40px + env(safe-area-inset-bottom)); 
+    }
+
+    /* 自動レイアウト：左右分割パターン */
+    #play-content.layout-horizontal {
+        flex-direction: row;
+        gap: 40px; 
+    }
+    #play-content.layout-horizontal #grid-container { order: 1; } 
+    #play-content.layout-horizontal #tray-container { order: 2; margin-bottom: 0; } 
+
+    /* トレイとカード置き場の共通スタイル */
+    #grid-container, #tray-container {
+        position: relative;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* トレイ(四角)をCSS Grid化 */
+    #grid-container {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+    }
+    
+    .grid-cell {
+        box-sizing: border-box;
+        border: 1px solid #333;
+        background-color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        color: #000;
+    }
+    .grid-cell.target {
+        background-color: transparent;
+    }
+    .grid-cell.out-of-range {
+        background-color: #e0e0e0;
+        color: #888;
+    }
+
+    /* ドラッグする数字ブロック（カード） */
+    .number-block {
+        position: absolute;
+        box-sizing: border-box;
+        border: 2px solid #000;
+        background-color: #FFD700;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        color: #000;
+        border-radius: 4px;
+        cursor: grab;
+        touch-action: none;
+        transition: background-color 0.3s;
+        line-height: 1;
+    }
+    .number-block.correct {
+        background-color: #32CD32;
+    }
+    .number-block.dragging {
+        transition: none;
+        opacity: 0.9;
+        transform: scale(1.05);
+    }
+    .number-block.animating {
+        transition: left 0.3s ease, top 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* オーバーレイUI */
+    #overlay-ui {
+        display: none;
+        position: absolute;
+        bottom: calc(40px + env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+    }
+
+</style>
+</head>
+<body>
+
+    <div id="home-screen" class="screen active">
+        <button class="btn" onclick="startGame()">スタート</button>
+        <button class="btn" style="background-color: #8E8E93; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 30px;" onclick="handleSettingTap()">
+            <span>設定</span>
+            <span style="font-size: 14px; font-weight: normal; margin-top: 4px;">※トリプルタップ</span>
+        </button>
+    </div>
+
+    <div id="setting-screen" class="screen">
+        <div class="setting-header">
+            <button class="btn" style="padding: 5px 15px; font-size: 16px;" onclick="showScreen('home-screen')">もどる</button>
+            <h1>設定</h1>
+            <div style="width: 60px;"></div>
+        </div>
+        
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>いくつずつ増える？ (最小):</label>
+                <input type="number" id="set-step-min" min="1" max="50">
+            </div>
+            <div class="setting-item">
+                <label>いくつずつ増える？ (最大):</label>
+                <input type="number" id="set-step-max" min="1" max="50">
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>ベース最小値 (何個目から):</label>
+                <input type="number" id="set-min" min="1" max="99">
+            </div>
+            <div class="setting-item">
+                <label>ベース最大値 (何個目まで):</label>
+                <input type="number" id="set-max" min="2" max="100">
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>モード:</label>
+                <select id="set-mode">
+                    <option value="all">全部</option>
+                    <option value="partial">一部空き</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="setting-group" id="partial-settings-group" style="display: none;">
+            <div class="setting-item">
+                <label>最初から置くマス (固定):</label>
+                <input type="number" id="set-partial-fixed" min="1" max="10">
+            </div>
+            <div class="setting-item">
+                <label>自分で置くマス (空欄):</label>
+                <input type="number" id="set-partial-empty" min="1" max="10">
+            </div>
+            <div class="setting-item" style="flex-direction: column; align-items: flex-start; background-color: #fcfcfc;">
+                <label style="font-size: 14px; color: #666; margin-bottom: 5px;">パターンのサンプル (最小倍率時の最初の10マス):</label>
+                <div id="sample-view" class="sample-view-container"></div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <div class="setting-item">
+                <label>問題数:</label>
+                <input type="number" id="set-max-questions" min="1" max="20">
+            </div>
+            <div class="setting-item">
+                <label>もどるボタンの表示:</label>
+                <input type="checkbox" id="set-show-back">
+            </div>
+        </div>
+    </div>
+
+    <div id="play-screen" class="screen">
+        <button class="btn back-btn" id="play-back-btn" onclick="quitGame()">もどる</button>
+        <div id="question-label" class="question-label">1/5</div>
+        
+        <div id="play-content">
+            <div id="grid-container"></div>
+            <div id="tray-container"></div>
+        </div>
+        
+        <div id="correct-mark">○</div>
+        
+        <div id="overlay-ui">
+            <button class="btn" id="next-btn" onclick="nextQuestion()">つぎへ</button>
+        </div>
+    </div>
+
+<script>
+    // --- 1. 共通要件: 画面高さの確実な取得 ---
+    function setHeight() {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setHeight();
+    window.addEventListener('resize', setHeight);
+    window.addEventListener('orientationchange', () => { setTimeout(setHeight, 100); });
+
+    // --- 2. 設定の管理 ---
+    const settings = {
+        min: parseInt(localStorage.getItem('num-min')) || 1,
+        max: parseInt(localStorage.getItem('num-max')) || 10,
+        stepMin: parseInt(localStorage.getItem('num-stepMin')) || 2, // 追加: 倍率の最小値
+        stepMax: parseInt(localStorage.getItem('num-stepMax')) || 5, // 追加: 倍率の最大値
+        mode: localStorage.getItem('num-mode') || 'all',
+        partialFixed: parseInt(localStorage.getItem('num-partialFixed')) || 1,
+        partialEmpty: parseInt(localStorage.getItem('num-partialEmpty')) || 2,
+        maxQuestions: parseInt(localStorage.getItem('num-maxQuestions')) || 5,
+        showBackButton: localStorage.getItem('num-showBackButton') !== 'false'
+    };
+
+    function initSettingsUI() {
+        document.getElementById('set-min').value = settings.min;
+        document.getElementById('set-max').value = settings.max;
+        document.getElementById('set-step-min').value = settings.stepMin;
+        document.getElementById('set-step-max').value = settings.stepMax;
+        document.getElementById('set-mode').value = settings.mode;
+        document.getElementById('set-partial-fixed').value = settings.partialFixed;
+        document.getElementById('set-partial-empty').value = settings.partialEmpty;
+        document.getElementById('set-max-questions').value = settings.maxQuestions;
+        document.getElementById('set-show-back').checked = settings.showBackButton;
+        togglePartialSettings();
+    }
+
+    function togglePartialSettings() {
+        const mode = document.getElementById('set-mode').value;
+        document.getElementById('partial-settings-group').style.display = mode === 'partial' ? 'block' : 'none';
+        updateSampleView();
+    }
+    document.getElementById('set-mode').addEventListener('change', togglePartialSettings);
+
+    // サンプルビューの更新処理
+    function updateSampleView() {
+        const container = document.getElementById('sample-view');
+        container.innerHTML = '';
+        
+        const fixed = parseInt(document.getElementById('set-partial-fixed').value) || 1;
+        const empty = parseInt(document.getElementById('set-partial-empty').value) || 1;
+        const minVal = parseInt(document.getElementById('set-min').value) || 1;
+        // プレビュー表示用に設定中の最小倍率を使用
+        const previewStep = parseInt(document.getElementById('set-step-min').value) || 1; 
+        const cycle = fixed + empty;
+        
+        for (let i = 0; i < 10; i++) {
+            const num = (minVal + i) * previewStep; // ベース数値 × 倍率
+            const cell = document.createElement('div');
+            cell.className = 'sample-cell';
+            
+            // パターン判定 (0 から cycle-1 の間で判定)
+            if (i % cycle < fixed) {
+                cell.classList.add('locked');
+                cell.innerText = num;
+            } else {
+                cell.classList.add('empty');
+            }
+            container.appendChild(cell);
+        }
+    }
+
+    function saveSettings() {
+        settings.min = parseInt(document.getElementById('set-min').value);
+        settings.max = parseInt(document.getElementById('set-max').value);
+        settings.stepMin = parseInt(document.getElementById('set-step-min').value) || 1;
+        settings.stepMax = parseInt(document.getElementById('set-step-max').value) || 1;
+        settings.mode = document.getElementById('set-mode').value;
+        settings.partialFixed = parseInt(document.getElementById('set-partial-fixed').value) || 1;
+        settings.partialEmpty = parseInt(document.getElementById('set-partial-empty').value) || 1;
+        settings.maxQuestions = parseInt(document.getElementById('set-max-questions').value);
+        settings.showBackButton = document.getElementById('set-show-back').checked;
+
+        if(settings.min >= settings.max) {
+            settings.max = settings.min + 1;
+            document.getElementById('set-max').value = settings.max;
+        }
+        
+        // 最大値が最小値を下回らないように補正
+        if(settings.stepMin > settings.stepMax) {
+            settings.stepMax = settings.stepMin;
+            document.getElementById('set-step-max').value = settings.stepMax;
+        }
+
+        localStorage.setItem('num-min', settings.min);
+        localStorage.setItem('num-max', settings.max);
+        localStorage.setItem('num-stepMin', settings.stepMin);
+        localStorage.setItem('num-stepMax', settings.stepMax);
+        localStorage.setItem('num-mode', settings.mode);
+        localStorage.setItem('num-partialFixed', settings.partialFixed);
+        localStorage.setItem('num-partialEmpty', settings.partialEmpty);
+        localStorage.setItem('num-maxQuestions', settings.maxQuestions);
+        localStorage.setItem('num-showBackButton', settings.showBackButton);
+        
+        updateSampleView();
+    }
+    document.querySelectorAll('#setting-screen input, #setting-screen select').forEach(el => {
+        el.addEventListener('change', saveSettings);
+    });
+
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        if (screenId === 'setting-screen') {
+            initSettingsUI();
+        }
+    }
+
+    // --- トリプルタップ設定 ---
+    let settingTapCount = 0;
+    let settingTapTimer = null;
+
+    function handleSettingTap() {
+        settingTapCount++;
+        if (settingTapCount === 1) {
+            // 1回目のタップでタイマーをスタート（600ms以内に3回）
+            settingTapTimer = setTimeout(() => {
+                settingTapCount = 0;
+            }, 600);
+        }
+        
+        if (settingTapCount === 3) {
+            clearTimeout(settingTapTimer);
+            settingTapCount = 0;
+            showScreen('setting-screen');
+        }
+    }
+
+    // --- 4. ゲームロジック ---
+    let currentQuestion = 1;
+    let currentStep = 1; // 現在の問題の倍率
+    let panels = []; 
+    let blocks = []; 
+    let cellSize = 0;
+    let zIndexCounter = 10;
+
+    function startGame() {
+        initAudio();
+        currentQuestion = 1;
+        saveSettings();
+        showScreen('play-screen');
+        prepareQuestion();
+    }
+
+    function quitGame() {
+        clearBlocks();
+        showScreen('home-screen');
+    }
+
+    function prepareQuestion() {
+        clearBlocks(); 
+        document.getElementById('question-label').innerText = `${currentQuestion}/${settings.maxQuestions}`;
+        document.getElementById('play-back-btn').style.display = settings.showBackButton ? 'block' : 'none';
+        document.getElementById('correct-mark').classList.remove('show');
+        document.getElementById('overlay-ui').style.display = 'none';
+        
+        // ★出題ごとに、設定された範囲(stepMin 〜 stepMax)の中からランダムな倍率を決定
+        currentStep = Math.floor(Math.random() * (settings.stepMax - settings.stepMin + 1)) + settings.stepMin;
+        
+        // --- ★ 画面に収めるための最適レイアウト自動判定 ---
+        const playContent = document.getElementById('play-content');
+        playContent.className = ''; 
+        const contentRect = playContent.getBoundingClientRect();
+        
+        const cols = 10;
+        const gridRows = Math.floor((settings.max - 1) / cols) + 1;
+        
+        // 一部空きモードの場合、トレイ（カード置き場）に必要なカード数だけから行数を計算
+        const cycle = settings.partialFixed + settings.partialEmpty;
+        let emptyCount = 0;
+        if (settings.mode === 'partial') {
+            for (let i = 0; i < (settings.max - settings.min + 1); i++) {
+                if (i % cycle >= settings.partialFixed) emptyCount++;
+            }
+        } else {
+            emptyCount = settings.max - settings.min + 1;
+        }
+        const trayRows = Math.max(1, Math.ceil(emptyCount / cols));
+
+        // 利用可能な幅と高さ
+        const availW = contentRect.width;
+        const availH = contentRect.height;
+
+        // 【パターンA】 上下配置
+        const sizeA_W = Math.floor(availW / cols);
+        const sizeA_H = Math.floor((availH - 30) / (gridRows + trayRows));
+        const cellSizeA = Math.max(20, Math.min(sizeA_W, sizeA_H));
+
+        // 【パターンB】 左右配置
+        const sizeB_W = Math.floor((availW - 40) / (cols * 2));
+        const sizeB_H = Math.floor(availH / Math.max(gridRows, trayRows));
+        const cellSizeB = Math.max(20, Math.min(sizeB_W, sizeB_H));
+
+        let layout = 'vertical';
+        cellSize = cellSizeA;
+
+        if (cellSizeB > cellSizeA * 1.1) {
+            layout = 'horizontal';
+            cellSize = cellSizeB;
+        }
+
+        playContent.className = layout === 'horizontal' ? 'layout-horizontal' : 'layout-vertical';
+
+        const gridContainer = document.getElementById('grid-container');
+        const trayContainer = document.getElementById('tray-container');
+
+        gridContainer.style.width = `${cellSize * cols}px`;
+        gridContainer.style.height = `${cellSize * gridRows}px`;
+
+        trayContainer.style.width = `${cellSize * cols}px`;
+        trayContainer.style.height = `${cellSize * trayRows}px`;
+        
+        buildGrid();
+        setTimeout(() => {
+            buildBlocks();
+        }, 50);
+    }
+
+    function nextQuestion() {
+        if (currentQuestion < settings.maxQuestions) {
+            currentQuestion++;
+            prepareQuestion();
+        } else {
+            quitGame();
+        }
+    }
+
+    function clearBlocks() {
+        blocks.forEach(b => {
+            if(b.el && b.el.parentNode) {
+                b.el.parentNode.removeChild(b.el);
+            }
+        });
+        blocks = [];
+    }
+
+    // トレイ（四角）の構築
+    function buildGrid() {
+        const gridContainer = document.getElementById('grid-container');
+        gridContainer.innerHTML = '';
+        panels = [];
+        
+        const cols = 10;
+        const yCount = Math.floor((settings.max - 1) / cols) + 1;
+        
+        for (let y = 0; y < yCount; y++) {
+            for (let x = 1; x <= cols; x++) {
+                const baseNum = y * 10 + x; // 内部的な位置（1, 2, 3...）
+                const displayNum = baseNum * currentStep; // 画面に表示される実際の数字（倍数）
+                
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.style.width = `${cellSize}px`;
+                cell.style.height = `${cellSize}px`;
+                
+                // 3桁以上の大きな数字でもはみ出さないように文字サイズを調整
+                const numStr = String(displayNum);
+                let gridFontSizeRatio = 0.5;
+                if (numStr.length >= 3) {
+                    gridFontSizeRatio = 0.35; 
+                } else if (numStr.length === 2) {
+                    gridFontSizeRatio = 0.45; 
+                }
+                cell.style.fontSize = `${cellSize * gridFontSizeRatio}px`; 
+                
+                if (baseNum >= settings.min && baseNum <= settings.max) {
+                    cell.classList.add('target');
+                    cell.dataset.num = displayNum; // 判定には表示上の数字(倍数)を使う
+                    gridContainer.appendChild(cell);
+                    panels.push({ num: displayNum, el: cell, answer: null });
+                } else {
+                    cell.classList.add('out-of-range');
+                    cell.innerText = displayNum;
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+    }
+
+    // カード（数字ブロック）の構築
+    function buildBlocks() {
+        const tray = document.getElementById('tray-container');
+        panels.forEach(p => {
+            const rect = p.el.getBoundingClientRect();
+            p.x = rect.left;
+            p.y = rect.top;
+        });
+        const trayRect = tray.getBoundingClientRect();
+        const blockSize = cellSize; 
+        const cols = 10;
+
+        const cycle = settings.partialFixed + settings.partialEmpty;
+        let emptyCount = 0;
+        let startPoints = [];
+
+        for (let i = 0; i < (settings.max - settings.min + 1); i++) {
+            const isLocked = (settings.mode === 'partial') && ((i % cycle) < settings.partialFixed);
+            if (!isLocked) {
+                const col = emptyCount % cols;
+                const row = Math.floor(emptyCount / cols);
+                startPoints.push({
+                    x: col * blockSize,
+                    y: row * blockSize
+                });
+                emptyCount++;
+            }
+        }
+        startPoints.sort(() => Math.random() - 0.5);
+
+        let pointIndex = 0;
+        for (let i = 0; i < (settings.max - settings.min + 1); i++) {
+            const baseNum = settings.min + i;
+            const blockNum = baseNum * currentStep; // ブロックにも倍率をかける
+            
+            const isLocked = (settings.mode === 'partial') && ((i % cycle) < settings.partialFixed);
+
+            const blockEl = document.createElement('div');
+            blockEl.className = 'number-block animating';
+            blockEl.innerText = blockNum;
+            blockEl.style.width = `${blockSize}px`;
+            blockEl.style.height = `${blockSize}px`;
+            
+            const numStr = String(blockNum);
+            let fontSizeRatio = 0.8; 
+            if (numStr.length >= 3) {
+                fontSizeRatio = 0.55; 
+            } else if (numStr.length === 2) {
+                fontSizeRatio = 0.7; 
+            }
+            blockEl.style.fontSize = `${blockSize * fontSizeRatio}px`; 
+
+            let initialX, initialY;
+            let startX = 0, startY = 0;
+
+            if (isLocked) {
+                const targetPanel = panels.find(p => p.num === blockNum);
+                initialX = targetPanel.x;
+                initialY = targetPanel.y;
+                targetPanel.answer = blockNum;
+                blockEl.classList.add('correct');
+            } else {
+                startX = trayRect.left + startPoints[pointIndex].x;
+                startY = trayRect.top + startPoints[pointIndex].y;
+                initialX = startX;
+                initialY = startY;
+                pointIndex++;
+            }
+
+            blockEl.style.left = `${initialX}px`;
+            blockEl.style.top = `${initialY}px`;
+            document.body.appendChild(blockEl);
+
+            const blockObj = {
+                num: blockNum,
+                el: blockEl,
+                isPlacedCorrectly: isLocked,
+                isLocked: isLocked,
+                startX: startX,
+                startY: startY,
+                currentX: initialX,
+                currentY: initialY
+            };
+            blocks.push(blockObj);
+
+            if (!isLocked) {
+                setupDrag(blockObj, blockSize);
+            }
+
+            blockEl.addEventListener('click', (e) => {
+                if (blockObj.isPlacedCorrectly && !blockObj.isLocked) {
+                    const panel = panels.find(p => p.answer === blockObj.num);
+                    if (panel) panel.answer = null;
+                    blockObj.isPlacedCorrectly = false;
+                    blockEl.classList.remove('correct');
+                    moveBlockTo(blockObj, blockObj.startX, blockObj.startY);
+                }
+            });
+        }
+        
+        if (panels.every(p => p.answer !== null)) {
+            checkAllAnswer();
+        }
+    }
+
+    function setupDrag(block, blockSize) {
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        block.el.addEventListener('pointerdown', (e) => {
+            if (block.isPlacedCorrectly) return; 
+            isDragging = true;
+            block.el.classList.remove('animating');
+            block.el.classList.add('dragging');
+            block.el.style.zIndex = ++zIndexCounter;
+            const rect = block.el.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            const panel = panels.find(p => p.answer === block.num);
+            if (panel) panel.answer = null;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); 
+            let newX = e.clientX - offsetX;
+            let newY = e.clientY - offsetY;
+            block.currentX = newX;
+            block.currentY = newY;
+            block.el.style.left = `${newX}px`;
+            block.el.style.top = `${newY}px`;
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            block.el.classList.remove('dragging');
+            block.el.classList.add('animating');
+            const blockCenterX = block.currentX + blockSize / 2;
+            const blockCenterY = block.currentY + blockSize / 2;
+            const snapThreshold = cellSize * 0.7; 
+            let snapped = false;
+
+            for (let panel of panels) {
+                const panelCenterX = panel.x + cellSize / 2;
+                const panelCenterY = panel.y + cellSize / 2;
+                const distance = Math.hypot(blockCenterX - panelCenterX, blockCenterY - panelCenterY);
+                if (distance < snapThreshold && panel.answer === null) {
+                    moveBlockTo(block, panel.x, panel.y);
+                    panel.answer = block.num;
+                    snapped = true;
+                    break;
+                }
+            }
+            if (!snapped) {
+                moveBlockTo(block, block.startX, block.startY);
+            }
+            setTimeout(checkAllAnswer, 350);
+        });
+    }
+
+    function moveBlockTo(block, x, y) {
+        block.currentX = x;
+        block.currentY = y;
+        block.el.style.left = `${x}px`;
+        block.el.style.top = `${y}px`;
+    }
+
+    function checkAllAnswer() {
+        const allFilled = panels.every(p => p.answer !== null);
+        if (!allFilled) return;
+        let allCorrect = true;
+        panels.forEach(panel => {
+            const block = blocks.find(b => b.num === panel.answer);
+            if (!block) return;
+            if (panel.num === panel.answer) {
+                block.isPlacedCorrectly = true;
+                block.el.classList.add('correct');
+            } else {
+                panel.answer = null;
+                block.isPlacedCorrectly = false;
+                block.el.classList.remove('correct');
+                moveBlockTo(block, block.startX, block.startY);
+                allCorrect = false;
+            }
+        });
+        if (allCorrect) {
+            playCorrectSound();
+            document.getElementById('correct-mark').classList.add('show');
+            const btn = document.getElementById('next-btn');
+            btn.innerText = currentQuestion < settings.maxQuestions ? "つぎへ" : "ホームへ戻る";
+            document.getElementById('overlay-ui').style.display = 'block';
+        }
+    }
+
+    function playCorrectSound() {
+        if (!audioCtx) return;
+        try {
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc2.type = 'sine';
+            osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); 
+            osc2.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.15); 
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime + 0.15);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc1.start(audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.15);
+            osc2.start(audioCtx.currentTime + 0.15);
+            osc2.stop(audioCtx.currentTime + 0.4);
+        } catch(e) {}
+    }
+
+    initSettingsUI();
+</script>
+</body>
+</html>
