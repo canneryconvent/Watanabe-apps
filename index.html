@@ -168,6 +168,314 @@
         </div>
     </div>
 
+    <div class="guide-container">
+        <div class="guide-card">
+            <h3 class="guide-title">ホーム画面への追加方法</h3>
+            <p class="guide-intro">
+                本サイトのアプリは、端末の<strong>「ホーム画面に追加」</strong>をすると、アドレスバーや余計なボタンが消え、通常のアプリと同じ<strong>全画面（フルスクリーン）</strong>で遊べます。子どもの誤操作防止に非常に効果的ですので、ぜひお試しください。
+            </p>
+
+            <input type="radio" id="tab-ios" name="guide-tabs" checked>
+            <input type="radio" id="tab-android" name="guide-tabs">
+
+            <div class="tab-buttons">
+                <label for="tab-ios" class="tab-label label-ios">🍏 iPad / iPhone (Safari)</label>
+                <label for="tab-android" class="tab-label label-android">🤖 Android (Chrome)</label>
+            </div>
+
+            <div class="tab-content content-ios">
+                <ol class="step-list">
+                    <li><span class="step-num">1</span><strong>「Safari」</strong>でこのサイトを開きます。</li>
+                    <li><span class="step-num">2</span><strong>「共有ボタン」</strong>をタップします。</li>
+                    <li><span class="step-num">3</span><strong>「ホーム画面に追加 ➕」</strong>を選択します。</li>
+                    <li><span
+                            class="step-num">4</span><strong>「追加」</strong>を押すと、ホーム画面に可愛いアイコンが作られます。次回からはそれをタップするだけで全画面起動します！
+                    </li>
+                </ol>
+            </div>
+
+            <div class="tab-content content-android">
+                <ol class="step-list">
+                    <li><span class="step-num">1</span><strong>「Google Chrome」</strong>ブラウザでこのサイトを開きます。</li>
+                    <li><span class="step-num">2</span>画面右上にある<strong>「メニューボタン（縦に点３つ ⁝ ）」</strong>をタップします。</li>
+                    <li><span class="step-num">3</span>メニュー内の<strong>「ホーム画面に追加」</strong>（または「アプリをインストール」）を選択します。</li>
+                    <li><span
+                            class="step-num">4</span>画面の指示に従って<strong>「追加」</strong>を押すと、ホーム画面にアイコンが作成され、次回から全画面でサクサク遊べます！
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .guide-container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 0 15px;
+            font-family: sans-serif;
+        }
+
+        .guide-card {
+            background-color: #ffffff;
+            border: 2px solid #ffcc99;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(255, 165, 79, 0.1);
+        }
+
+        .guide-title {
+            margin: 0 0 10px 0;
+            color: #e67e22;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .guide-intro {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #666;
+            margin-bottom: 18px;
+        }
+
+        /* ラジオボタンは非表示 */
+        input[name="guide-tabs"] {
+            display: none;
+        }
+
+        /* タブボタンのレイアウト */
+        .tab-buttons {
+            display: table;
+            width: 100%;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffcc99;
+        }
+
+        .tab-label {
+            display: table-cell;
+            text-align: center;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            background-color: #fafafa;
+            border: 1px solid #eee;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* アクティブなタブの見た目 */
+        #tab-ios:checked~.tab-buttons .label-ios,
+        #tab-android:checked~.tab-buttons .label-android {
+            color: #e67e22;
+            background-color: #fff5eb;
+            border: 2px solid #ffcc99;
+            border-bottom: 2px solid #fff5eb;
+            /* 下線を消してドッキングさせる */
+            position: relative;
+            top: 2px;
+        }
+
+        /* コンテンツの表示・非表示の制御 */
+        .tab-content {
+            display: none;
+            background-color: #fff5eb;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #ffcc99;
+        }
+
+        #tab-ios:checked~.content-ios {
+            display: block;
+        }
+
+        #tab-android:checked~.content-android {
+            display: block;
+        }
+
+        /* ステップリストの装飾 */
+        .step-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .step-list li {
+            position: relative;
+            padding-left: 32px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        .step-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-num {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: #ffa54f;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
+
+    <div class="disclaimer-container">
+        <details class="disclaimer-details">
+            <summary class="disclaimer-summary">
+                <span>📄 免責事項およびご利用について (プライバシーポリシー)</span>
+                <span class="arrow">▼</span>
+            </summary>
+            <div class="disclaimer-content">
+                <p class="intro">本サイトで公開している教育用アプリをご利用いただくにあたり、以下の事項をご確認・ご了承いただけますようお願いいたします。</p>
+
+                <div class="section-block">
+                    <h4>1. ご利用範囲と著作権について</h4>
+                    <ul>
+                        <li><strong>学校・療育での利用大歓迎：</strong>
+                            ご家庭はもちろん、幼稚園、保育園、小学校、特別支援学校、放課後等デイサービス、療育施設等での学習・指導目的での利用は、原則として<strong>無料かつ自由</strong>（事前連絡不要）です。教育現場でぜひご活用ください。
+                        </li>
+                        <li><strong>著作権の帰属：</strong> アプリに含まれるプログラム、デザイン、イラスト等の著作権はサイト制作者に帰属します。</li>
+                        <li><strong>禁止事項：</strong> アプリを無断で複製・改変して有償で販売することや、商用教材に組み込んで転売する行為は禁止します。</li>
+                    </ul>
+                </div>
+
+                <div class="section-block">
+                    <h4>2. 免責事項</h4>
+                    <ul>
+                        <li><strong>動作の非保証：</strong>
+                            万全を期して制作しておりますが、正確性、安全性、および特定の環境での確実な動作（iOS/iPadOS等のアップデートに伴う挙動変化を含む）を完全に保証するものではありません。</li>
+                        <li><strong>損害の免責：</strong> 本サイトおよびアプリのご利用によって生じた一切のトラブルや損害（端末の不具合、データの消失等）について、制作者は一切の責任を負いません。
+                        </li>
+                        <li><strong>仕様変更：</strong> アプリの改善やバグ修正のため、予告なく内容の変更や公開停止を行うことがあります。</li>
+                    </ul>
+                </div>
+
+                <div class="section-block">
+                    <h4>3. アクセス解析とデータの収集について</h4>
+                    <ul>
+                        <li><strong>アクセス解析の利用：</strong> アプリの使用頻度や訪問者数を把握し、今後のアップデートの参考にするため、<strong>Google Analytics 4
+                                (GA4)</strong> および<strong>外部カウンターAPI</strong>を利用しています。</li>
+                        <li><strong>データの匿名性：</strong>
+                            収集されるデータは、閲覧されたページや端末のOS環境などの統計情報であり、お名前やご住所などの<strong>個人を特定する情報は一切含まれません（完全な匿名です）</strong>。これらはサイトの改善目的以外には使用いたしません。
+                        </li>
+                    </ul>
+                </div>
+
+                <p class="date">制定日: 2026年5月25日</p>
+            </div>
+        </details>
+    </div>
+
+    <style>
+        .disclaimer-container {
+            max-width: 600px;
+            margin: 40px auto 20px auto;
+            padding: 0 15px;
+            font-family: sans-serif;
+        }
+
+        .disclaimer-details {
+            background-color: #fff5eb;
+            /* 優しい薄オレンジの背景 */
+            border: 2px solid #ffa54f;
+            /* 温かみのあるオレンジの枠線 */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .disclaimer-details[open] {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .disclaimer-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #d2691e;
+            cursor: pointer;
+            list-style: none;
+            /* デフォルトの矢印を消す */
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .disclaimer-summary::-webkit-details-marker {
+            display: none;
+            /* Safari用のデフォルト矢印消し */
+        }
+
+        .disclaimer-summary .arrow {
+            font-size: 10px;
+            transition: transform 0.3s ease;
+            color: #ffa54f;
+        }
+
+        .disclaimer-details[open] .disclaimer-summary .arrow {
+            transform: rotate(180deg);
+            /* 開いたときに矢印を上に向ける */
+        }
+
+        .disclaimer-content {
+            padding: 0 20px 20px 20px;
+            border-top: 1px dashed #ffa54f;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .disclaimer-content .intro {
+            margin: 15px 0;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .section-block {
+            margin-bottom: 18px;
+        }
+
+        .section-block h4 {
+            margin: 10px 0 6px 0;
+            color: #d2691e;
+            font-size: 14px;
+            border-left: 3px solid #ffa54f;
+            padding-left: 8px;
+        }
+
+        .section-block ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .section-block li {
+            margin-bottom: 6px;
+        }
+
+        .disclaimer-content .date {
+            text-align: right;
+            font-size: 11px;
+            color: #999;
+            margin: 15px 0 0 0;
+        }
+    </style>
 </body>
 
 </html>
