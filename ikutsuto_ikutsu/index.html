@@ -2,9 +2,1080 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>数の分解と合成</title>
+    <link rel="stylesheet" href="../common/style.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* アプリ固有のスタイル */
+        :root {
+            --blue-zone: #0000ff;
+            --yellow-zone: #ffff00;
+            --ball-diameter: 0px; /* JavaScriptで画面サイズに基づき動的計算 */
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: #ffffff;
+            color: #000000;
+            font-family: 'Klee One', cursive, sans-serif;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ==================== ホーム画面 ==================== */
+        .home-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            z-index: 10;
+        }
+
+        .home-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .score-board {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* ==================== 設定＆履歴管理画面 ==================== */
+        .setting-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #ffffff;
+            z-index: 40;
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scroll-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-bottom: 40px;
+        }
+
+        .setting-group {
+            border: 3px solid #cbd5e1;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #ffffff;
+        }
+
+        .setting-group-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px dashed #cbd5e1;
+            padding-bottom: 5px;
+            color: #334155;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.8rem;
+            width: 100%;
+        }
+
+        .stepper-label { font-size: 1.8rem; }
+        .stepper-value { font-size: 1.8rem; min-width: 50px; text-align: center; }
+        
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .stepper button {
+            font-size: 2rem;
+            width: 50px; height: 50px;
+            border-radius: 10px;
+            background-color: #e2e8f0;
+            border: none;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        /* モード選択ラジオボタン */
+        .mode-radio-label {
+            font-size: 1.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mode-radio-label input {
+            transform: scale(1.6);
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* トグルスイッチ */
+        .toggle-switch {
+            position: relative; display: inline-block; width: 60px; height: 34px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* 詳細履歴リストのレイアウト */
+        .history-list {
+            display: flex; flex-direction: column; gap: 15px;
+            max-height: 65vh; overflow-y: auto;
+            border: 3px solid #cbd5e1; border-radius: 15px; padding: 15px;
+            background-color: #f8fafc;
+            -webkit-overflow-scrolling: touch;
+        }
+        .history-item {
+            padding: 12px; border-bottom: 2px dashed #cbd5e1;
+            background: #ffffff; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-date { font-size: 1.1rem; color: #64748b; font-weight: bold; }
+        .history-result { font-size: 1.4rem; font-weight: bold; margin: 4px 0; color: #1e293b; }
+        .history-details-box {
+            margin-top: 8px; padding: 8px; background-color: #f1f5f9;
+            border-radius: 6px; font-size: 1.15rem; color: #334155;
+            display: flex; flex-direction: column; gap: 4px;
+            line-height: 1.4;
+        }
+
+        /* ==================== プレイ画面 ==================== */
+        .play-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none;
+            background-color: #ffffff;
+            z-index: 20;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 20px; left: 20px; right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .play-score-top { font-size: 2rem; font-weight: bold; }
+
+        .dec-balls-zone {
+            position: absolute;
+            top: 90px;
+            left: 20px;
+            right: 20px;
+            height: calc(var(--ball-diameter) + 20px);
+            border: 1px solid #999999;
+            border-radius: 10px;
+            display: block;
+            z-index: 100;
+            box-sizing: border-box;
+            background-color: transparent;
+        }
+
+        .zone-background {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 10;
+        }
+
+        .blue-box { width: 400px; height: 400px; background-color: var(--blue-zone); }
+        .yellow-box { width: 400px; height: 400px; background-color: var(--yellow-zone); }
+
+        .equation-container {
+            position: absolute; 
+            top: 55%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; z-index: 50;
+        }
+
+        .block-total {
+            width: 400px; height: 200px; background-color: #ffffff;
+            border: 5px solid #000000; border-bottom: none;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 100px; font-weight: bold; box-sizing: border-box;
+        }
+
+        .block-split { display: flex; }
+
+        .block-left, .block-right {
+            width: 200px; height: 200px; border: 5px solid #000000;
+            background-color: #ffffff; position: relative;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 100px; font-weight: bold; box-sizing: border-box;
+        }
+
+        .block-left::before {
+            content: ""; position: absolute; top:0; left:0; right:0; bottom:0;
+            background-color: rgba(0, 0, 255, 0.3); z-index: 1;
+        }
+        .block-right::before {
+            content: ""; position: absolute; top:0; left:0; right:0; bottom:0;
+            background-color: rgba(255, 255, 0, 0.3); z-index: 1;
+        }
+
+        .block-left span, .block-right span, .block-total span { position: relative; z-index: 2; }
+
+        .block-right { cursor: pointer; touch-action: manipulation; }
+        .composite-mode .block-total { cursor: pointer; touch-action: manipulation; }
+        .composite-mode .block-right { cursor: default; }
+
+        #balls-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 150; pointer-events: none;
+        }
+
+        .ball {
+            position: absolute; background-color: #ff0000; border: 5px solid #000000;
+            border-radius: 50%; pointer-events: auto; touch-action: none;
+            cursor: grab; box-sizing: border-box;
+        }
+
+        /* ==================== ポップオーバー ==================== */
+        .popover-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2); z-index: 200;
+        }
+
+        .keypad-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #808080; padding: 20px; border-radius: 15px;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+
+        .keypad-row { display: flex; gap: 15px; }
+
+        .key-btn {
+            width: 100px; height: 100px; background: #ffff00; border-radius: 15px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 70px; font-weight: bold; color: #000000;
+            cursor: pointer; user-select: none; touch-action: manipulation;
+        }
+
+        /* ==================== 判定演出 ==================== */
+        .feedback-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 300; pointer-events: none;
+        }
+
+        .feedback-circle {
+            display: none; width: 500px; height: 500px;
+            border: 50px solid #ff0000; border-radius: 50%;
+        }
+
+        .feedback-cross {
+            display: none; font-size: 800px; color: #00ff00;
+            font-family: system-ui, sans-serif; line-height: 1; font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <p><a href="keitou_map/">系統マップ</a></p>
-    <p><a href="keyboard/index.html">平仮名キーボード</a></p>
+
+    <div id="home-screen" class="home-screen">
+        <div class="home-container">
+            <div class="score-board">
+                ⭕️:<span id="score-clear">0</span> ❌:<span id="score-wrong">0</span>
+            </div>
+
+            <button class="btn-orange" style="font-size: 3rem; width: 100%; padding: 30px; border-radius: 20px;" id="main-start-btn">スタート</button>
+            
+            <div id="current-mode-notice" style="font-size: 1.6rem; color: #475569; font-weight: bold; margin-top: 10px;"></div>
+            
+            <div style="display: flex; gap: 20px; width: 100%; margin-top: 40px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <button class="btn-gray" style="width: 100%; font-size: 1.5rem; padding: 15px;" id="history-btn">プレイ履歴</button>
+                    <div style="font-size: 1.1rem; color: #64748b; margin-top: 8px; font-weight: bold;">※トリプルタップ</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <button class="btn-gray" style="width: 100%; font-size: 1.5rem; padding: 15px;" id="setting-btn">設定</button>
+                    <div style="font-size: 1.1rem; color: #64748b; margin-top: 8px; font-weight: bold;">※トリプルタップ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="setting-screen" class="setting-screen">
+        <div class="scroll-container">
+            <h2 style="font-size: 2.3rem; text-align: center; margin: 10px 0;">設定・履歴</h2>
+            
+            <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 10px;">
+                <button class="btn-gray" id="tab-setting-btn" style="flex: 1; padding: 12px; font-size: 1.5rem; font-weight: bold;" onclick="switchTab('setting')">設定</button>
+                <button class="btn-gray" id="tab-history-btn" style="flex: 1; padding: 12px; font-size: 1.5rem; font-weight: bold;" onclick="switchTab('history')">プレイ履歴</button>
+            </div>
+
+            <div id="config-content">
+                <div class="setting-group">
+                    <div class="setting-group-title">ゲームモード</div>
+                    <div style="display: flex; justify-content: space-around; padding: 10px 0;">
+                        <label class="mode-radio-label">
+                            <input type="radio" name="game-mode-select" value="decomposition"> 数の分解
+                        </label>
+                        <label class="mode-radio-label">
+                            <input type="radio" name="game-mode-select" value="composite"> 数の合成
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="dec-config-group">
+                    <div class="setting-group-title">数の分解 設定</div>
+                    <div class="setting-row">
+                        <span class="stepper-label">最小値</span>
+                        <div class="stepper">
+                            <button onclick="changeValue('minDec', -1)">-</button>
+                            <span id="val-min-dec" class="stepper-value">3</span>
+                            <button onclick="changeValue('minDec', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="stepper-label">最大値</span>
+                        <div class="stepper">
+                            <button onclick="changeValue('maxDec', -1)">-</button>
+                            <span id="val-max-dec" class="stepper-value">5</span>
+                            <button onclick="changeValue('maxDec', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="stepper-label">問題数</span>
+                        <div class="stepper">
+                            <button onclick="changeValue('qDec', -1)">-</button>
+                            <span id="val-q-dec" class="stepper-value">10</span>
+                            <button onclick="changeValue('qDec', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group" id="comp-config-group">
+                    <div class="setting-group-title">数の合成 設定</div>
+                    <div class="setting-row">
+                        <span class="stepper-label">最小値</span>
+                        <div class="stepper">
+                            <button onclick="changeValue('minComp', -1)">-</button>
+                            <span id="val-min-comp" class="stepper-value">3</span>
+                            <button onclick="changeValue('minComp', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="stepper-label">最大値</span>
+                        <div class="stepper">
+                            <button onclick="changeValue('maxComp', -1)">-</button>
+                            <span id="val-max-comp" class="stepper-value">5</span>
+                            <button onclick="changeValue('maxComp', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="stepper-label">問題数</span>
+                        <div class="stepper">
+                            <button onclick="changeValue('qComp', -1)">-</button>
+                            <span id="val-q-comp" class="stepper-value">10</span>
+                            <button onclick="changeValue('qComp', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <span class="stepper-label">プレイ中の<br>「もどる」ボタン表示</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-back" onchange="toggleBackBtn(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history-content" style="display: none; width: 100%;">
+                <div id="history-list" class="history-list"></div>
+            </div>
+
+            <button class="btn-gray" style="width: 100%; font-size: 1.8rem; padding: 15px; margin-top: 10px; font-weight: bold;" onclick="closeSetting()">保存して戻る</button>
+        </div>
+    </div>
+
+    <div id="play-screen" class="play-screen">
+        <div class="top-bar">
+            <button class="btn-gray" id="back-btn" style="font-size: 1.5rem; padding: 10px 20px;">もどる</button>
+            <div class="play-score-top">
+                ⭕️:<span id="play-clear">0</span> ❌:<span id="play-wrong">0</span>
+            </div>
+        </div>
+
+        <div id="dec-balls-zone" class="dec-balls-zone"></div>
+
+        <div id="equation-block" class="equation-container">
+            <div class="block-total" id="block-total-container"><span id="block-total-val">0</span></div>
+            <div class="block-split">
+                <div class="block-left"><span id="block-left-val">0</span></div>
+                <div class="block-right" id="block-right-container"><span id="block-right-val">?</span></div>
+            </div>
+        </div>
+
+        <div class="zone-background">
+            <div class="blue-box"></div>
+            <div class="yellow-box"></div>
+        </div>
+
+        <div id="balls-container"></div>
+    </div>
+
+    <div id="popover" class="popover-overlay">
+        <div class="keypad-container">
+            <div class="keypad-row">
+                <div class="key-btn" data-num="1">1</div>
+                <div class="key-btn" data-num="2">2</div>
+                <div class="key-btn" data-num="3">3</div>
+                <div class="key-btn" data-num="4">4</div>
+                <div class="key-btn" data-num="5">5</div>
+            </div>
+            <div class="keypad-row">
+                <div class="key-btn" data-num="6">6</div>
+                <div class="key-btn" data-num="7">7</div>
+                <div class="key-btn" data-num="8">8</div>
+                <div class="key-btn" data-num="9">9</div>
+                <div class="key-btn" data-num="10">10</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="feedback-overlay">
+        <div id="feedback-circle" class="feedback-circle"></div>
+        <div id="feedback-cross" class="feedback-cross">X</div>
+    </div>
+
+    <script src="../common/core.js"></script>
+    <script>
+        // ==================== 音源不要：標準効果音シンセサイザーシステム ====================
+        function playStandardSound(type) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const audioCtx = new AudioContext();
+                
+                if (type === 'correct') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.12); 
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'wrong') {
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc1.type = 'sawtooth';
+                    osc2.type = 'sawtooth';
+                    osc1.frequency.setValueAtTime(140, audioCtx.currentTime);
+                    osc2.frequency.setValueAtTime(143, audioCtx.currentTime);
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.25);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                    osc1.start();
+                    osc2.start();
+                    osc1.stop(audioCtx.currentTime + 0.35);
+                    osc2.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'finish') {
+                    const freqs = [261.63, 329.63, 392.00, 523.25]; 
+                    freqs.forEach((f, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(f, audioCtx.currentTime + idx * 0.08);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+                        osc.start(audioCtx.currentTime + idx * 0.08);
+                        osc.stop(audioCtx.currentTime + 0.7);
+                    });
+                }
+            } catch (e) {
+                console.error("Audio Context Error: ", e);
+            }
+        }
+
+        // ==================== アプリ変数管理 ====================
+        let config = {
+            mode: localStorage.getItem('mathGameMode') || 'decomposition', 
+            minDec: parseInt(localStorage.getItem('minDec')) || 3,
+            maxDec: parseInt(localStorage.getItem('maxDec')) || 5,
+            qDec: parseInt(localStorage.getItem('qDec')) || 10,
+            minComp: parseInt(localStorage.getItem('minComp')) || 3,
+            maxComp: parseInt(localStorage.getItem('maxComp')) || 5,
+            qComp: parseInt(localStorage.getItem('qComp')) || 10,
+            showBackBtn: localStorage.getItem('showBackBtn') === null ? true : localStorage.getItem('showBackBtn') === 'true'
+        };
+
+        let gameState = {
+            mode: 'decomposition', 
+            isPlaying: false,
+            numOfClear: 0,
+            numOfWrong: 0,
+            targetQuestions: 10,
+            currentTotal: 0,
+            currentLeft: 0,
+            currentRight: 0,
+            currentAnswer: 0,
+            isCorrect: false,
+            isWrong: false,
+            balls: [],
+            sessionLog: [] 
+        };
+
+        let ballDiameter = 0;
+        let ballRadius = 0;
+
+        window.addEventListener('load', () => {
+            initUIValues();
+            setupEventListeners();
+            setupModeRadios();
+            setupTripleTapButtons();
+            resizeCanvas();
+            updateHomeUI();
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+
+        function resizeCanvas() {
+            ballDiameter = window.innerWidth / 12;
+            ballRadius = ballDiameter / 2;
+            document.documentElement.style.setProperty('--ball-diameter', ballDiameter + 'px');
+            if (gameState.isPlaying) drawGame();
+        }
+
+        function initUIValues() {
+            document.getElementById('val-min-dec').innerText = config.minDec;
+            document.getElementById('val-max-dec').innerText = config.maxDec;
+            document.getElementById('val-q-dec').innerText = config.qDec;
+            document.getElementById('val-min-comp').innerText = config.minComp;
+            document.getElementById('val-max-comp').innerText = config.maxComp;
+            document.getElementById('val-q-comp').innerText = config.qComp;
+            document.getElementById('toggle-back').checked = config.showBackBtn;
+            
+            document.getElementById('score-clear').innerText = gameState.numOfClear;
+            document.getElementById('score-wrong').innerText = gameState.numOfWrong;
+        }
+
+        function updateHomeUI() {
+            const notice = document.getElementById('current-mode-notice');
+            if (config.mode === 'decomposition') {
+                notice.innerText = '現在のモード：数の分解';
+            } else {
+                notice.innerText = '現在のモード：数の合成';
+            }
+            // 選択モードに応じて設定項目の表示・非表示を切り替える
+            document.getElementById('dec-config-group').style.display = (config.mode === 'decomposition') ? 'flex' : 'none';
+            document.getElementById('comp-config-group').style.display = (config.mode === 'composite') ? 'flex' : 'none';
+        }
+
+        function setupModeRadios() {
+            const radios = document.getElementsByName('game-mode-select');
+            radios.forEach(r => {
+                if (r.value === config.mode) r.checked = true;
+                r.addEventListener('change', (e) => {
+                    config.mode = e.target.value;
+                    localStorage.setItem('mathGameMode', config.mode);
+                    updateHomeUI();
+                });
+            });
+        }
+
+        function toggleBackBtn(checkbox) {
+            config.showBackBtn = checkbox.checked;
+            localStorage.setItem('showBackBtn', config.showBackBtn);
+        }
+
+        function changeValue(type, step) {
+            if (type === 'minDec') {
+                config.minDec = Math.max(2, Math.min(10, config.minDec + step));
+                if (config.minDec > config.maxDec) config.maxDec = config.minDec;
+                localStorage.setItem('minDec', config.minDec);
+                localStorage.setItem('maxDec', config.maxDec);
+                document.getElementById('val-min-dec').innerText = config.minDec;
+                document.getElementById('val-max-dec').innerText = config.maxDec;
+            } else if (type === 'maxDec') {
+                config.maxDec = Math.max(2, Math.min(10, config.maxDec + step));
+                if (config.maxDec < config.minDec) config.minDec = config.maxDec;
+                localStorage.setItem('minDec', config.minDec);
+                localStorage.setItem('maxDec', config.maxDec);
+                document.getElementById('val-min-dec').innerText = config.minDec;
+                document.getElementById('val-max-dec').innerText = config.maxDec;
+            } else if (type === 'qDec') {
+                config.qDec = Math.max(2, Math.min(20, config.qDec + step));
+                localStorage.setItem('qDec', config.qDec);
+                document.getElementById('val-q-dec').innerText = config.qDec;
+            } else if (type === 'minComp') {
+                config.minComp = Math.max(2, Math.min(10, config.minComp + step));
+                if (config.minComp > config.maxComp) config.maxComp = config.minComp;
+                localStorage.setItem('minComp', config.minComp);
+                localStorage.setItem('maxComp', config.maxComp);
+                document.getElementById('val-min-comp').innerText = config.minComp;
+                document.getElementById('val-max-comp').innerText = config.maxComp;
+            } else if (type === 'maxComp') {
+                config.maxComp = Math.max(2, Math.min(10, config.maxComp + step));
+                if (config.maxComp < config.minComp) config.minComp = config.maxComp;
+                localStorage.setItem('minComp', config.minComp);
+                localStorage.setItem('maxComp', config.maxComp);
+                document.getElementById('val-min-comp').innerText = config.minComp;
+                document.getElementById('val-max-comp').innerText = config.maxComp;
+            } else if (type === 'qComp') {
+                config.qComp = Math.max(2, Math.min(20, config.qComp + step));
+                localStorage.setItem('qComp', config.qComp);
+                document.getElementById('val-q-comp').innerText = config.qComp;
+            }
+        }
+
+        // ==================== トリプルタップによる起動処理 ====================
+        function setupTripleTapButtons() {
+            bindTripleTap('setting-btn', () => {
+                openSettingAndSwitchTab('setting');
+            });
+            bindTripleTap('history-btn', () => {
+                openSettingAndSwitchTab('history');
+            });
+        }
+
+        function bindTripleTap(elementId, callback) {
+            let clickCount = 0;
+            let clickTimer = null;
+            const btn = document.getElementById(elementId);
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                clickCount++;
+                if (clickCount === 1) {
+                    clickTimer = setTimeout(() => { clickCount = 0; }, 600);
+                } else if (clickCount === 3) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+                    callback();
+                }
+            });
+        }
+
+        function openSettingAndSwitchTab(tabName) {
+            const radios = document.getElementsByName('game-mode-select');
+            radios.forEach(r => { if (r.value === config.mode) r.checked = true; });
+            updateHomeUI();
+
+            switchTab(tabName);
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('play-screen').style.display = 'none';
+            document.getElementById('setting-screen').style.display = 'flex';
+        }
+
+        function closeSetting() {
+            document.getElementById('setting-screen').style.display = 'none';
+            if (gameState.isPlaying) {
+                document.getElementById('play-screen').style.display = 'block';
+            } else {
+                document.getElementById('home-screen').style.display = 'flex';
+            }
+            updateHomeUI();
+        }
+
+        function switchTab(tab) {
+            const btnSet = document.getElementById('tab-setting-btn');
+            const btnHis = document.getElementById('tab-history-btn');
+            const conSet = document.getElementById('config-content');
+            const conHis = document.getElementById('history-content');
+            
+            if (tab === 'setting') {
+                btnSet.style.backgroundColor = '#cbd5e1';
+                btnHis.style.backgroundColor = '#e2e8f0';
+                conSet.style.display = 'block';
+                conHis.style.display = 'none';
+            } else {
+                btnSet.style.backgroundColor = '#e2e8f0';
+                btnHis.style.backgroundColor = '#cbd5e1';
+                conSet.style.display = 'none';
+                conHis.style.display = 'block';
+                renderDetailedHistory();
+            }
+        }
+
+        // ==================== 詳細履歴システム ====================
+        function renderDetailedHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            const historyData = JSON.parse(localStorage.getItem('mathDetailedHistory')) || [];
+            
+            if (historyData.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; font-size:1.3rem; color:#64748b;">プレイ履歴はありません</div>';
+                return;
+            }
+            
+            historyData.forEach(h => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                
+                let detailsLogHtml = '';
+                if (h.details && h.details.length > 0) {
+                    h.details.forEach(d => {
+                        const icon = d.ok ? '<span style="color:red; font-weight:bold; margin-right:5px;">⭕️</span>' : '<span style="color:green; font-weight:bold; margin-right:5px;">✕</span>';
+                        detailsLogHtml += `<div style="display:flex; align-items:center;">${icon} ${d.text}</div>`;
+                    });
+                } else {
+                    detailsLogHtml += '<div>※詳細データがありません</div>';
+                }
+                
+                item.innerHTML = `
+                    <div class="history-date">${h.date}</div>
+                    <div class="history-result">【${h.mode}】 ⭕️正解: ${h.clear}回 / ❌不正解: ${h.wrong}回</div>
+                    <div class="history-details-box">${detailsLogHtml}</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function saveSessionToHistory() {
+            const historyData = JSON.parse(localStorage.getItem('mathDetailedHistory')) || [];
+            const now = new Date();
+            const dateStr = `${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const modeStr = gameState.mode === 'decomposition' ? '数の分解' : '数の合成';
+            
+            historyData.unshift({
+                date: dateStr,
+                mode: modeStr,
+                clear: gameState.numOfClear,
+                wrong: gameState.numOfWrong,
+                details: gameState.sessionLog
+            });
+            
+            if (historyData.length > 30) historyData.pop();
+            localStorage.setItem('mathDetailedHistory', JSON.stringify(historyData));
+        }
+
+        // ==================== イベント割り当て ====================
+        function setupEventListeners() {
+            document.getElementById('main-start-btn').addEventListener('click', () => startGame(config.mode));
+            document.getElementById('back-btn').addEventListener('click', backToHome);
+
+            document.getElementById('block-right-container').addEventListener('click', () => {
+                if (gameState.mode === 'decomposition' && !gameState.isWrong && !gameState.isCorrect) showPopover(true);
+            });
+
+            document.getElementById('block-total-container').addEventListener('click', () => {
+                if (gameState.mode === 'composite' && !gameState.isWrong && !gameState.isCorrect) showPopover(true);
+            });
+
+            document.querySelectorAll('.key-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const selectedNum = parseInt(e.currentTarget.getAttribute('data-num'));
+                    checkAnswer(selectedNum);
+                    showPopover(false);
+                });
+            });
+
+            document.getElementById('popover').addEventListener('click', (e) => {
+                if (e.target.id === 'popover') showPopover(false);
+            });
+        }
+
+        // ==================== ゲーム本編メインロジック ====================
+        function startGame(mode) {
+            gameState.mode = mode;
+            gameState.isPlaying = true;
+            gameState.numOfClear = 0;
+            gameState.numOfWrong = 0;
+            gameState.targetQuestions = (mode === 'decomposition') ? config.qDec : config.qComp;
+            gameState.sessionLog = [];
+
+            document.getElementById('play-clear').innerText = gameState.numOfClear;
+            document.getElementById('play-wrong').innerText = gameState.numOfWrong;
+            document.getElementById('back-btn').style.visibility = config.showBackBtn ? 'visible' : 'hidden';
+
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('setting-screen').style.display = 'none';
+            document.getElementById('play-screen').style.display = 'block';
+            
+            const eqContainer = document.getElementById('equation-block');
+            if (mode === 'composite') {
+                eqContainer.classList.add('composite-mode');
+            } else {
+                eqContainer.classList.remove('composite-mode');
+            }
+
+            resizeCanvas();
+            setQuestion();
+        }
+
+        function backToHome() {
+            gameState.isPlaying = false;
+            document.getElementById('play-screen').style.display = 'none';
+            document.getElementById('setting-screen').style.display = 'none';
+            document.getElementById('home-screen').style.display = 'flex';
+            document.getElementById('score-clear').innerText = gameState.numOfClear;
+            document.getElementById('score-wrong').innerText = gameState.numOfWrong;
+        }
+
+        function setQuestion() {
+            gameState.isWrong = false;
+            gameState.isCorrect = false;
+            gameState.currentAnswer = 0;
+            gameState.balls = [];
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const ballsContainer = document.getElementById('balls-container');
+            const decBallsZone = document.getElementById('dec-balls-zone');
+
+            ballsContainer.innerHTML = '';
+            decBallsZone.innerHTML = '';
+
+            if (gameState.mode === 'decomposition') {
+                gameState.currentTotal = Math.floor(Math.random() * (config.maxDec - config.minDec + 1)) + config.minDec;
+                gameState.currentLeft = Math.floor(Math.random() * (gameState.currentTotal - 1)) + 1;
+                gameState.currentRight = gameState.currentTotal - gameState.currentLeft;
+
+                const zoneCenterY = decBallsZone.offsetTop + (decBallsZone.offsetHeight / 2);
+
+                for (let i = 0; i < gameState.currentTotal; i++) {
+                    let ballX = (width / 11) * i + width / 2 - (width / 11) * (gameState.currentTotal - 1) / 2;
+                    gameState.balls.push({ x: ballX, y: zoneCenterY, parentZone: 'decBallsZone' });
+                }
+
+                document.getElementById('block-total-val').innerText = gameState.currentTotal;
+                document.getElementById('block-left-val').innerText = gameState.currentLeft;
+                document.getElementById('block-right-val').innerText = '?';
+
+            } else {
+                gameState.currentTotal = Math.floor(Math.random() * (config.maxComp - config.minComp + 1)) + config.minComp;
+                gameState.currentLeft = Math.floor(Math.random() * (gameState.currentTotal - 1)) + 1;
+                gameState.currentRight = gameState.currentTotal - gameState.currentLeft;
+
+                const boxHeight = 400;
+                const boxTop = height - boxHeight;
+
+                for (let i = 0; i < gameState.currentLeft; i++) {
+                    let x = Math.random() * (400 - ballRadius * 2) + ballRadius;
+                    let y = Math.random() * (boxHeight - ballRadius * 2) + boxTop + ballRadius;
+                    gameState.balls.push({ x: x, y: y, parentZone: 'ballsContainer' });
+                }
+
+                for (let i = 0; i < gameState.currentRight; i++) {
+                    let x = Math.random() * (400 - ballRadius * 2) + (width - 400) + ballRadius;
+                    let y = Math.random() * (boxHeight - ballRadius * 2) + boxTop + ballRadius;
+                    gameState.balls.push({ x: x, y: y, parentZone: 'ballsContainer' });
+                }
+
+                document.getElementById('block-total-val').innerText = '?';
+                document.getElementById('block-left-val').innerText = gameState.currentLeft;
+                document.getElementById('block-right-val').innerText = gameState.currentRight;
+            }
+
+            drawGame();
+        }
+
+        function checkAnswer(selectedAnswer) {
+            gameState.currentAnswer = selectedAnswer;
+
+            if (gameState.mode === 'decomposition') {
+                document.getElementById('block-right-val').innerText = selectedAnswer;
+            } else {
+                document.getElementById('block-total-val').innerText = selectedAnswer;
+            }
+
+            const expected = (gameState.mode === 'decomposition') ? gameState.currentRight : gameState.currentTotal;
+            const isTargetCorrect = (selectedAnswer === expected);
+
+            let logText = "";
+            if (gameState.mode === 'decomposition') {
+                logText = `${gameState.currentTotal} の分解 ➔ 左に ${gameState.currentLeft}、右に [ ${selectedAnswer} ] と答えた (正解: ${gameState.currentRight})`;
+            } else {
+                logText = `左に ${gameState.currentLeft}、右に ${gameState.currentRight} の合成 ➔ 合わせて [ ${selectedAnswer} ] と答えた (正解: ${gameState.currentTotal})`;
+            }
+            gameState.sessionLog.push({ text: logText, ok: isTargetCorrect });
+
+            if (isTargetCorrect) {
+                playStandardSound('correct');
+                gameState.isCorrect = true;
+                gameState.numOfClear += 1;
+                document.getElementById('play-clear').innerText = gameState.numOfClear;
+
+                showFeedback('correct');
+
+                setTimeout(() => {
+                    showFeedback('hide');
+                    if (gameState.numOfClear >= gameState.targetQuestions) {
+                        saveSessionToHistory();
+                        playStandardSound('finish');
+                        backToHome();
+                    } else {
+                        setQuestion();
+                    }
+                }, 1000);
+
+            } else {
+                playStandardSound('wrong');
+                gameState.isWrong = true;
+                gameState.numOfWrong += 1;
+                document.getElementById('play-wrong').innerText = gameState.numOfWrong;
+
+                showFeedback('wrong');
+
+                setTimeout(() => {
+                    gameState.currentAnswer = 0;
+                    if (gameState.mode === 'decomposition') {
+                        document.getElementById('block-right-val').innerText = '?';
+                    } else {
+                        document.getElementById('block-total-val').innerText = '?';
+                    }
+                    gameState.isWrong = false;
+                    showFeedback('hide');
+                }, 1000);
+            }
+        }
+
+        function showPopover(show) {
+            document.getElementById('popover').style.display = show ? 'block' : 'none';
+        }
+
+        function showFeedback(result) {
+            const circle = document.getElementById('feedback-circle');
+            const cross = document.getElementById('feedback-cross');
+            if (result === 'correct') {
+                circle.style.display = 'block'; cross.style.display = 'none';
+            } else if (result === 'wrong') {
+                circle.style.display = 'none'; cross.style.display = 'block';
+            } else {
+                circle.style.display = 'none'; cross.style.display = 'none';
+            }
+        }
+
+        // ==================== ボールのDOM描画と吸い付きドラッグ制御 ====================
+        let activeBallIndex = -1;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+
+        function drawGame() {
+            const ballsContainer = document.getElementById('balls-container');
+            const decBallsZone = document.getElementById('dec-balls-zone');
+
+            ballsContainer.innerHTML = '';
+            decBallsZone.innerHTML = '';
+            
+            gameState.balls.forEach((ball, i) => {
+                const ballEl = document.createElement('div');
+                ballEl.classList.add('ball');
+                ballEl.style.width = ballDiameter + 'px';
+                ballEl.style.height = ballDiameter + 'px';
+                
+                const parent = (ball.parentZone === 'decBallsZone') ? decBallsZone : ballsContainer;
+                parent.appendChild(ballEl);
+                
+                const parentOffsetTop = parent.offsetTop || 0;
+                ballEl.style.left = (ball.x - ballRadius) + 'px';
+                ballEl.style.top = (ball.y - parentOffsetTop - ballRadius) + 'px';
+                
+                ballEl.addEventListener('pointerdown', (e) => {
+                    if (gameState.isWrong || gameState.isCorrect) return;
+                    activeBallIndex = i;
+                    touchOffsetX = e.clientX - ball.x;
+                    touchOffsetY = e.clientY - ball.y;
+                    
+                    document.addEventListener('pointermove', onBallPointerMove);
+                    document.addEventListener('pointerup', onBallPointerUp);
+                    document.addEventListener('pointercancel', onBallPointerUp);
+                    e.preventDefault();
+                });
+            });
+        }
+
+        function onBallPointerMove(e) {
+            if (activeBallIndex === -1) return;
+            const ball = gameState.balls[activeBallIndex];
+            
+            ball.x = e.clientX - touchOffsetX;
+            ball.y = e.clientY - touchOffsetY;
+            
+            if (ball.parentZone === 'decBallsZone') {
+                const limitTop = document.getElementById('dec-balls-zone').offsetTop;
+                const limitBottom = limitTop + document.getElementById('dec-balls-zone').offsetHeight;
+                if (ball.y > limitBottom || ball.y < limitTop) {
+                    ball.parentZone = 'ballsContainer';
+                    drawGame();
+                    return;
+                }
+            }
+            
+            const parentEl = (ball.parentZone === 'decBallsZone') ? document.getElementById('dec-balls-zone') : document.getElementById('balls-container');
+            const parentOffsetTop = parentEl.offsetTop || 0;
+            
+            let indexCounter = 0;
+            for (let j = 0; j < activeBallIndex; j++) {
+                if (gameState.balls[j].parentZone === ball.parentZone) indexCounter++;
+            }
+            const currentBallDOM = parentEl.children[indexCounter];
+            
+            if (currentBallDOM) {
+                currentBallDOM.style.left = (ball.x - ballRadius) + 'px';
+                currentBallDOM.style.top = (ball.y - parentOffsetTop - ballRadius) + 'px';
+            }
+        }
+
+        function onBallPointerUp() {
+            activeBallIndex = -1;
+            document.removeEventListener('pointermove', onBallPointerMove);
+            document.removeEventListener('pointerup', onBallPointerUp);
+            document.removeEventListener('pointercancel', onBallPointerUp);
+        }
+    </script>
 </body>
 </html>
