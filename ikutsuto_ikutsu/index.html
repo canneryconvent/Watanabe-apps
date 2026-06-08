@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>いくつといくつ</title>
     
+    <!-- ホーム画面追加時のアイコン設定 -->
     <link rel="apple-touch-icon" href="img.png">
     <link rel="icon" href="img.png">
 
+    <!-- 共通スタイルシートの読み込み -->
     <link rel="stylesheet" href="../common/style.css">
     
+    <!-- Google Fonts より Klee One Webフォントをロード -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
@@ -22,12 +25,16 @@
             --ball-diameter: 0px; 
         }
 
+        /* 全ての要素にKlee Oneを強制適用（iPad等でのフォールバック防止） */
+        * {
+            font-family: 'Klee One', cursive, sans-serif !important;
+        }
+
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
             background-color: #ffffff;
             color: #000000;
-            font-family: 'Klee One', cursive, sans-serif;
             overflow: hidden;
             position: relative;
             user-select: none;
@@ -57,19 +64,10 @@
             gap: 15px;
         }
 
-        .thumbnail-icon {
-            width: 120px;
-            height: 120px;
-            border-radius: 20px;
-            object-fit: cover;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 5px;
-        }
-
         .score-board {
-            font-size: 1.5rem;
+            font-size: 1.2rem; /* 少し小さく */
             text-align: center;
-            font-weight: bold;
+            font-weight: 600; /* boldの代わりに600指定でKlee Oneの太字を適用 */
             color: #334155;
             margin-bottom: 10px;
         }
@@ -110,7 +108,7 @@
 
         .setting-group-title {
             font-size: 1.5rem;
-            font-weight: bold;
+            font-weight: 600;
             text-align: center;
             margin-bottom: 10px;
             border-bottom: 2px dashed #cbd5e1;
@@ -126,8 +124,8 @@
             width: 100%;
         }
 
-        .stepper-label { font-size: 1.4rem; font-weight: bold; }
-        .stepper-value { font-size: 1.5rem; min-width: 40px; text-align: center; font-weight: bold; }
+        .stepper-label { font-size: 1.4rem; font-weight: 600; }
+        .stepper-value { font-size: 1.5rem; min-width: 40px; text-align: center; font-weight: 600; }
         
         .stepper {
             display: flex;
@@ -151,7 +149,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            font-weight: bold;
+            font-weight: 600;
         }
         .mode-radio-label input {
             transform: scale(1.4);
@@ -189,14 +187,14 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
         .history-item:last-child { border-bottom: none; }
-        .history-date { font-size: 1rem; color: #64748b; font-weight: bold; }
-        .history-result { font-size: 1.2rem; font-weight: bold; margin: 4px 0; color: #1e293b; }
+        .history-date { font-size: 1rem; color: #64748b; font-weight: 600; }
+        .history-result { font-size: 1.2rem; font-weight: 600; margin: 4px 0; color: #1e293b; }
         .history-details-box {
             margin-top: 8px; padding: 8px; background-color: #f1f5f9;
             border-radius: 6px; font-size: 1.2rem; color: #334155;
             display: flex; flex-direction: column;
             line-height: 1.5;
-            font-weight: bold;
+            font-weight: 600;
         }
 
         /* ==================== プレイ画面 ==================== */
@@ -212,7 +210,7 @@
         /* 上部エリア（もどるボタン・スコア） */
         .top-bar {
             position: absolute;
-            top: 10px; left: 10px; right: 10px; /* 余白を狭くして上に寄せる */
+            top: 5px; left: 10px; right: 10px; /* 上に寄せる */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -220,10 +218,10 @@
         }
 
         .play-score-top { 
-            font-size: 1.2rem; /* スコアを小さく */
-            font-weight: bold; 
+            font-size: 1rem; /* スコアを小さく */
+            font-weight: 600; 
             background: rgba(255,255,255,0.8);
-            padding: 5px 10px;
+            padding: 3px 8px;
             border-radius: 8px;
             border: 1px solid #ccc;
         }
@@ -231,7 +229,7 @@
         /* 上部のボールを囲う枠（上にずらす） */
         .dec-balls-zone {
             position: absolute;
-            top: 60px; /* 90pxから60pxに変更して上にずらす */
+            top: 45px; /* 上にずらす */
             left: 20px;
             right: 20px;
             height: calc(var(--ball-diameter) + 15px);
@@ -267,7 +265,7 @@
             border: 5px solid #000000;
             background-color: #ffffff;
             display: flex; justify-content: center; align-items: center;
-            font-size: 100px; font-weight: bold; box-sizing: border-box;
+            font-size: 100px; font-weight: 600; box-sizing: border-box;
             cursor: default;
             position: relative;
         }
@@ -326,7 +324,7 @@
         .key-btn {
             width: 100px; height: 100px; background: #ffff00; border-radius: 15px;
             display: flex; justify-content: center; align-items: center;
-            font-size: 70px; font-weight: bold; color: #000000;
+            font-size: 70px; font-weight: 600; color: #000000;
             cursor: pointer; user-select: none; touch-action: manipulation;
         }
 
@@ -344,37 +342,40 @@
 
         .feedback-cross {
             display: none; font-size: 800px; color: #00ff00;
-            font-family: system-ui, sans-serif; line-height: 1; font-weight: bold;
+            line-height: 1; font-weight: 600;
         }
     </style>
 </head>
 <body>
 
+    <!-- ==================== ホーム画面 ==================== -->
     <div id="home-screen" class="home-screen">
         <div class="home-container">
-            <img src="img.png" alt="アプリのアイコン" class="thumbnail-icon" onerror="this.style.display='none'">
 
             <div class="score-board">
                 ⭕️:<span id="score-clear">0</span> ❌:<span id="score-wrong">0</span>
             </div>
 
-            <button class="btn-orange" style="font-size: 2.5rem; width: 100%; padding: 20px; border-radius: 20px;" id="main-start-btn">スタート</button>
+            <!-- シンプルなスタートボタン -->
+            <button class="btn-orange" style="font-size: 2.5rem; width: 100%; padding: 20px; border-radius: 20px; touch-action: manipulation;" id="main-start-btn">スタート</button>
             
-            <div id="current-mode-notice" style="font-size: 1.1rem; color: #475569; font-weight: bold; margin-top: 5px;"></div>
+            <div id="current-mode-notice" style="font-size: 1.1rem; color: #475569; font-weight: 600; margin-top: 5px;"></div>
             
+            <!-- 設定・履歴ボタン (トリプルタップ起動) -->
             <div style="display: flex; gap: 15px; width: 100%; margin-top: 30px;">
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                    <button class="btn-gray" style="width: 100%; font-size: 1.2rem; padding: 10px;" id="history-btn">プレイ履歴</button>
-                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px; font-weight: bold;">※トリプルタップ</div>
+                    <button class="btn-gray" style="width: 100%; font-size: 1.2rem; padding: 10px; touch-action: manipulation;" id="history-btn">プレイ履歴</button>
+                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px; font-weight: 600;">※トリプルタップ</div>
                 </div>
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                    <button class="btn-gray" style="width: 100%; font-size: 1.2rem; padding: 10px;" id="setting-btn">設定</button>
-                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px; font-weight: bold;">※トリプルタップ</div>
+                    <button class="btn-gray" style="width: 100%; font-size: 1.2rem; padding: 10px; touch-action: manipulation;" id="setting-btn">設定</button>
+                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px; font-weight: 600;">※トリプルタップ</div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ==================== 設定画面 ==================== -->
     <div id="setting-screen" class="setting-screen">
         <div class="scroll-container">
             <h2 style="font-size: 1.8rem; text-align: center; margin: 5px 0;">設定</h2>
@@ -392,6 +393,7 @@
                     </div>
                 </div>
 
+                <!-- 分解設定 -->
                 <div class="setting-group" id="dec-config-group">
                     <div class="setting-group-title">分解の設定</div>
                     
@@ -437,6 +439,7 @@
                     </div>
                 </div>
 
+                <!-- 合成設定 -->
                 <div class="setting-group" id="comp-config-group">
                     <div class="setting-group-title">合成の設定</div>
                     <div class="setting-row">
@@ -465,6 +468,7 @@
                     </div>
                 </div>
 
+                <!-- もどるボタン表示設定 -->
                 <div class="setting-group">
                     <div class="setting-row">
                         <span class="stepper-label">プレイ中の<br>「もどる」ボタン表示</span>
@@ -476,10 +480,11 @@
                 </div>
             </div>
 
-            <button class="btn-gray" style="width: 100%; font-size: 1.4rem; padding: 12px; margin-top: 10px; font-weight: bold;" onclick="closeScreen()">保存して戻る</button>
+            <button class="btn-gray" style="width: 100%; font-size: 1.4rem; padding: 12px; margin-top: 10px; font-weight: 600;" onclick="closeScreen()">保存して戻る</button>
         </div>
     </div>
 
+    <!-- ==================== 履歴画面 ==================== -->
     <div id="history-screen" class="history-screen">
         <div class="scroll-container">
             <h2 style="font-size: 1.8rem; text-align: center; margin: 5px 0;">プレイ履歴</h2>
@@ -488,13 +493,14 @@
                 <div id="history-list" class="history-list"></div>
             </div>
 
-            <button class="btn-gray" style="width: 100%; font-size: 1.4rem; padding: 12px; margin-top: 10px; font-weight: bold;" onclick="closeScreen()">閉じる</button>
+            <button class="btn-gray" style="width: 100%; font-size: 1.4rem; padding: 12px; margin-top: 10px; font-weight: 600;" onclick="closeScreen()">閉じる</button>
         </div>
     </div>
 
+    <!-- ==================== プレイ画面 ==================== -->
     <div id="play-screen" class="play-screen">
         <div class="top-bar">
-            <button class="btn-gray" id="back-btn" style="font-size: 1.2rem; padding: 5px 15px;">もどる</button>
+            <button class="btn-gray" id="back-btn" style="font-size: 1rem; padding: 4px 12px; touch-action: manipulation;">もどる</button>
             <div class="play-score-top">
                 ⭕️:<span id="play-clear">0</span> ❌:<span id="play-wrong">0</span>
             </div>
@@ -518,6 +524,7 @@
         <div id="balls-container"></div>
     </div>
 
+    <!-- ポップオーバー（数字キーパッド） -->
     <div id="popover" class="popover-overlay">
         <div class="keypad-container">
             <div class="keypad-row">
@@ -537,6 +544,7 @@
         </div>
     </div>
 
+    <!-- 正誤判定演出 -->
     <div class="feedback-overlay">
         <div id="feedback-circle" class="feedback-circle"></div>
         <div id="feedback-cross" class="feedback-cross">X</div>
@@ -754,18 +762,16 @@
             });
         }
 
-        // pointerdownを使って、スマホのタップとマウスのクリック両方を確実に拾う
         function bindTripleTap(elementId, callback) {
             let tapCount = 0;
             let tapTimer = null;
             const btn = document.getElementById(elementId);
             
+            // pointerdownで確実に判定（受付時間を500msに拡大）
             btn.addEventListener('pointerdown', (e) => {
-                e.preventDefault(); // デフォルト動作による誤爆を防ぐ
                 tapCount++;
                 if (tapCount === 1) {
-                    // タップ間隔を少し長めの800msに設定し、焦らず叩けるように
-                    tapTimer = setTimeout(() => { tapCount = 0; }, 800);
+                    tapTimer = setTimeout(() => { tapCount = 0; }, 500);
                 } else if (tapCount === 3) {
                     clearTimeout(tapTimer);
                     tapCount = 0;
@@ -806,7 +812,7 @@
             updateHomeUI();
         }
 
-        // ==================== シンプルで見やすい履歴システム ====================
+        // ==================== 超シンプル履歴システム ====================
         function renderDetailedHistory() {
             const list = document.getElementById('history-list');
             list.innerHTML = '';
@@ -824,11 +830,11 @@
                 let detailsLogHtml = '';
                 if (h.details && h.details.length > 0) {
                     h.details.forEach(d => {
-                        const icon = d.ok ? '<span style="color:#ef4444; font-weight:bold; margin-left:8px;">⭕️</span>' : '<span style="color:#22c55e; font-weight:bold; margin-left:8px;">❌</span>';
+                        const icon = d.ok ? '⭕️' : '❌';
                         detailsLogHtml += `
-                        <div style="display:flex; justify-content: space-between; align-items:center; padding: 4px 0; border-bottom: 1px solid #e2e8f0;">
-                            <span>${d.text}</span>
-                            <span>${icon}</span>
+                        <div style="display:flex; justify-content: flex-start; align-items:center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; gap: 8px;">
+                            <span style="font-size: 1.2rem;">${icon}</span>
+                            <span style="font-size: 1.2rem;">${d.text}</span>
                         </div>`;
                     });
                 } else {
@@ -1028,18 +1034,19 @@
 
             const isTargetCorrect = (selectedAnswer === expected);
 
+            // 超シンプル形式でのログ生成
             let logText = "";
             if (gameState.mode === 'decomposition') {
                 if (gameState.currentBlank === 'left') {
-                    logText = `${gameState.currentTotal} ＝ ？ ＋ ${gameState.currentRight} ➔ 答: ${selectedAnswer}`;
+                    logText = `${gameState.currentTotal} → [ ${selectedAnswer} ] と ${gameState.currentRight}`;
                 } else {
-                    logText = `${gameState.currentTotal} ＝ ${gameState.currentLeft} ＋ ？ ➔ 答: ${selectedAnswer}`;
+                    logText = `${gameState.currentTotal} → ${gameState.currentLeft} と [ ${selectedAnswer} ]`;
                 }
             } else {
-                logText = `？ ＝ ${gameState.currentLeft} ＋ ${gameState.currentRight} ➔ 答: ${selectedAnswer}`;
+                logText = `${gameState.currentLeft} と ${gameState.currentRight} → [ ${selectedAnswer} ]`;
             }
             if (!isTargetCorrect) {
-                logText += ` <span style="font-size:1rem; color:#64748b;">(正:${expected})</span>`;
+                logText += ` <span style="color:#64748b; font-size:1.1rem;">(正解:${expected})</span>`;
             }
             gameState.sessionLog.push({ text: logText, ok: isTargetCorrect });
 
