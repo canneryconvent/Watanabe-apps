@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数字タップ</title>
+    
+    <link rel="apple-touch-icon" href="img.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap');
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f2f2f7; /* SwiftUIの標準背景色（グレー） */
+            font-family: 'Klee One', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        /* 画面共通 */
+        .screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            flex-direction: column;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- ホーム画面 (SwiftUIレイアウト) --- */
+        #home-screen {
+            background-color: #ffffff; /* ホームは白背景 */
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 60px;
+            color: #000000;
+        }
+
+        /* SwiftUI風ボタン */
+        .btn-primary {
+            width: 240px;
+            padding: 16px;
+            font-size: 1.5rem;
+            font-family: 'Klee One', sans-serif;
+            font-weight: 600;
+            background-color: #007aff; /* Appleブルー */
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            touch-action: manipulation;
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        .btn-primary:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            width: 240px;
+            padding: 14px;
+            font-size: 1.2rem;
+            font-family: 'Klee One', sans-serif;
+            font-weight: 600;
+            background-color: #e5e5ea;
+            color: #007aff;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            text-align: center;
+            touch-action: manipulation;
+            transition: transform 0.1s, background-color 0.1s;
+        }
+        .btn-secondary:active {
+            transform: scale(0.96);
+            background-color: #d1d1d6;
+        }
+
+        .setting-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .setting-note {
+            font-size: 0.8rem;
+            color: #8e8e93;
+            margin-top: 8px;
+        }
+
+        /* --- プレイ画面 --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: calc(env(safe-area-inset-top) + 10px) 20px 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e5ea;
+        }
+
+        .btn-back {
+            color: #007aff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .btn-back:active {
+            opacity: 0.5;
+        }
+
+        .time-display {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        #play-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            touch-action: none;
+            overflow: hidden; /* はみ出し防止 */
+        }
+
+        #grid-container {
+            display: grid;
+            gap: 8px;
+            justify-content: center;
+            align-content: center;
+        }
+
+        .grid-item {
+            background-color: #fde047;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            cursor: pointer;
+            touch-action: manipulation;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            /* アスペクト比はJavaScriptのピクセル指定によって完全に1:1になります */
+        }
+
+        .grid-item.tapped {
+            opacity: 0.5;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        .grid-item.empty {
+            background-color: transparent;
+            box-shadow: none;
+            pointer-events: none;
+        }
+
+        /* --- 設定画面 (SwiftUI Form風) --- */
+        #setting-screen {
+            align-items: center;
+            padding-top: calc(env(safe-area-inset-top) + 30px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .setting-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+        }
+
+        .setting-row {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e5ea;
+        }
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-row label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        .setting-row input[type="range"] {
+            width: 100%;
+        }
+
+        .preview-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-color: #f2f2f7;
+            border-radius: 8px;
+        }
+
+        #preview-grid {
+            display: grid;
+            gap: 2px;
+            width: 100%;
+            max-width: 150px;
+        }
+
+        .preview-item {
+            background-color: #fde047;
+            border-radius: 2px;
+            aspect-ratio: 1 / 1;
+            opacity: 0.8;
+        }
+        .preview-item.empty {
+            background-color: transparent;
+        }
+
+        .btn-done {
+            width: 90%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ホーム画面 -->
+    <div id="home-screen" class="screen active">
+        <div class="title">数字タップ</div>
+        
+        <div class="btn-primary" id="btn-start">スタート</div>
+        
+        <div class="setting-wrapper">
+            <div class="btn-secondary" id="btn-setting">設定</div>
+            <div class="setting-note">※トリプルタップ</div>
+        </div>
+    </div>
+
+    <!-- プレイ画面 -->
+    <div id="play-screen" class="screen">
+        <div class="header">
+            <div class="btn-back" id="btn-back-home">＜ もどる</div>
+            <div class="time-display" id="time-display">Time: 0.00</div>
+        </div>
+        <div id="play-area">
+            <div id="grid-container"></div>
+        </div>
+    </div>
+
+    <!-- 設定画面 -->
+    <div id="setting-screen" class="screen">
+        <div class="setting-title">設定</div>
+        
+        <div class="form-section">
+            <div class="setting-row">
+                <label><span>縦</span><span id="label-rows">5</span></label>
+                <input type="range" id="slider-rows" min="1" max="10" value="5">
+            </div>
+            <div class="setting-row">
+                <label><span>横</span><span id="label-cols">5</span></label>
+                <input type="range" id="slider-cols" min="1" max="10" value="5">
+            </div>
+            <div class="setting-row">
+                <label><span>最大値</span><span id="label-max">25</span></label>
+                <input type="range" id="slider-max" min="1" max="25" value="25">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="setting-row">
+                <div style="font-size: 1rem; margin-bottom: 5px;">サンプルビュー</div>
+                <div class="preview-box">
+                    <div id="preview-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-primary btn-done" id="btn-done">完了</div>
+    </div>
+
+    <script>
+        // --- 音声システム ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playClick() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playWrong() {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playFinish() {
+            initAudio();
+            const now = audioCtx.currentTime;
+            
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(659.25, now); // E5
+            gain1.gain.setValueAtTime(0.1, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.3);
+
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(523.25, now + 0.15); // C5
+            gain2.gain.setValueAtTime(0.1, now + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.15);
+            osc2.stop(now + 0.6);
+        }
+
+        // --- 状態管理 ---
+        let config = {
+            rows: parseInt(localStorage.getItem('nt_rows')) || 5,
+            cols: parseInt(localStorage.getItem('nt_cols')) || 5,
+            maxValue: parseInt(localStorage.getItem('nt_max')) || 25
+        };
+
+        let state = {
+            currentNum: 1,
+            targetMax: 1,
+            randomNums: [],
+            timeElapsed: 0,
+            timerRunning: false,
+            startTime: 0,
+            rafId: null
+        };
+
+        const screens = {
+            home: document.getElementById('home-screen'),
+            play: document.getElementById('play-screen'),
+            setting: document.getElementById('setting-screen')
+        };
+
+        function showScreen(name) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[name].classList.add('active');
+            
+            // プレイ画面表示時にグリッドサイズを再計算
+            if (name === 'play') {
+                setTimeout(updateGridSize, 10);
+            }
+        }
+
+        // --- トリプルタップ（設定ボタンのみに適用） ---
+        let tapCount = 0;
+        let tapTimer = null;
+        document.getElementById('btn-setting').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            tapCount++;
+            if (tapCount === 1) {
+                tapTimer = setTimeout(() => { tapCount = 0; }, 600); // 0.6秒以内に3回
+            } else if (tapCount === 3) {
+                clearTimeout(tapTimer);
+                tapCount = 0;
+                openSetting();
+            }
+        });
+
+        // --- 画面遷移イベント ---
+        document.getElementById('btn-start').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            initAudio();
+            startGame();
+            showScreen('play');
+        });
+
+        document.getElementById('btn-back-home').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            stopTimer();
+            showScreen('home');
+        });
+
+        document.getElementById('btn-done').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            config.rows = parseInt(document.getElementById('slider-rows').value);
+            config.cols = parseInt(document.getElementById('slider-cols').value);
+            config.maxValue = parseInt(document.getElementById('slider-max').value);
+
+            localStorage.setItem('nt_rows', config.rows);
+            localStorage.setItem('nt_cols', config.cols);
+            localStorage.setItem('nt_max', config.maxValue);
+            showScreen('home');
+        });
+
+        // --- ウィンドウリサイズ対応 ---
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (screens.play.classList.contains('active')) {
+                    updateGridSize();
+                }
+            }, 100);
+        });
+
+        // --- ゲームロジック ---
+        function startGame() {
+            state.currentNum = 1;
+            state.timeElapsed = 0;
+            state.timerRunning = false;
+            updateTimeDisplay();
+
+            const totalCells = config.rows * config.cols;
+            state.targetMax = Math.min(config.maxValue, totalCells);
+
+            let nums = [];
+            for (let i = 1; i <= config.maxValue; i++) {
+                nums.push(i);
+            }
+            shuffleArray(nums);
+
+            state.randomNums = nums.slice(0, totalCells);
+            while (state.randomNums.length < totalCells) {
+                state.randomNums.push(0);
+            }
+            shuffleArray(state.randomNums);
+
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+
+            state.randomNums.forEach((num) => {
+                const item = document.createElement('div');
+                item.className = 'grid-item';
+
+                if (num === 0) {
+                    item.classList.add('empty');
+                } else {
+                    item.textContent = num;
+                    item.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        handleTap(num, item);
+                    });
+                }
+                container.appendChild(item);
+            });
+            
+            updateGridSize();
+        }
+
+        // --- 【重要】マス目の1:1アスペクト比固定とサイズ計算 ---
+        function updateGridSize() {
+            const container = document.getElementById('grid-container');
+            const playArea = document.getElementById('play-area');
+            if (!container || !playArea) return;
+
+            // padding分を差し引いた利用可能エリア
+            const availableWidth = playArea.clientWidth - 20; 
+            const availableHeight = playArea.clientHeight - 20;
+            if (availableWidth <= 0 || availableHeight <= 0) return;
+
+            const gap = 8;
+            const totalGapWidth = gap * (config.cols - 1);
+            const totalGapHeight = gap * (config.rows - 1);
+
+            // 1マスのサイズを計算して最小値を採用（これにより完全な正方形になる）
+            const cellW = (availableWidth - totalGapWidth) / config.cols;
+            const cellH = (availableHeight - totalGapHeight) / config.rows;
+            const cellSize = Math.floor(Math.min(cellW, cellH));
+
+            container.style.gridTemplateColumns = `repeat(${config.cols}, ${cellSize}px)`;
+            container.style.gridTemplateRows = `repeat(${config.rows}, ${cellSize}px)`;
+
+            // マス目のサイズに合わせて文字サイズも完璧に調整
+            const fontSize = Math.floor(cellSize * 0.55);
+            const items = container.querySelectorAll('.grid-item');
+            items.forEach(item => {
+                if (!item.classList.contains('empty')) {
+                    item.style.fontSize = `${fontSize}px`;
+                }
+            });
+        }
+
+        function handleTap(num, element) {
+            if (num === state.currentNum) {
+                playClick();
+                if (state.currentNum === 1 && !state.timerRunning) {
+                    startTimer();
+                }
+
+                element.classList.add('tapped');
+
+                if (state.currentNum === state.targetMax) {
+                    stopTimer();
+                    playFinish();
+                    setTimeout(() => {
+                        startGame();
+                    }, 1000);
+                } else {
+                    state.currentNum++;
+                }
+            } else if (num > state.currentNum) {
+                playWrong();
+            }
+        }
+
+        // --- タイマー処理 ---
+        function startTimer() {
+            state.timerRunning = true;
+            state.startTime = performance.now();
+            
+            function tick() {
+                if (!state.timerRunning) return;
+                state.timeElapsed = (performance.now() - state.startTime) / 1000;
+                updateTimeDisplay();
+                state.rafId = requestAnimationFrame(tick);
+            }
+            state.rafId = requestAnimationFrame(tick);
+        }
+
+        function stopTimer() {
+            state.timerRunning = false;
+            if (state.rafId) cancelAnimationFrame(state.rafId);
+        }
+
+        function updateTimeDisplay() {
+            document.getElementById('time-display').textContent = `Time: ${state.timeElapsed.toFixed(2)}`;
+        }
+
+        // --- 設定・プレビュー ---
+        const sliderRows = document.getElementById('slider-rows');
+        const sliderCols = document.getElementById('slider-cols');
+        const sliderMax = document.getElementById('slider-max');
+        const labelRows = document.getElementById('label-rows');
+        const labelCols = document.getElementById('label-cols');
+        const labelMax = document.getElementById('label-max');
+
+        function openSetting() {
+            sliderRows.value = config.rows;
+            sliderCols.value = config.cols;
+            sliderMax.max = config.rows * config.cols;
+            sliderMax.value = Math.min(config.maxValue, sliderMax.max);
+            
+            updateSettingUI();
+            showScreen('setting');
+        }
+
+        function updateSettingUI() {
+            const r = parseInt(sliderRows.value);
+            const c = parseInt(sliderCols.value);
+            const m = parseInt(sliderMax.value);
+
+            sliderMax.max = r * c;
+            if (m > r * c) sliderMax.value = r * c;
+
+            labelRows.textContent = sliderRows.value;
+            labelCols.textContent = sliderCols.value;
+            labelMax.textContent = sliderMax.value;
+
+            // サンプルビューの更新
+            const preview = document.getElementById('preview-grid');
+            preview.innerHTML = '';
+            preview.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
+            
+            // プレビュー全体のアスペクト比を動的に調整
+            preview.style.aspectRatio = `${c} / ${r}`;
+            
+            const total = r * c;
+            for(let i=0; i<total; i++) {
+                const cell = document.createElement('div');
+                cell.className = i < parseInt(sliderMax.value) ? 'preview-item' : 'preview-item empty';
+                preview.appendChild(cell);
+            }
+        }
+
+        sliderRows.addEventListener('input', updateSettingUI);
+        sliderCols.addEventListener('input', updateSettingUI);
+        sliderMax.addEventListener('input', updateSettingUI);
+
+        // --- ユーティリティ ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    </script>
+</body>
+</html>
