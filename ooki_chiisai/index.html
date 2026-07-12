@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>おおきいちいさい</title>
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="img.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        /* 誤操作防止と画面フィットの共通設計 */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: calc(var(--vh, 1vh) * 100);
+            overflow: hidden;
+            background-color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+            color: #333333;
+        }
+
+        /* 画面共通定義 */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: calc(10px + env(safe-area-inset-top));
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* ホーム画面：白背景、中央寄せ */
+        #home-screen {
+            justify-content: center;
+            background-color: #ffffff;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+            transition: transform 0.1s ease, background-color 0.2s;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-start {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .btn-start:active {
+            background-color: #e68a00;
+        }
+
+        .btn-secondary {
+            background-color: #f7f7f7;
+            color: #333333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:active {
+            background-color: #ebebeb;
+        }
+
+        /* プレイ画面 */
+        #play-screen {
+            justify-content: space-between;
+            position: relative;
+            background-color: #ffffff;
+        }
+
+        /* 戻るボタン中央上部、進捗は左上に配置 */
+        .header-bar {
+            width: 100%;
+            height: 50px;
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+            position: relative;
+            padding: 0 20px;
+            z-index: 50; 
+        }
+
+        .btn-back {
+            background-color: #f2f2f7;
+            color: #ff9500;
+            padding: 8px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            touch-action: manipulation;
+            z-index: 60;
+        }
+
+        .btn-back:active {
+            transform: scale(0.95);
+        }
+
+        .progress-text {
+            position: absolute;
+            left: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #555555;
+            z-index: 60;
+        }
+
+        /* ターゲット枠エリア：大は左、小は右に完全固定。片方が非表示でもレイアウトをキープ */
+        .target-zones {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 950px;
+            flex-grow: 1;
+            gap: 20px;
+            margin: 10px 0;
+        }
+
+        .zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+        }
+
+        .zone-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        #big-zone .zone-title {
+            font-size: 44px; /* おおきい */
+            color: #ff5722;
+        }
+
+        #small-zone .zone-title {
+            font-size: 26px; /* ちいさい */
+            color: #2196f3;
+        }
+
+        .box {
+            width: 100%;
+            border-style: dashed;
+            border-radius: 32px;
+            position: relative; /* 箱の中での絶対配置基準 */
+            transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+        }
+
+        /* 大きい枠（うっすら赤オレンジ系） */
+        #big-zone .box {
+            border-width: 6px;
+            border-color: #ff5722;
+            background-color: #fff5f2;
+            max-width: 420px;
+            min-height: 320px;
+        }
+
+        /* 小さい枠（うっすら青系） */
+        #small-zone .box {
+            border-width: 4px;
+            border-color: #2196f3;
+            background-color: #f0f7ff;
+            max-width: 280px;
+            min-height: 240px;
+        }
+
+        /* ホバー中のハイライト */
+        #big-zone .box.hover {
+            background-color: #ffebe6;
+            border-style: solid;
+            transform: scale(1.02);
+        }
+        
+        #small-zone .box.hover {
+            background-color: #e1f0ff;
+            border-style: solid;
+            transform: scale(1.02);
+        }
+        
+        /* 正解時の視覚演出 */
+        #big-zone .box.correct-animation {
+            background-color: #e8f5e9;
+            border-color: #4caf50;
+            border-style: solid;
+        }
+
+        #small-zone .box.correct-animation {
+            background-color: #e8f5e9;
+            border-color: #4caf50;
+            border-style: solid;
+        }
+
+        /* 下部アイテム出現トレイ */
+        .item-source-area {
+            width: 100%;
+            min-height: 250px;
+            background-color: #fbfbfb;
+            border-top: 3px dashed #eeeeee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap; 
+            gap: 20px;
+            padding: 20px;
+            position: relative;
+            touch-action: none;
+        }
+
+        /* ドラッグ可能な絵文字（大＝200px, 小＝100px） */
+        .draggable-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            touch-action: none;
+            position: relative;
+            z-index: 10;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        
+        .draggable-item.dragging {
+            z-index: 100;
+        }
+        
+        /* 箱に収まった絵文字（サイズ変更せず絶対配置） */
+        .draggable-item.placed {
+            pointer-events: none;
+            position: absolute !important;
+            transform: none !important;
+            margin: 0 !important;
+            z-index: 5;
+        }
+
+        /* =========================================
+           iOS 設定アプリ風 2カラム／レスポンシブレイアウト
+           ========================================= */
+        #setting-screen {
+            background-color: #f2f2f7; 
+            justify-content: flex-start;
+            padding: 0;
+        }
+
+        .ios-nav-bar {
+            width: 100%;
+            height: 50px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #d1d1d6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .ios-nav-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .ios-nav-save {
+            position: absolute;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #007aff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* 横並び・縦並びが画面サイズで切り替わるフレックスコンテナ */
+        .setting-layout-container {
+            display: flex;
+            flex-direction: column; /* デフォルト：スマホ縦は縦並び（設定が上、プレビューが下） */
+            width: 100%;
+            height: calc(100% - 50px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            gap: 20px;
+        }
+
+        /* 横幅に余裕があるとき（PC、タブレット、スマホ横画面など）は左右2カラムに配置 */
+        @media (min-width: 850px) {
+            .setting-layout-container {
+                flex-direction: row; 
+                align-items: flex-start;
+                overflow-y: hidden; /* 親のスクロールを止めて、左パネルだけを個別にスクロール */
+            }
+            .setting-controls-pane {
+                flex: 1.2;
+                height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-right: 10px;
+            }
+            .setting-preview-pane {
+                flex: 1;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                position: sticky;
+                top: 0;
+            }
+        }
+
+        /* 左側（コントロール） */
+        .setting-controls-pane {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 右側（リアルタイムプレビュー） */
+        .setting-preview-pane {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* サンプルプレビューカードの強化 */
+        .sample-view-card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 16px;
+            border: 0.5px solid #c8c7cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .sample-view-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8e8e93;
+            text-align: center;
+            width: 100%;
+            border-bottom: 0.5px solid #e5e5ea;
+            padding-bottom: 8px;
+        }
+
+        /* 本物そっくりのミニチュアプレイビュー */
+        .mini-play-view {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background-color: #ffffff;
+            border: 1px solid #c8c7cc;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+            pointer-events: none; /* タップ不可 */
+        }
+
+        .mini-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 20px;
+            border-bottom: 0.5px solid #e5e5ea;
+            padding-bottom: 4px;
+        }
+
+        .mini-progress {
+            font-size: 10px;
+            font-weight: bold;
+            color: #8e8e93;
+        }
+
+        .mini-back-btn {
+            font-size: 8px;
+            background-color: #f2f2f7;
+            color: #ff9500;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .mini-target-zones {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            flex-grow: 1;
+            margin-top: 8px;
+            gap: 8px;
+        }
+
+        .mini-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .mini-zone-title {
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        #mini-big-zone .mini-zone-title { color: #ff5722; }
+        #mini-small-zone .mini-zone-title { color: #2196f3; }
+
+        .mini-box {
+            width: 100%;
+            border-style: dashed;
+            border-radius: 12px;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #mini-big-box {
+            border-width: 2px;
+            border-color: #ff5722;
+            background-color: #fff5f2;
+        }
+
+        #mini-small-box {
+            border-width: 2.5px;
+            border-color: #2196f3;
+            background-color: #f0f7ff;
+        }
+
+        .mini-source-area {
+            height: 55px;
+            border-top: 1.5px dashed #e5e5ea;
+            background-color: #fafafa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 4px;
+        }
+
+        /* ミニチュア内絵文字スタイル（縮小スケール） */
+        .mini-emoji {
+            display: inline-block;
+            line-height: 1;
+            transition: all 0.2s ease;
+        }
+        .mini-emoji.big {
+            font-size: 34px;
+        }
+        .mini-emoji.small {
+            font-size: 17px;
+        }
+
+        /* 単一のフラットリスト */
+        .ios-list {
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 0.5px solid #c8c7cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            width: 100%;
+        }
+
+        .ios-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            min-height: 54px;
+            border-bottom: 0.5px solid #c8c7cc;
+            background-color: #ffffff;
+        }
+
+        .ios-row:last-child {
+            border-bottom: none;
+        }
+
+        .ios-row-label {
+            font-size: 16px;
+            color: #000000;
+            font-weight: 500;
+        }
+
+        .ios-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* セグメントコントロール */
+        .ios-segment {
+            display: flex;
+            background-color: #f2f2f7;
+            padding: 2px;
+            border-radius: 8px;
+        }
+
+        .ios-segment-btn {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #000000;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+
+        .ios-segment-btn.selected {
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            font-weight: 600;
+        }
+
+        /* iOS トグルスイッチ */
+        .ios-switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+
+        .ios-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .ios-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e5ea;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .ios-slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        input:checked + .ios-slider {
+            background-color: #34c759; 
+        }
+
+        input:checked + .ios-slider:before {
+            transform: translateX(20px);
+        }
+
+        /* iOSスライダー */
+        .ios-range-slider {
+            -webkit-appearance: none;
+            width: 150px;
+            height: 4px;
+            border-radius: 2px;
+            background: #d1d1d6;
+            outline: none;
+        }
+
+        .ios-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 0.5px solid #d1d1d6;
+        }
+
+        .ios-slider-val {
+            font-size: 16px;
+            font-weight: 500;
+            color: #8e8e93;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* 履歴画面 */
+        #history-screen {
+            justify-content: flex-start;
+            padding-top: 40px;
+            background-color: #f2f2f7;
+        }
+
+        .history-list {
+            width: 100%;
+            max-width: 550px;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 詳細履歴アコーディオン */
+        .history-item-container {
+            background: #ffffff;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 0.5px solid #c8c7cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .history-item-header {
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background-color: #ffffff;
+        }
+
+        .history-item-header:active {
+            background-color: #f2f2f7;
+        }
+
+        .history-item-details {
+            display: none;
+            padding: 16px;
+            background-color: #f9f9f9;
+            border-top: 0.5px solid #c8c7cc;
+            font-size: 14px;
+            color: #555555;
+            line-height: 1.6;
+        }
+
+        .history-item-container.expanded .history-item-details {
+            display: block;
+        }
+
+        .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 0.5px dashed #d1d1d6;
+        }
+
+        .details-row:last-child {
+            border-bottom: none;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: #8e8e93;
+            margin-top: 50px;
+            font-size: 17px;
+        }
+
+        /* ○×の特大オーバーレイ */
+        .feedback-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1000;
+            transition: opacity 0.1s ease;
+        }
+        
+        .feedback-overlay.circle { color: rgba(244, 67, 54, 0.85); }
+        .feedback-overlay.cross { color: rgba(33, 150, 243, 0.85); }
+
+        /* 確認ダイアログ */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .ios-alert {
+            width: 270px;
+            background-color: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            overflow: hidden;
+            animation: alertPop 0.25s ease-out;
+        }
+
+        @keyframes alertPop {
+            from { transform: scale(1.15); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .ios-alert-title {
+            padding: 16px 16px 4px 16px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .ios-alert-message {
+            padding: 0 16px 16px 16px;
+            font-size: 13px;
+            color: #000000;
+        }
+
+        .ios-alert-buttons {
+            width: 100%;
+            display: flex;
+            border-top: 0.5px solid #c8c7cc;
+        }
+
+        .ios-alert-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 17px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .ios-alert-btn-cancel {
+            color: #007aff;
+            border-right: 0.5px solid #c8c7cc;
+            font-weight: 400;
+        }
+
+        .ios-alert-btn-confirm {
+            color: #ff3b30;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 確認モーダル -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="ios-alert">
+            <div class="ios-alert-title">確認</div>
+            <div class="ios-alert-message">ホーム画面にもどりますか？</div>
+            <div class="ios-alert-buttons">
+                <button class="ios-alert-btn ios-alert-btn-cancel" id="modal-cancel-btn">いいえ</button>
+                <button class="ios-alert-btn ios-alert-btn-confirm" id="modal-confirm-btn">もどる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 視覚的フィードバック -->
+    <div id="feedback-circle" class="feedback-overlay circle">○</div>
+    <div id="feedback-cross" class="feedback-overlay cross">×</div>
+
+    <!-- ホーム画面 -->
+    <div id="home-screen" class="screen active">
+        <div class="menu-buttons">
+            <button class="btn btn-start" id="start-btn">スタート</button>
+            <!-- 設定ボタンとトリプルタップの注記をパッケージ化 -->
+            <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                <button class="btn btn-secondary" id="go-setting-btn" style="margin-bottom: 6px;">設定</button>
+                <span style="font-size: 13px; color: #8e8e93; font-weight: 500; letter-spacing: 0.5px;">※トリプルタップ</span>
+            </div>
+            <button class="btn btn-secondary" id="go-history-btn" style="margin-top: 8px;">履歴</button>
+        </div>
+    </div>
+
+    <!-- プレイ画面 -->
+    <div id="play-screen" class="screen">
+        <div class="header-bar" id="play-header-bar">
+            <div class="progress-text" id="progress-display">1 / 5</div>
+            <button class="btn-back" id="play-back-btn">もどる</button>
+        </div>
+
+        <div class="target-zones">
+            <div id="big-zone" class="zone">
+                <div class="zone-title">おおきい</div>
+                <div class="box" id="big-box"></div>
+            </div>
+            <div id="small-zone" class="zone">
+                <div class="zone-title">ちいさい</div>
+                <div class="box" id="small-box"></div>
+            </div>
+        </div>
+
+        <div class="item-source-area" id="source-area"></div>
+    </div>
+
+    <!-- 設定画面（iOS grouped-styleフラットリスト ＋ 縮小リアルタイムプレビュー） -->
+    <div id="setting-screen" class="screen">
+        <div class="ios-nav-bar">
+            <span class="ios-nav-title">設定</span>
+            <button class="ios-nav-save" id="save-setting-btn">完了</button>
+        </div>
+        
+        <div class="setting-layout-container">
+            <!-- 左側（上部）：設定コントロールフラットリスト -->
+            <div class="setting-controls-pane">
+                <div class="ios-list">
+                    <!-- 分類モード -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">分類モード</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-step">
+                                <button class="ios-segment-btn" data-value="big-only">大きいのみ</button>
+                                <button class="ios-segment-btn" data-value="both">両方</button>
+                                <button class="ios-segment-btn" data-value="small-only">小さいのみ</button>
+                                <button class="ios-segment-btn" data-value="random">ランダム</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 同時出題ペア数 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">同時出題ペア数</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-pairs">
+                                <button class="ios-segment-btn" data-value="1">1組</button>
+                                <button class="ios-segment-btn" data-value="2">2組</button>
+                                <button class="ios-segment-btn" data-value="3">3組</button>
+                                <button class="ios-segment-btn" data-value="4">4組</button>
+                                <button class="ios-segment-btn" data-value="5">5組</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 問題数（総出題数から変更） -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">問題数</span>
+                        <div class="ios-control">
+                            <input type="range" min="1" max="15" value="5" class="ios-range-slider" id="questions-slider">
+                            <span class="ios-slider-val" id="questions-val-display">5問</span>
+                        </div>
+                    </div>
+
+                    <!-- 音声読み上げ -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">音声読み上げ</span>
+                        <div class="ios-control">
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch-voice" checked>
+                                <span class="ios-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 誤答時の挙動 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">間違えたときの動き</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-wrong-behavior">
+                                <button class="ios-segment-btn" data-value="back">すぐもどる</button>
+                                <button class="ios-segment-btn" data-value="stay">その場にとまる</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- もどるボタン表示制限 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">「もどる」ボタンを表示する</span>
+                        <div class="ios-control">
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch-show-back" checked>
+                                <span class="ios-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 使用する画像の種類 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">使用する画像の種類</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-emoji-type">
+                                <button class="ios-segment-btn" data-value="all">🎨 すべて</button>
+                                <button class="ios-segment-btn" data-value="animal">🐶 動物</button>
+                                <button class="ios-segment-btn" data-value="food">🍎 食べ物</button>
+                                <button class="ios-segment-btn" data-value="vehicle">🚗 乗り物</button>
+                                <button class="ios-segment-btn" data-value="shape">🔴 図形</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右側（下部）：縮小ミニチュアプレイビュー（サンプルビュー） -->
+            <div class="setting-preview-pane">
+                <div class="sample-view-card">
+                    <span class="sample-view-title">プレイ画面のリアルタイムプレビュー</span>
+                    <div class="mini-play-view">
+                        <!-- ヘッダー -->
+                        <div class="mini-header">
+                            <div class="mini-progress">1 / 5</div>
+                            <div class="mini-back-btn" id="mini-preview-back">もどる</div>
+                        </div>
+                        
+                        <!-- ターゲット枠 -->
+                        <div class="mini-target-zones">
+                            <div id="mini-big-zone" class="mini-zone">
+                                <div class="mini-zone-title">おおきい</div>
+                                <div class="mini-box" id="mini-big-box"></div>
+                            </div>
+                            <div id="mini-small-zone" class="mini-zone">
+                                <div class="mini-zone-title">ちいさい</div>
+                                <div class="mini-box" id="mini-small-box"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 下部トレイ -->
+                        <div class="mini-source-area" id="mini-source-area">
+                            <!-- JS側で設定ペア数に応じて重複しない大・小絵文字を自動生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 履歴画面 -->
+    <div id="history-screen" class="screen">
+        <h2 style="font-size: 28px; margin-top: 10px; margin-bottom: 10px;">プレイ履歴</h2>
+        <div class="history-list" id="history-list-container"></div>
+        <button class="btn btn-secondary" id="clear-history-btn" style="max-width:320px; margin-bottom:12px; background-color:#ffebee; color:#c62828; border-color:#ffcdd2;">履歴をすべて消去</button>
+        <button class="btn btn-start" id="history-back-btn" style="max-width:320px; margin-bottom:20px;">ホームにもどる</button>
+    </div>
+
+    <script>
+        // --- データベース定義 ---
+        const EMOJI_DATA = {
+            animal: ['🐶', '🐱', '🦁', '🐻', '🐰', '🐼', '🐘', '🐵', '🐤', '🐸'],
+            food: ['🍎', '🍌', '🍉', '🍇', '🍓', '🥕', '🍅', '🍏', '🍊', '🍔'],
+            vehicle: ['🚗', '✈️', '🚢', '🚄', '🚲', '🚒', '🚑', '🚀', '🚌', '🚁'],
+            shape: ['🔴', '🔵', '🟡', '🟢', '🔶', '🔷', '⭐', '❤️', '⬛', '🌀']
+        };
+
+        // --- カテゴリごとの代表プレビュー絵文字（ペア数を増やした際の重複回避用） ---
+        const PREVIEW_EMOJIS = {
+            all: ['🐶', '🍎', '🚗', '🔴', '🍌', '🐱', '🚄', '⭐', '🍇', '🐸'],
+            animal: ['🐶', '🐱', '🦁', '🐻', '🐰', '🐼', '🐘', '🐵', '🐤', '🐸'],
+            food: ['🍎', '🍌', '🍉', '🍇', '🍓', '🥕', '🍅', '🍏', '🍊', '🍔'],
+            vehicle: ['🚗', '✈️', '🚢', '🚄', '🚲', '🚒', '🚑', '🚀', '🚌', '🚁'],
+            shape: ['🔴', '🔵', '🟡', '🟢', '🔶', '🔷', '⭐', '❤️', '⬛', '🌀']
+        };
+
+        // --- アプリステート管理 ---
+        let settings = {
+            step: 'both',   // 分類モード：初期設定は「両方」
+            pairs: 1,       // 同時出題ペア数（1〜5）：初期設定は1組
+            questions: 5,   // 出題総数
+            voice: 'on',
+            wrongBehavior: 'back',
+            showBackButton: 'on', 
+            emojiType: 'all'
+        };
+
+        let gameState = {
+            currentQuestionIndex: 0,
+            currentStepMode: 'both',
+            history: [],
+            startTime: null,
+            correctCount: 0,
+            isAnimating: false,
+            
+            // 各問題内でのクリアログ
+            questionStartTime: null,
+            questionMistakes: 0,
+            detailedLog: [], 
+
+            // 現在配置されたアイテム数（ペア数に連動）
+            bigPlacedCount: 0,
+            smallPlacedCount: 0,
+            // 必要なアイテムの総数
+            bigRequiredCount: 0,
+            smallRequiredCount: 0
+        };
+
+        // --- 自立式Web Audio API（効果音システム） ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            if (type === 'correct') {
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(659.25, now);
+                osc1.frequency.setValueAtTime(880.00, now + 0.12);
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1318.5, now);
+                osc2.frequency.setValueAtTime(1760.0, now + 0.12);
+
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.5);
+                osc2.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+                
+                gainNode.gain.setValueAtTime(0.12, now);
+                gainNode.gain.linearRampToValueAtTime(0.001, now + 0.25);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'finish') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
+                    const osc = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    const start = now + index * 0.08;
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, start);
+                    
+                    gainNode.gain.setValueAtTime(0.15, start);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    osc.start(start);
+                    osc.stop(start + 0.4);
+                });
+            }
+        }
+
+        // --- 音声読み上げ（TTS） ---
+        function speakText(text) {
+            if (settings.voice !== 'on') return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ja-JP';
+            u.rate = 1.0;
+            u.volume = 1.0;
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- iOS Safari 100vh 追従処理 ---
+        function resetVH() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        window.addEventListener('resize', resetVH);
+        window.addEventListener('orientationchange', resetVH);
+        resetVH();
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'history-screen') {
+                renderHistory();
+            }
+        }
+
+        // --- 設定ボタントリプルタップ起動 ---
+        let settingTapCount = 0;
+        let settingLastTapTime = 0;
+        document.getElementById('go-setting-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - settingLastTapTime < 500) {
+                settingTapCount++;
+            } else {
+                settingTapCount = 1;
+            }
+            settingLastTapTime = now;
+
+            if (settingTapCount === 3) {
+                settingTapCount = 0;
+                initAudio();
+                speakText('');
+                showScreen('setting-screen');
+                updateSampleView(); // プレビューの初期描画
+            }
+        });
+
+        // --- ミニチュアプレイプレビュー（サンプルビュー）の動的完全連動システム ---
+        function updateSampleView() {
+            const miniBigZone = document.getElementById('mini-big-zone');
+            const miniSmallZone = document.getElementById('mini-small-zone');
+            const miniSourceArea = document.getElementById('mini-source-area');
+            const miniPreviewBack = document.getElementById('mini-preview-back');
+            
+            // 1. もどるボタン表示設定の連動
+            if (settings.showBackButton === 'on') {
+                miniPreviewBack.style.visibility = 'visible';
+            } else {
+                miniPreviewBack.style.visibility = 'hidden';
+            }
+
+            // 2. 分類モードの連動（おおきい・ちいさいターゲット枠の可視性制御）
+            if (settings.step === 'big-only') {
+                miniBigZone.style.visibility = 'visible';
+                miniSmallZone.style.visibility = 'hidden';
+            } else if (settings.step === 'small-only') {
+                miniBigZone.style.visibility = 'hidden';
+                miniSmallZone.style.visibility = 'visible';
+            } else {
+                miniBigZone.style.visibility = 'visible';
+                miniSmallZone.style.visibility = 'visible';
+            }
+
+            // 3. 使用する画像の種類カテゴリの取得
+            const currentCategoryEmojis = PREVIEW_EMOJIS[settings.emojiType] || PREVIEW_EMOJIS.all;
+
+            // 4. トレイ（下部）内のミニペア絵文字の動的組み立て（重複を防ぎバリエーション豊かに並べる）
+            miniSourceArea.innerHTML = '';
+            
+            // 設定されたペア数分（1〜5）だけ、トレイに大・小絵文字を生成
+            for (let i = 0; i < settings.pairs; i++) {
+                // ペア数が1組より多い時は、トレイにそれぞれ別の絵文字を並べる
+                const emoji = currentCategoryEmojis[i % currentCategoryEmojis.length];
+
+                // 大絵文字をトレイに生成
+                const bigEmojiEl = document.createElement('span');
+                bigEmojiEl.className = 'mini-emoji big';
+                bigEmojiEl.innerText = emoji;
+                miniSourceArea.appendChild(bigEmojiEl);
+
+                // 小絵文字をトレイに生成
+                const smallEmojiEl = document.createElement('span');
+                smallEmojiEl.className = 'mini-emoji small';
+                smallEmojiEl.innerText = emoji;
+                miniSourceArea.appendChild(smallEmojiEl);
+            }
+        }
+
+        // --- 設定の読み込み・適用・保存 ---
+        function initSettingsUI() {
+            const saved = localStorage.getItem('ookii_chiisai_settings');
+            if (saved) {
+                try { settings = { ...settings, ...JSON.parse(saved) }; } catch(e) {}
+            }
+            const savedHistory = localStorage.getItem('ookii_chiisai_history');
+            if (savedHistory) {
+                try { gameState.history = JSON.parse(savedHistory); } catch(e) {}
+            }
+
+            // セグメントボタングループ
+            setupButtonGroup('opt-step', 'step');
+            setupButtonGroup('opt-pairs', 'pairs', true);
+            setupButtonGroup('opt-wrong-behavior', 'wrong-behavior', false, 'wrongBehavior');
+            setupButtonGroup('opt-emoji-type', 'emoji-type', false, 'emojiType');
+            
+            // スライダー
+            const slider = document.getElementById('questions-slider');
+            const display = document.getElementById('questions-val-display');
+            slider.value = settings.questions;
+            display.innerText = `${settings.questions}問`;
+
+            slider.addEventListener('input', (e) => {
+                settings.questions = parseInt(e.target.value, 10);
+                display.innerText = `${settings.questions}問`;
+            });
+
+            // トグルスイッチ（音声と戻るボタン）
+            const voiceSwitch = document.getElementById('switch-voice');
+            voiceSwitch.checked = (settings.voice === 'on');
+            voiceSwitch.addEventListener('change', (e) => {
+                settings.voice = e.target.checked ? 'on' : 'off';
+            });
+
+            const showBackSwitch = document.getElementById('switch-show-back');
+            showBackSwitch.checked = (settings.showBackButton === 'on');
+            showBackSwitch.addEventListener('change', (e) => {
+                settings.showBackButton = e.target.checked ? 'on' : 'off';
+                updateSampleView(); // プレビューに反映
+            });
+            
+            updateSettingsUI();
+            updateSampleView();
+        }
+
+        function setupButtonGroup(groupId, configKey, isInt = false, stateKey = null) {
+            const container = document.getElementById(groupId);
+            const targetKey = stateKey || configKey;
+            
+            container.querySelectorAll('.ios-segment-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    container.querySelectorAll('.ios-segment-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    let val = btn.getAttribute('data-value');
+                    settings[targetKey] = isInt ? parseInt(val, 10) : val;
+
+                    // リアルタイムにプレビューサンプルビューを更新
+                    updateSampleView();
+                });
+            });
+        }
+
+        function updateSettingsUI() {
+            setGroupSelected('opt-step', settings.step);
+            setGroupSelected('opt-pairs', settings.pairs.toString());
+            setGroupSelected('opt-wrong-behavior', settings.wrongBehavior);
+            setGroupSelected('opt-emoji-type', settings.emojiType);
+            
+            document.getElementById('switch-voice').checked = (settings.voice === 'on');
+            document.getElementById('switch-show-back').checked = (settings.showBackButton === 'on');
+        }
+
+        function setGroupSelected(groupId, value) {
+            const container = document.getElementById(groupId);
+            container.querySelectorAll('.ios-segment-btn').forEach(btn => {
+                if (btn.getAttribute('data-value') === value) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        // --- 履歴保存・出力 ---
+        function saveHistoryItem() {
+            const endTime = Date.now();
+            const elapsedSec = Math.round((endTime - gameState.startTime) / 1000);
+            
+            let stepLabel = '';
+            if (settings.step === 'big-only') stepLabel = '大きいのみ';
+            else if (settings.step === 'small-only') stepLabel = '小さいのみ';
+            else if (settings.step === 'both') stepLabel = '両方';
+            else if (settings.step === 'random') stepLabel = 'ランダム';
+
+            const newItem = {
+                id: Date.now(),
+                date: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                step: stepLabel,
+                pairs: settings.pairs,
+                score: `${gameState.correctCount} / ${settings.questions}`,
+                time: `${elapsedSec}秒`,
+                details: JSON.parse(JSON.stringify(gameState.detailedLog))
+            };
+
+            gameState.history.unshift(newItem);
+            if (gameState.history.length > 20) gameState.history.pop();
+            localStorage.setItem('ookii_chiisai_history', JSON.stringify(gameState.history));
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list-container');
+            container.innerHTML = '';
+            
+            if (gameState.history.length === 0) {
+                container.innerHTML = '<div class="history-empty">プレイデータがありません</div>';
+                return;
+            }
+
+            gameState.history.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'history-item-container';
+                
+                const header = document.createElement('div');
+                header.className = 'history-item-header';
+                header.innerHTML = `
+                    <div>
+                        <strong style="color:#000000; font-size: 16px;">${item.date}</strong><br>
+                        <span style="color:#8e8e93; font-size:13px;">${item.step} (${item.pairs}組ペア)</span>
+                    </div>
+                    <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                        <div>
+                            <span style="font-weight:bold; color:#ff9500; font-size: 18px;">${item.score}</span><br>
+                            <span style="color:#8e8e93; font-size:12px;">${item.time}</span>
+                        </div>
+                        <span style="font-size:12px; color:#c7c7cc;">▼</span>
+                    </div>
+                `;
+                
+                const details = document.createElement('div');
+                details.className = 'history-item-details';
+                
+                let detailsHTML = `<div style="font-weight:bold; margin-bottom:8px; color:#007aff;">📄 設問ごとの詳細記録</div>`;
+                if (item.details && item.details.length > 0) {
+                    item.details.forEach(q => {
+                        detailsHTML += `
+                            <div class="details-row">
+                                <span>第${q.index}問 [${q.emojis.join(', ')}] (${q.modeText})</span>
+                                <span>解答時間: <strong>${q.time}</strong> / 誤答: <strong style="color:${q.mistakes > 0 ? '#ff3b30':'#34c759'};">${q.mistakes}回</strong></span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    detailsHTML += `<div>詳細ログはありません</div>`;
+                }
+                details.innerHTML = detailsHTML;
+
+                wrapper.appendChild(header);
+                wrapper.appendChild(details);
+
+                header.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    wrapper.classList.toggle('expanded');
+                });
+
+                container.appendChild(wrapper);
+            });
+        }
+
+        // --- 出題絵文字アロケーション（重複のないよう選別） ---
+        function getQuestionEmojis(num) {
+            let pool = [];
+            if (settings.emojiType === 'all') {
+                pool = [...EMOJI_DATA.animal, ...EMOJI_DATA.food, ...EMOJI_DATA.vehicle, ...EMOJI_DATA.shape];
+            } else {
+                pool = [...(EMOJI_DATA[settings.emojiType] || EMOJI_DATA.animal)];
+            }
+            pool.sort(() => Math.random() - 0.5);
+            return pool.slice(0, num);
+        }
+
+        function startNewGame() {
+            initAudio();
+            gameState.currentQuestionIndex = 0;
+            gameState.correctCount = 0;
+            gameState.startTime = Date.now();
+            gameState.detailedLog = [];
+            
+            const backBtn = document.getElementById('play-back-btn');
+            if (settings.showBackButton === 'on') {
+                backBtn.style.visibility = 'visible';
+            } else {
+                backBtn.style.visibility = 'hidden';
+            }
+
+            showScreen('play-screen');
+            setupQuestion();
+        }
+
+        function setupQuestion() {
+            gameState.isAnimating = false;
+            gameState.bigPlacedCount = 0;
+            gameState.smallPlacedCount = 0;
+            
+            gameState.questionStartTime = Date.now();
+            gameState.questionMistakes = 0;
+            
+            document.getElementById('progress-display').innerText = `${gameState.currentQuestionIndex + 1} / ${settings.questions}`;
+
+            if (settings.step === 'random') {
+                const modes = ['big-only', 'small-only', 'both'];
+                gameState.currentStepMode = modes[Math.floor(Math.random() * modes.length)];
+            } else {
+                gameState.currentStepMode = settings.step;
+            }
+
+            const bigZone = document.getElementById('big-zone');
+            const smallZone = document.getElementById('small-zone');
+            const bigBox = document.getElementById('big-box');
+            const smallBox = document.getElementById('small-box');
+            
+            bigBox.className = 'box';
+            smallBox.className = 'box';
+            bigBox.innerHTML = '';
+            smallBox.innerHTML = '';
+
+            // ターゲット枠線の配置は常に左上（大）＆右上（小）に完全固定。片方のモードでも visibility で位置をキープ。
+            if (gameState.currentStepMode === 'big-only') {
+                bigZone.style.visibility = 'visible';
+                smallZone.style.visibility = 'hidden'; 
+                gameState.bigRequiredCount = settings.pairs;
+                gameState.smallRequiredCount = 0;
+            } else if (gameState.currentStepMode === 'small-only') {
+                bigZone.style.visibility = 'hidden'; 
+                smallZone.style.visibility = 'visible';
+                gameState.bigRequiredCount = 0;
+                gameState.smallRequiredCount = settings.pairs;
+            } else {
+                bigZone.style.visibility = 'visible';
+                smallZone.style.visibility = 'visible';
+                gameState.bigRequiredCount = settings.pairs;
+                gameState.smallRequiredCount = settings.pairs;
+            }
+
+            const activeEmojis = getQuestionEmojis(settings.pairs);
+            gameState.currentEmojis = activeEmojis; 
+
+            const sourceArea = document.getElementById('source-area');
+            sourceArea.innerHTML = '';
+
+            // 同じ絵文字（ペア）が必ずトレイの中で隣り合わせに並ぶアロケーション
+            let itemsToCreate = [];
+            activeEmojis.forEach((emoji, emojiIndex) => {
+                let pairItems = [
+                    { type: 'big', emoji: emoji, size: '200px', fontSize: '160px', pairId: emojiIndex },
+                    { type: 'small', emoji: emoji, size: '100px', fontSize: '80px', pairId: emojiIndex }
+                ];
+
+                if (Math.random() > 0.5) {
+                    pairItems.reverse();
+                }
+
+                itemsToCreate.push(...pairItems);
+            });
+
+            itemsToCreate.forEach((data, index) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'draggable-item';
+                itemEl.id = `item-${data.type}-${index}`;
+                itemEl.innerText = data.emoji;
+                itemEl.style.fontSize = data.fontSize;
+                itemEl.style.width = data.size;
+                itemEl.style.height = data.size;
+                itemEl.setAttribute('data-type', data.type);
+
+                sourceArea.appendChild(itemEl);
+                makeElementDraggable(itemEl);
+            });
+        }
+
+        // --- Pointer Events を活用した高精度ドラッグシステム ---
+        function makeElementDraggable(el) {
+            let startX = 0, startY = 0;
+            let initialTransformX = 0, initialTransformY = 0;
+            let isDragging = false;
+
+            el.addEventListener('pointerdown', onPointerDown);
+
+            function onPointerDown(e) {
+                if (gameState.isAnimating) return;
+                e.preventDefault();
+                initAudio();
+                
+                isDragging = true;
+                el.classList.add('dragging');
+
+                startX = e.clientX;
+                startY = e.clientY;
+
+                const style = window.getComputedStyle(el);
+                const matrix = new DOMMatrixReadOnly(style.transform);
+                initialTransformX = matrix.m41;
+                initialTransformY = matrix.m42;
+
+                el.setPointerCapture(e.pointerId);
+                el.addEventListener('pointermove', onPointerMove);
+                el.addEventListener('pointerup', onPointerUp);
+                el.addEventListener('pointercancel', onPointerUp);
+            }
+
+            function onPointerMove(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                el.style.transform = `translate(${initialTransformX + dx}px, ${initialTransformY + dy}px) scale(1.04)`;
+                checkHoverEffect(el);
+            }
+
+            function onPointerUp(e) {
+                if (!isDragging) return;
+                isDragging = false;
+                el.classList.remove('dragging');
+
+                el.releasePointerCapture(e.pointerId);
+                el.removeEventListener('pointermove', onPointerMove);
+                el.removeEventListener('pointerup', onPointerUp);
+                el.removeEventListener('pointercancel', onPointerUp);
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                evaluateDrop(el, initialTransformX + dx, initialTransformY + dy);
+            }
+        }
+
+        function checkHoverEffect(el) {
+            const rect = el.getBoundingClientRect();
+            const bigBox = document.getElementById('big-box');
+            const smallBox = document.getElementById('small-box');
+
+            const bigRect = bigBox.getBoundingClientRect();
+            const smallRect = smallBox.getBoundingClientRect();
+
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            if (gameState.currentStepMode !== 'small-only' && 
+                cx >= bigRect.left && cx <= bigRect.right && cy >= bigRect.top && cy <= bigRect.bottom) {
+                bigBox.classList.add('hover');
+            } else {
+                bigBox.classList.remove('hover');
+            }
+
+            if (gameState.currentStepMode !== 'big-only' && 
+                cx >= smallRect.left && cx <= smallRect.right && cy >= smallRect.top && cy <= smallRect.bottom) {
+                smallBox.classList.add('hover');
+            } else {
+                smallBox.classList.remove('hover');
+            }
+        }
+
+        function evaluateDrop(el, currentTransformX, currentTransformY) {
+            const rect = el.getBoundingClientRect();
+            const itemType = el.getAttribute('data-type');
+            
+            const bigBox = document.getElementById('big-box');
+            const smallBox = document.getElementById('small-box');
+            
+            bigBox.classList.remove('hover');
+            smallBox.classList.remove('hover');
+
+            const bigRect = bigBox.getBoundingClientRect();
+            const smallRect = smallBox.getBoundingClientRect();
+
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            let targetBox = null;
+            let isCorrectDrop = false;
+
+            if (gameState.currentStepMode !== 'small-only' && 
+                cx >= bigRect.left && cx <= bigRect.right && cy >= bigRect.top && cy <= bigRect.bottom) {
+                targetBox = bigBox;
+                if (itemType === 'big') isCorrectDrop = true;
+            } else if (gameState.currentStepMode !== 'big-only' && 
+                cx >= smallRect.left && cx <= smallRect.right && cy >= smallRect.top && cy <= smallRect.bottom) {
+                targetBox = smallBox;
+                if (itemType === 'small') isCorrectDrop = true;
+            }
+
+            if (targetBox && isCorrectDrop) {
+                // 正解：アイテムのサイズ（200px / 100px）を変更せず、ドロップされた位置に絶対配置で重ねて置く
+                const boxRect = targetBox.getBoundingClientRect();
+                
+                const relativeLeft = rect.left - boxRect.left;
+                const relativeTop = rect.top - boxRect.top;
+
+                el.classList.add('placed');
+                el.style.left = `${relativeLeft}px`;
+                el.style.top = `${relativeTop}px`;
+                el.style.transform = 'none'; 
+                
+                targetBox.appendChild(el);
+
+                if (itemType === 'big') {
+                    gameState.bigPlacedCount++;
+                    speakText('おおきい');
+                } else {
+                    gameState.smallPlacedCount++;
+                    speakText('ちいさい');
+                }
+                
+                targetBox.classList.add('correct-animation');
+                setTimeout(() => {
+                    targetBox.classList.remove('correct-animation');
+                }, 500);
+
+                checkQuestionClear();
+            } else if (targetBox && !isCorrectDrop) {
+                // 誤答時のペナルティ判定
+                gameState.questionMistakes++;
+                triggerFeedback(false);
+                if (settings.wrongBehavior === 'back') {
+                    resetElementPosition(el);
+                } else {
+                    el.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px)`;
+                }
+            } else {
+                resetElementPosition(el);
+            }
+        }
+
+        function resetElementPosition(el) {
+            el.style.transition = 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            el.style.transform = 'translate(0px, 0px)';
+            setTimeout(() => {
+                el.style.transition = 'none';
+            }, 250);
+        }
+
+        function triggerFeedback(isCorrect) {
+            const target = isCorrect ? document.getElementById('feedback-circle') : document.getElementById('feedback-cross');
+            playSound(isCorrect ? 'correct' : 'wrong');
+            target.style.opacity = '1';
+            setTimeout(() => {
+                target.style.opacity = '0';
+            }, 600);
+        }
+
+        function checkQuestionClear() {
+            let isCleared = (gameState.bigPlacedCount >= gameState.bigRequiredCount) && 
+                            (gameState.smallPlacedCount >= gameState.smallRequiredCount);
+
+            if (isCleared) {
+                gameState.isAnimating = true; 
+                gameState.correctCount++;
+                triggerFeedback(true);
+
+                // 詳細履歴ログ蓄積
+                const qDuration = Math.round((Date.now() - gameState.questionStartTime) / 1000);
+                let modeText = '';
+                if (gameState.currentStepMode === 'big-only') modeText = '大きいのみ';
+                else if (gameState.currentStepMode === 'small-only') modeText = '小さいのみ';
+                else modeText = '両方';
+
+                gameState.detailedLog.push({
+                    index: gameState.currentQuestionIndex + 1,
+                    emojis: [...gameState.currentEmojis],
+                    modeText: modeText,
+                    time: `${qDuration}秒`,
+                    mistakes: gameState.questionMistakes
+                });
+
+                setTimeout(() => {
+                    gameState.currentQuestionIndex++;
+                    if (gameState.currentQuestionIndex < settings.questions) {
+                        setupQuestion();
+                    } else {
+                        endGame();
+                    }
+                }, 1400);
+            }
+        }
+
+        function endGame() {
+            playSound('finish');
+            saveHistoryItem();
+            alert(`ぜんぶ クリア！\nせいかい: ${gameState.correctCount} / ${settings.questions}`);
+            showScreen('home-screen');
+        }
+
+        // --- 確認モーダル制御 ---
+        const modal = document.getElementById('confirm-modal');
+        
+        function showConfirmModal() {
+            modal.classList.add('active');
+        }
+
+        function hideConfirmModal() {
+            modal.classList.remove('active');
+        }
+
+        document.getElementById('play-back-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showConfirmModal();
+        });
+
+        document.getElementById('modal-cancel-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            hideConfirmModal();
+        });
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            hideConfirmModal();
+            showScreen('home-screen');
+        });
+
+        // --- 各ボタンクリックイベント ---
+        document.getElementById('start-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            startNewGame();
+        });
+
+        document.getElementById('go-history-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            showScreen('history-screen');
+        });
+
+        document.getElementById('save-setting-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('ookii_chiisai_settings', JSON.stringify(settings));
+            showScreen('home-screen');
+        });
+
+        document.getElementById('history-back-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            showScreen('home-screen');
+        });
+
+        document.getElementById('clear-history-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            showConfirmModalForClear();
+        });
+
+        // 履歴クリア確認用カスタムアラート
+        function showConfirmModalForClear() {
+            const backupMessage = document.querySelector('.ios-alert-message').innerText;
+            const backupConfirmText = document.getElementById('modal-confirm-btn').innerText;
+            
+            document.querySelector('.ios-alert-message').innerText = '履歴をすべて消去しますか？';
+            document.getElementById('modal-confirm-btn').innerText = '消去';
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            const clearHistoryAction = (e) => {
+                e.preventDefault();
+                gameState.history = [];
+                localStorage.removeItem('ookii_chiisai_history');
+                renderHistory();
+                hideConfirmModal();
+                
+                document.querySelector('.ios-alert-message').innerText = backupMessage;
+                confirmBtn.innerText = backupConfirmText;
+                confirmBtn.removeEventListener('click', clearHistoryAction);
+                confirmBtn.addEventListener('click', defaultConfirmAction);
+            };
+            
+            const defaultConfirmAction = (e) => {
+                e.preventDefault();
+                hideConfirmModal();
+                showScreen('home-screen');
+            };
+
+            const clone = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(clone, confirmBtn);
+            clone.addEventListener('click', clearHistoryAction);
+            
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+            const cancelAction = (e) => {
+                e.preventDefault();
+                hideConfirmModal();
+                document.querySelector('.ios-alert-message').innerText = backupMessage;
+                clone.innerText = backupConfirmText;
+                
+                const restoreBtn = document.getElementById('modal-confirm-btn');
+                const restoreClone = restoreBtn.cloneNode(true);
+                restoreBtn.parentNode.replaceChild(restoreClone, restoreBtn);
+                restoreClone.addEventListener('click', (evt) => {
+                    evt.preventDefault();
+                    hideConfirmModal();
+                    showScreen('home-screen');
+                });
+                cancelBtn.removeEventListener('click', cancelAction);
+                cancelBtn.addEventListener('click', (evt) => {
+                    evt.preventDefault();
+                    hideConfirmModal();
+                });
+            };
+            cancelBtn.addEventListener('click', cancelAction);
+
+            showConfirmModal();
+        }
+
+        window.onload = () => {
+            initSettingsUI();
+        };
+    </script>
+</body>
+</html>
