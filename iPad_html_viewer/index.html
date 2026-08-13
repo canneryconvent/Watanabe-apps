@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- 文字色を黒（デフォルト）にし、影や黒塗りを防止 -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>HTML Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+    }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* 画面全体を覆うiframe */
+    #viewer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      display: block;
+      background-color: #ffffff;
+      z-index: 1;
+    }
+
+    /* タップエリアガイド */
+    .tap-guide-zone {
+      position: fixed;
+      right: 0;
+      width: 25vw;
+      height: 25vh;
+      background: rgba(10, 132, 255, 0.15);
+      border: 2px dashed rgba(10, 132, 255, 0.6);
+      z-index: 9998;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0a84ff;
+      font-weight: bold;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+    #guide-top-right {
+      top: 0;
+      border-bottom-left-radius: 16px;
+    }
+    #guide-bottom-right {
+      bottom: 0;
+      border-top-left-radius: 16px;
+    }
+
+    .hidden-guide {
+      opacity: 0 !important;
+    }
+
+    /* 参考コード同様の純粋な全画面オーバーレイ */
+    #ui-modal-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 20px;
+    }
+    #ui-modal-wrapper.hidden {
+      display: none;
+    }
+
+    /* UIモーダル本体 */
+    #ui-container {
+      background: rgba(30, 30, 30, 0.95);
+      color: #ffffff;
+      padding: 24px;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 85vh;
+      overflow-y: auto;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .ui-header {
+      text-align: center;
+    }
+    .ui-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .ui-attention {
+      font-size: 16px;
+      font-weight: 700;
+      color: red;
+    }
+    .ui-description {
+      font-size: 12px;
+      color: #a0a0a5;
+    }
+
+    /* 操作手順フロー */
+    .step-flow {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .step-flow-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #0a84ff;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #e5e5ea;
+    }
+    .step-badge {
+      background: #0a84ff;
+      color: #fff;
+      font-weight: bold;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .step-arrow {
+      text-align: center;
+      color: #636366;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+
+    .app-info {
+      font-size: 11px;
+      color: #8e8e93;
+      line-height: 1.3;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+
+    .file-input-label {
+      display: block;
+      background-color: #0a84ff;
+      color: #ffffff;
+      text-align: center;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .close-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #ffffff;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <iframe id="viewer"></iframe>
+
+  <div id="guide-top-right" class="tap-guide-zone">右上エリア</div>
+  <div id="guide-bottom-right" class="tap-guide-zone">右下エリア</div>
+
+  <div id="ui-modal-wrapper">
+    <div id="ui-container">
+      <div class="ui-header">
+        <div class="ui-title">iPad HTML Viewer</div>
+      </div>
+      <div class="ui-attention">
+        本アプリは、iPadで直接開くことができないローカルのHTMLファイルを表示・実行するためのビューアーです。<br>
+※　表示するHTMLファイルが別途必要なため、本アプリ単体では動作しません。
+      </div>
+    
+      <div class="step-flow">
+        <div class="step-flow-title">【UI（メニュー）の再表示方法】
+          <small>※HTMLファイルを変更するために</small>
+        </div>
+        
+        <div class="step-item">
+          <span class="step-badge">1</span>
+          <span>画面の<b>右上エリア</b>をダブルタップ</span>
+        </div>
+        <div class="step-arrow">⬇︎（5秒以内）</div>
+        
+        <div class="step-item">
+          <span class="step-badge">2</span>
+          <span>画面の<b>右下エリア</b>をダブルタップ</span>
+        </div>
+        <div class="step-arrow">⬇︎</div>
+        
+        <div class="step-item">
+          <span class="step-badge">3</span>
+          <span>ファイル選択メニューが画面中央に表示</span>
+        </div>
+      </div>
+
+      <div class="app-info">
+        ※ 本アプリをSafariの共有メニューから「ホーム画面に追加」して使用することで、ブラウザ枠やボタンのない全画面で起動します。
+      </div>
+
+      <label class="file-input-label">
+        HTMLファイルを選択
+        <input type="file" id="fileInput" accept=".html,.htm">
+      </label>
+      
+      <button class="close-btn" id="closeBtn">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    const uiModalWrapper = document.getElementById('ui-modal-wrapper');
+    const fileInput = document.getElementById('fileInput');
+    const viewer = document.getElementById('viewer');
+    const closeBtn = document.getElementById('closeBtn');
+
+    const guideTR = document.getElementById('guide-top-right');
+    const guideBR = document.getElementById('guide-bottom-right');
+
+    let lastTRTap = 0;
+    let trSuccessTime = 0;
+    let lastBRTap = 0;
+
+    function toggleUI(show) {
+      if (show) {
+        uiModalWrapper.classList.remove('hidden');
+        guideTR.classList.remove('hidden-guide');
+        guideBR.classList.remove('hidden-guide');
+      } else {
+        uiModalWrapper.classList.add('hidden');
+        guideTR.classList.add('hidden-guide');
+        guideBR.classList.add('hidden-guide');
+      }
+    }
+
+    function handleTouchStart(e) {
+      if (!uiModalWrapper.classList.contains('hidden')) return;
+
+      if (!e.touches || e.touches.length === 0) return;
+      const touch = e.touches[0];
+      
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const x = touch.clientX;
+      const y = touch.clientY;
+
+      const isTopRight = (x >= w * 0.75) && (y <= h * 0.25);
+      const isBottomRight = (x >= w * 0.75) && (y >= h * 0.75);
+
+      const now = Date.now();
+
+      if (isTopRight) {
+        if (now - lastTRTap < 600) {
+          trSuccessTime = now;
+        }
+        lastTRTap = now;
+      } else if (isBottomRight) {
+        if (now - lastBRTap < 600) {
+          if (trSuccessTime !== 0 && (now - trSuccessTime < 5000)) {
+            toggleUI(true);
+            trSuccessTime = 0;
+          }
+        }
+        lastBRTap = now;
+      }
+    }
+
+    function attachTouchEvents(targetDocument) {
+      if (!targetDocument) return;
+
+      try {
+        const style = targetDocument.createElement('style');
+        style.textContent = '* { touch-action: manipulation; }';
+        targetDocument.head?.appendChild(style);
+
+        targetDocument.removeEventListener('touchstart', handleTouchStart);
+        targetDocument.addEventListener('touchstart', handleTouchStart, { passive: true });
+
+        let lastTouchEnd = 0;
+        targetDocument.addEventListener('touchend', (e) => {
+          const now = Date.now();
+          if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+          }
+          lastTouchEnd = now;
+        }, false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    
+    viewer.addEventListener('load', () => {
+      const doc = viewer.contentDocument || viewer.contentWindow.document;
+      attachTouchEvents(doc);
+    });
+
+    setTimeout(() => {
+      const doc = viewer.contentDocument || viewer.contentWindow.document;
+      attachTouchEvents(doc);
+    }, 100);
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          viewer.srcdoc = evt.target.result;
+          toggleUI(false);
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      toggleUI(false);
+    });
+  </script>
+</body>
+</html>
