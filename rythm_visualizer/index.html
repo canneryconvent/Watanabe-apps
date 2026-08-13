@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>リズム視覚化ツール</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --border-color: #000000;
+      --hover-bg: #f0f0f0;
+      --note-hover-bg: #f9f9f9;
+      --msg-color: #666666;
+      --del-btn-bg: #000000;
+      --del-btn-color: #ffffff;
+    }
+
+    body.dark-mode {
+      --bg-color: #000000;
+      --text-color: #ffffff;
+      --border-color: #ffffff;
+      --hover-bg: #333333;
+      --note-hover-bg: #222222;
+      --msg-color: #aaaaaa;
+      --del-btn-bg: #ffffff;
+      --del-btn-color: #000000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    /* コントロールエリア */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 30px;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+    }
+
+    select, input[type="range"], button {
+      font-size: 1rem;
+      padding: 6px 12px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: var(--hover-bg);
+    }
+
+    /* 音符追加パレット */
+    .add-palette {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .add-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      padding: 2px;
+    }
+
+    .add-btn svg {
+      width: 28px;
+      height: 38px;
+      fill: currentColor;
+      stroke: currentColor;
+    }
+
+    /* 表示モード切替・背景切替 */
+    .mode-switch, .theme-switch {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* ステージ・音符表示エリア（レスポンシブ対応） */
+    .stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 100vw;
+      margin-top: 10px;
+      min-height: 300px;
+      padding: 0 10px;
+      overflow: hidden;
+    }
+
+    /* カウントイン用インジケーター（絶対配置） */
+    .count-in-container {
+      display: none;
+      position: absolute;
+      top: 5%;
+      left: 50%;
+      transform: translateX(-50%) scale(clamp(1.0, 3vw, 1.6));
+      gap: clamp(12px, 3vw, 24px);
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    /* カウントインの丸 */
+    .count-circle {
+      width: clamp(24px, 5vw, 36px);
+      height: clamp(24px, 5vw, 36px);
+      border-radius: 50%;
+      background-color: var(--text-color);
+      transition: background-color 0.1s linear;
+    }
+
+    .count-circle.active {
+      background-color: #ff0000;
+    }
+
+    /* 全体音符コンテナ（動的スケーリング対象） */
+    .rhythm-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: auto;
+      max-width: 100%;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s ease-out;
+      transform-origin: center center;
+    }
+
+    /* 2小節ごとの行 */
+    .rhythm-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 5px;
+      width: max-content;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* 音符アイテム */
+    .note-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      flex-shrink: 0;
+      height: 120px;
+      color: var(--text-color);
+    }
+
+    /* 4分系（1拍）と8分系（0.5拍）の幅設定 */
+    .note-item[data-duration="1"] {
+      width: 110px;
+    }
+    .note-item[data-duration="0.5"] {
+      width: 55px;
+    }
+
+    .note-item:hover {
+      background-color: var(--note-hover-bg);
+    }
+
+    .note-item svg {
+      width: 48px;
+      height: 75px;
+      fill: currentColor;
+      stroke: currentColor;
+    }
+
+    /* 移動する滑らかな赤枠 */
+    .active-frame {
+      position: absolute;
+      border: 4px solid #ff0000;
+      border-radius: 6px;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      transition: left 0.1s linear, top 0.1s linear, width 0.1s linear, height 0.1s linear;
+    }
+
+    /* ◯表記用のスタイリング */
+    .circle-symbol {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: var(--text-color);
+    }
+
+    .circle-symbol.large-solid {
+      width: 52px;
+      height: 52px;
+    }
+
+    .circle-symbol.small-solid {
+      width: 28px;
+      height: 28px;
+    }
+
+    .circle-symbol.large-dashed {
+      width: 52px;
+      height: 52px;
+      background-color: transparent;
+      border: 3px dashed var(--text-color);
+    }
+
+    .circle-symbol.small-dashed {
+      width: 28px;
+      height: 28px;
+      background-color: transparent;
+      border: 2px dashed var(--text-color);
+    }
+
+    /* 👏✊絵文字表記用のスタイリング */
+    .emoji-symbol {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      line-height: 1;
+    }
+
+    /* 休符の✊️を半透明にする設定 */
+    .emoji-symbol.rest {
+      opacity: 0.4;
+    }
+
+    .emoji-symbol.large {
+      font-size: clamp(32px, 7vw, 56px);
+    }
+
+    .emoji-symbol.small {
+      font-size: clamp(18px, 4vw, 32px);
+    }
+
+    /* 小節線 */
+    .measure-line {
+      width: 3px;
+      height: 90px;
+      background-color: var(--text-color);
+      margin: 0 10px;
+      flex-shrink: 0;
+    }
+
+    /* 削除ボタン */
+    .delete-btn {
+      position: absolute;
+      top: -6px;
+      right: 0px;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      line-height: 18px;
+      padding: 0;
+      border-radius: 50%;
+      background: var(--del-btn-bg);
+      color: var(--del-btn-color);
+      border: none;
+      display: none;
+    }
+
+    .note-item:hover .delete-btn {
+      display: block;
+    }
+
+    /* --- 再生中全画面表示用の設定 --- */
+    body.is-playing {
+      padding: 0;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    body.is-playing .edit-only,
+    body.is-playing h1 {
+      display: none !important;
+    }
+
+    body.is-playing .stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-color);
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    body.is-playing .count-in-container {
+      display: flex;
+    }
+
+    body.is-playing .note-item:hover {
+      background-color: transparent;
+    }
+
+    .empty-msg {
+      font-size: 1rem;
+      color: var(--msg-color);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>リズム視覚化ツール</h1>
+
+  <!-- 編集・設定コントロールエリア -->
+  <div class="controls edit-only">
+    <div class="control-row">
+      <div class="control-group">
+        <label for="bpmInput">テンポ (BPM):</label>
+        <input type="range" id="bpmInput" min="40" max="200" step="5" value="80">
+        <span id="bpmValue">80</span>
+      </div>
+
+      <div class="control-group">
+        <button id="playBtn">再生</button>
+      </div>
+
+      <div class="control-group">
+        <label>
+          <input type="checkbox" id="loopCheck" checked> 繰り返し
+        </label>
+      </div>
+
+      <div class="control-group">
+        <label>
+          <input type="checkbox" id="soundCheck" checked> クリック音
+        </label>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <!-- 表示モード切り替え -->
+      <div class="mode-switch">
+        <span>表示:</span>
+        <label><input type="radio" name="displayMode" value="note" checked> 音符</label>
+        <label><input type="radio" name="displayMode" value="circle"> ◯表記</label>
+        <label><input type="radio" name="displayMode" value="emoji"> 👏✊表記</label>
+      </div>
+
+      <!-- 背景切り替え -->
+      <div class="theme-switch">
+        <span>背景:</span>
+        <label><input type="radio" name="themeMode" value="light" checked> 白</label>
+        <label><input type="radio" name="themeMode" value="dark"> 黒</label>
+      </div>
+    </div>
+
+    <!-- 音符追加パレット -->
+    <div class="control-row">
+      <div class="add-palette">
+        <span>追加:</span>
+        <button class="add-btn" data-type="quarter" title="四分音符">
+          <svg viewBox="0 0 40 60"><ellipse cx="14" cy="46" rx="7" ry="5" transform="rotate(-20 14 46)" fill="currentColor"/><line x1="20" y1="44" x2="20" y2="12" stroke="currentColor" stroke-width="3"/></svg>
+        </button>
+        <button class="add-btn" data-type="eighth" title="8分音符">
+          <svg viewBox="0 0 40 60"><ellipse cx="14" cy="46" rx="7" ry="5" transform="rotate(-20 14 46)" fill="currentColor"/><line x1="20" y1="44" x2="20" y2="12" stroke="currentColor" stroke-width="3"/><path d="M20,12 Q32,20 28,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </button>
+        <button class="add-btn" data-type="rest_quarter" title="4分休符">
+          <svg viewBox="0 0 40 60"><path d="M18,12 L24,22 L16,32 L22,40 C17,45 15,50 21,52" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="add-btn" data-type="rest_eighth" title="8分休符">
+          <svg viewBox="0 0 40 60"><circle cx="16" cy="22" r="3.5" fill="currentColor"/><path d="M16,22 Q22,18 24,14 M22,18 L15,46" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <button id="popBtn">1つ消去</button>
+      <button id="clearBtn">全消去</button>
+    </div>
+  </div>
+
+  <!-- リズム表示領域 -->
+  <div class="stage" id="stageArea">
+    <!-- カウントイン表示（丸4つ・絶対配置） -->
+    <div class="count-in-container" id="countInContainer">
+      <div class="count-circle"></div>
+      <div class="count-circle"></div>
+      <div class="count-circle"></div>
+      <div class="count-circle"></div>
+    </div>
+
+    <!-- 音符表示コンテナ -->
+    <div class="rhythm-container" id="rhythmContainer"></div>
+
+    <!-- 移動する赤枠アニメーション用要素 -->
+    <div class="active-frame" id="activeFrame"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 音符情報定義
+    const NOTE_TYPES = {
+      quarter: { name: '四分音符', duration: 1.0 },
+      eighth: { name: '８分音符', duration: 0.5 },
+      rest_quarter: { name: '４分休符', duration: 1.0 },
+      rest_eighth: { name: '８分休符', duration: 0.5 }
+    };
+
+    // 初期データ（空からスタート）
+    let notes = [];
+
+    let bpm = 80;
+    let isPlaying = false;
+    let isCountIn = false;
+    let countInStep = 0;
+    let currentIndex = 0;
+    let timerId = null;
+    let displayMode = 'note';
+
+    // DOM要素
+    const rhythmContainer = document.getElementById('rhythmContainer');
+    const stageArea = document.getElementById('stageArea');
+    const activeFrame = document.getElementById('activeFrame');
+    const countInContainer = document.getElementById('countInContainer');
+    const countCircles = document.querySelectorAll('.count-circle');
+    const bpmInput = document.getElementById('bpmInput');
+    const bpmValue = document.getElementById('bpmValue');
+    const playBtn = document.getElementById('playBtn');
+    const soundCheck = document.getElementById('soundCheck');
+    const loopCheck = document.getElementById('loopCheck');
+    const popBtn = document.getElementById('popBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const modeRadios = document.querySelectorAll('input[name="displayMode"]');
+    const themeRadios = document.querySelectorAll('input[name="themeMode"]');
+
+    // Firebase Persistent Data Setup
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rhythm-visualizer-app';
+
+    if (typeof __firebase_config !== 'undefined') {
+      const firebaseConfig = JSON.parse(__firebase_config);
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+
+      const initAuth = async () => {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      };
+
+      initAuth();
+
+      onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user && db) {
+          setupFirestoreSync();
+        }
+      });
+    }
+
+    function setupFirestoreSync() {
+      if (!currentUser || !db) return;
+      const userDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'rhythmData');
+      
+      onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (Array.isArray(data.notes)) notes = data.notes;
+          if (typeof data.bpm === 'number') {
+            bpm = data.bpm;
+            bpmInput.value = bpm;
+            bpmValue.textContent = bpm;
+          }
+          if (data.displayMode) {
+            displayMode = data.displayMode;
+            const targetRadio = document.querySelector(`input[name="displayMode"][value="${displayMode}"]`);
+            if (targetRadio) targetRadio.checked = true;
+          }
+          if (typeof data.isDarkMode === 'boolean') {
+            if (data.isDarkMode) {
+              document.body.classList.add('dark-mode');
+              const darkRadio = document.querySelector('input[name="themeMode"][value="dark"]');
+              if (darkRadio) darkRadio.checked = true;
+            } else {
+              document.body.classList.remove('dark-mode');
+              const lightRadio = document.querySelector('input[name="themeMode"][value="light"]');
+              if (lightRadio) lightRadio.checked = true;
+            }
+          }
+          if (typeof data.loop === 'boolean') loopCheck.checked = data.loop;
+          if (typeof data.sound === 'boolean') soundCheck.checked = data.sound;
+          render();
+        }
+      }, () => {});
+    }
+
+    let saveTimeout = null;
+    function saveData() {
+      if (!currentUser || !db) return;
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(async () => {
+        const userDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'rhythmData');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        await setDoc(userDocRef, {
+          notes: notes,
+          bpm: bpm,
+          displayMode: displayMode,
+          isDarkMode: isDarkMode,
+          loop: loopCheck.checked,
+          sound: soundCheck.checked,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }, 300);
+    }
+
+    // Web Audio API
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!soundCheck.checked || !audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'countin') {
+        osc.frequency.setValueAtTime(1000, now);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+        return;
+      }
+
+      if (type.startsWith('rest')) return;
+
+      const freq = 600;
+      const duration = type === 'quarter' ? 0.1 : 0.07;
+
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    // 音符（SVG）描画
+    function getNoteSVG(type) {
+      if (type === 'quarter') {
+        return `<svg viewBox="0 0 40 60"><ellipse cx="14" cy="46" rx="7" ry="5" transform="rotate(-20 14 46)" fill="currentColor" /><line x1="20" y1="44" x2="20" y2="12" stroke="currentColor" stroke-width="3" /></svg>`;
+      } else if (type === 'eighth') {
+        return `<svg viewBox="0 0 40 60"><ellipse cx="14" cy="46" rx="7" ry="5" transform="rotate(-20 14 46)" fill="currentColor" /><line x1="20" y1="44" x2="20" y2="12" stroke="currentColor" stroke-width="3" /><path d="M20,12 Q32,20 28,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`;
+      } else if (type === 'rest_quarter') {
+        return `<svg viewBox="0 0 40 60"><path d="M18,12 L24,22 L16,32 L22,40 C17,45 15,50 21,52" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      } else if (type === 'rest_eighth') {
+        return `<svg viewBox="0 0 40 60"><circle cx="16" cy="22" r="3.5" fill="currentColor" /><path d="M16,22 Q22,18 24,14 M22,18 L15,46" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>`;
+      }
+      return '';
+    }
+
+    // ◯表記描画
+    function getCircleHTML(type) {
+      if (type === 'quarter') {
+        return `<div class="circle-symbol large-solid"></div>`;
+      } else if (type === 'eighth') {
+        return `<div class="circle-symbol small-solid"></div>`;
+      } else if (type === 'rest_quarter') {
+        return `<div class="circle-symbol large-dashed"></div>`;
+      } else if (type === 'rest_eighth') {
+        return `<div class="circle-symbol small-dashed"></div>`;
+      }
+      return '';
+    }
+
+    // 👏✊絵文字表記描画
+    function getEmojiHTML(type) {
+      if (type === 'quarter') {
+        return `<div class="emoji-symbol large">👏</div>`;
+      } else if (type === 'eighth') {
+        return `<div class="emoji-symbol small">👏</div>`;
+      } else if (type === 'rest_quarter') {
+        return `<div class="emoji-symbol large rest">✊️</div>`;
+      } else if (type === 'rest_eighth') {
+        return `<div class="emoji-symbol small rest">✊️</div>`;
+      }
+      return '';
+    }
+
+    // トータル拍数の計算
+    function getTotalBeats() {
+      return notes.reduce((sum, type) => sum + NOTE_TYPES[type].duration, 0);
+    }
+
+    // 画面サイズ・音符量に合わせて自動でスケール調整
+    function fitToScreen() {
+      rhythmContainer.style.transform = 'none';
+
+      if (notes.length === 0) return;
+
+      const rows = rhythmContainer.querySelectorAll('.rhythm-row');
+      let maxWidth = 0;
+      rows.forEach(row => {
+        if (row.scrollWidth > maxWidth) maxWidth = row.scrollWidth;
+      });
+
+      const containerHeight = rhythmContainer.offsetHeight;
+      const isPlayingMode = document.body.classList.contains('is-playing');
+
+      const availableWidth = window.innerWidth * (isPlayingMode ? 0.95 : 0.9);
+      const availableHeight = isPlayingMode ? window.innerHeight * 0.75 : window.innerHeight * 0.45;
+
+      if (maxWidth > 0 && availableWidth > 0) {
+        const scaleX = availableWidth / maxWidth;
+        const scaleY = containerHeight > 0 ? availableHeight / containerHeight : 1;
+        let scale = Math.min(scaleX, scaleY);
+
+        if (!isPlayingMode) {
+          scale = Math.min(scale, 1.0);
+        } else {
+          scale = Math.min(scale, 1.8);
+        }
+
+        rhythmContainer.style.transform = `scale(${scale})`;
+      }
+    }
+
+    // 画面描画（2小節ごとに改行）
+    function render() {
+      rhythmContainer.innerHTML = '';
+
+      if (notes.length === 0) {
+        rhythmContainer.innerHTML = '<span class="empty-msg edit-only">音符を追加してください</span>';
+        hideActiveFrame();
+        rhythmContainer.style.transform = 'none';
+        return;
+      }
+
+      let currentBeatsInRow = 0;
+      let currentRow = document.createElement('div');
+      currentRow.className = 'rhythm-row';
+      rhythmContainer.appendChild(currentRow);
+
+      notes.forEach((type, index) => {
+        const duration = NOTE_TYPES[type].duration;
+
+        // 2小節（8拍）超えたら新しい行を生成
+        if (currentBeatsInRow + duration > 8.001) {
+          currentRow = document.createElement('div');
+          currentRow.className = 'rhythm-row';
+          rhythmContainer.appendChild(currentRow);
+          currentBeatsInRow = 0;
+        }
+
+        const item = document.createElement('div');
+        item.className = 'note-item';
+        item.setAttribute('data-duration', duration);
+        item.setAttribute('data-index', index);
+
+        if (displayMode === 'note') {
+          item.innerHTML = getNoteSVG(type);
+        } else if (displayMode === 'circle') {
+          item.innerHTML = getCircleHTML(type);
+        } else if (displayMode === 'emoji') {
+          item.innerHTML = getEmojiHTML(type);
+        }
+
+        // 非再生時：クリックで切り替え
+        item.addEventListener('click', (e) => {
+          if (isPlaying) return;
+          if (e.target.classList.contains('delete-btn')) return;
+          cycleNoteType(index);
+        });
+
+        // 削除ボタン
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn edit-only';
+        delBtn.textContent = '×';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteNote(index);
+        });
+        item.appendChild(delBtn);
+
+        currentRow.appendChild(item);
+
+        currentBeatsInRow += duration;
+
+        // 4拍ごとに小節線を挿入
+        if (currentBeatsInRow % 4 === 0 && currentBeatsInRow < 8 && index < notes.length - 1) {
+          const line = document.createElement('div');
+          line.className = 'measure-line';
+          currentRow.appendChild(line);
+        }
+      });
+
+      fitToScreen();
+
+      // 再生中かつ本再生時は枠の位置を更新
+      if (isPlaying && !isCountIn) {
+        updateActiveFramePosition();
+      } else {
+        hideActiveFrame();
+      }
+    }
+
+    // 赤枠の位置設定
+    function updateActiveFramePosition() {
+      const activeItem = document.querySelector(`.note-item[data-index="${currentIndex}"]`);
+      if (!activeItem) {
+        hideActiveFrame();
+        return;
+      }
+
+      const stageRect = stageArea.getBoundingClientRect();
+      const itemRect = activeItem.getBoundingClientRect();
+
+      activeFrame.style.display = 'block';
+      activeFrame.style.left = `${itemRect.left - stageRect.left}px`;
+      activeFrame.style.top = `${itemRect.top - stageRect.top}px`;
+      activeFrame.style.width = `${itemRect.width}px`;
+      activeFrame.style.height = `${itemRect.height}px`;
+    }
+
+    function hideActiveFrame() {
+      activeFrame.style.display = 'none';
+    }
+
+    // 音符の切り替え
+    function cycleNoteType(index) {
+      const keys = Object.keys(NOTE_TYPES);
+      const currentPos = keys.indexOf(notes[index]);
+      const nextPos = (currentPos + 1) % keys.length;
+      notes[index] = keys[nextPos];
+      render();
+      saveData();
+    }
+
+    // 音符の追加（最大4小節 = 16拍まで）
+    function addNote(type) {
+      const currentBeats = getTotalBeats();
+      const addBeats = NOTE_TYPES[type].duration;
+
+      if (currentBeats + addBeats > 16) {
+        return;
+      }
+
+      notes.push(type);
+      render();
+      saveData();
+    }
+
+    // 末尾の音符を1つ消去
+    function popNote() {
+      if (notes.length > 0) {
+        notes.pop();
+        render();
+        saveData();
+      }
+    }
+
+    // 音符の削除
+    function deleteNote(index) {
+      notes.splice(index, 1);
+      render();
+      saveData();
+    }
+
+    // 再生ステップ
+    function playStep() {
+      if (!isPlaying) return;
+
+      const beatTime = (60 / bpm) * 1000;
+
+      // カウントイン処理
+      if (isCountIn) {
+        if (countInStep < 4) {
+          countCircles.forEach(c => c.classList.remove('active'));
+          countCircles[countInStep].classList.add('active');
+          countInStep++;
+          playSound('countin');
+          timerId = setTimeout(playStep, beatTime);
+          return;
+        } else {
+          isCountIn = false;
+          countInContainer.style.display = 'none';
+          countCircles.forEach(c => c.classList.remove('active'));
+          currentIndex = 0;
+        }
+      }
+
+      if (notes.length === 0) {
+        stopPlayback();
+        return;
+      }
+
+      if (currentIndex >= notes.length) {
+        if (loopCheck.checked) {
+          currentIndex = 0;
+        } else {
+          stopPlayback();
+          return;
+        }
+      }
+
+      render();
+
+      const currentType = notes[currentIndex];
+      const duration = NOTE_TYPES[currentType].duration * beatTime;
+
+      setTimeout(() => {
+        if (isPlaying && !isCountIn) {
+          playSound(currentType);
+        }
+      }, 100);
+
+      currentIndex++;
+      timerId = setTimeout(playStep, duration);
+    }
+
+    function startPlayback(e) {
+      if (e) e.stopPropagation();
+      if (notes.length === 0) return;
+
+      initAudio();
+      isPlaying = true;
+      isCountIn = true;
+      countInStep = 0;
+      currentIndex = 0;
+
+      countCircles.forEach(c => c.classList.remove('active'));
+      countInContainer.style.display = 'flex';
+
+      document.body.classList.add('is-playing');
+      render();
+
+      setTimeout(() => {
+        if (isPlaying) {
+          window.addEventListener('click', stopPlaybackOnTouch, { once: true });
+          window.addEventListener('touchstart', stopPlaybackOnTouch, { once: true });
+        }
+      }, 100);
+
+      playStep();
+    }
+
+    function stopPlaybackOnTouch(e) {
+      if (isPlaying) {
+        stopPlayback();
+      }
+    }
+
+    function stopPlayback() {
+      isPlaying = false;
+      isCountIn = false;
+      clearTimeout(timerId);
+      currentIndex = 0;
+
+      countInContainer.style.display = 'none';
+      countCircles.forEach(c => c.classList.remove('active'));
+      
+      window.removeEventListener('click', stopPlaybackOnTouch);
+      window.removeEventListener('touchstart', stopPlaybackOnTouch);
+      
+      document.body.classList.remove('is-playing');
+      render();
+    }
+
+    // イベントリスナー
+    bpmInput.addEventListener('input', (e) => {
+      bpm = parseInt(e.target.value, 10);
+      bpmValue.textContent = bpm;
+      saveData();
+    });
+
+    loopCheck.addEventListener('change', saveData);
+    soundCheck.addEventListener('change', saveData);
+
+    playBtn.addEventListener('click', startPlayback);
+    popBtn.addEventListener('click', popNote);
+
+    clearBtn.addEventListener('click', () => {
+      if (isPlaying) stopPlayback();
+      notes = [];
+      render();
+      saveData();
+    });
+
+    document.querySelectorAll('.add-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-type');
+        addNote(type);
+      });
+    });
+
+    modeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        displayMode = e.target.value;
+        render();
+        saveData();
+      });
+    });
+
+    themeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.value === 'dark') {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+        render();
+        saveData();
+      });
+    });
+
+    // ウィンドウリサイズ時・動的スケーリング追従
+    window.addEventListener('resize', () => {
+      render();
+    });
+
+    // 初期化
+    render();
+  </script>
+</body>
+</html>
