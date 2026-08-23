@@ -8,6 +8,8 @@
   <meta name="theme-color" content="#ffffff">
   <link rel="apple-touch-icon" href="img.png">
   <title>HTML Viewer</title>
+  <!-- ZIP解凍用ライブラリ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -184,7 +186,7 @@
       font-weight: 600;
       font-size: 14px;
     }
-    .file-input-label.folder-btn {
+    .file-input-label.zip-btn {
       background-color: #30d158;
     }
     input[type="file"] {
@@ -217,12 +219,12 @@
 
       <div class="ui-attention">
         本アプリは、iPadで直接開くことができないローカルのHTMLファイルを表示・実行するためのビューアーです。<br>
-        ※ 表示するHTMLファイルまたはフォルダが別途必要なため、本アプリ単体では動作しません。
+        ※ 表示するHTMLまたはZIPファイルが別途必要なため、本アプリ単体では動作しません。
       </div>
     
       <div class="step-flow">
         <div class="step-flow-title">【UI（メニュー）の再表示方法】
-          <small>※ファイル・フォルダを変更するために</small>
+          <small>※ファイル・ZIPを変更するために</small>
         </div>
         
         <div class="step-item">
@@ -244,7 +246,7 @@
       </div>
 
       <div class="app-info">
-        ※ 画像やCSS・JSなどの外部ファイルを参照している場合は「フォルダごと選択」を使用してください。<br>
+        ※ 画像やCSS・JSを含む場合は、フォルダをZIP圧縮して「ZIPファイルを選択」から読み込んでください。<br>
         ※ Safariの共有メニューから「ホーム画面に追加」して使用することで全画面起動します。
       </div>
 
@@ -254,9 +256,9 @@
           <input type="file" id="fileInput" accept=".html,.htm">
         </label>
 
-        <label class="file-input-label folder-btn">
-          📁 フォルダごと選択（HTML＋画像等）
-          <input type="file" id="folderInput" webkitdirectory directory multiple>
+        <label class="file-input-label zip-btn">
+          📦 ZIPファイルを選択（HTML＋画像等）
+          <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed">
         </label>
       </div>
       
@@ -267,7 +269,7 @@
   <script>
     const uiModalWrapper = document.getElementById('ui-modal-wrapper');
     const fileInput = document.getElementById('fileInput');
-    const folderInput = document.getElementById('folderInput');
+    const zipInput = document.getElementById('zipInput');
     const viewer = document.getElementById('viewer');
     const closeBtn = document.getElementById('closeBtn');
 
@@ -277,7 +279,6 @@
     let lastTRTap = 0;
     let trSuccessTime = 0;
     let lastBRTap = 0;
-    let lastTouchTime = 0;
     let createdBlobUrls = [];
 
     function clearBlobUrls() {
@@ -297,12 +298,15 @@
       }
     }
 
-    // タップおよびマウスクリック共通の判定処理
-    function processInteraction(x, y) {
+    // pointerdown でタッチ・マウス・ペン入力を統合処理
+    function handlePointerDown(e) {
       if (!uiModalWrapper.classList.contains('hidden')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
 
       const w = window.innerWidth;
       const h = window.innerHeight;
+      const x = e.clientX;
+      const y = e.clientY;
 
       const isTopRight = (x >= w * 0.75) && (y <= h * 0.25);
       const isBottomRight = (x >= w * 0.75) && (y >= h * 0.75);
@@ -324,19 +328,6 @@
       }
     }
 
-    function handleTouchStart(e) {
-      if (!e.touches || e.touches.length === 0) return;
-      lastTouchTime = Date.now();
-      const touch = e.touches[0];
-      processInteraction(touch.clientX, touch.clientY);
-    }
-
-    function handleMouseDown(e) {
-      if (e.button !== 0) return; // 左クリックのみ
-      if (Date.now() - lastTouchTime < 500) return; // タッチ直後の疑似マウスイベントを無視
-      processInteraction(e.clientX, e.clientY);
-    }
-
     function attachInputEvents(targetDocument) {
       if (!targetDocument) return;
       try {
@@ -344,11 +335,8 @@
         style.textContent = '* { touch-action: manipulation; }';
         targetDocument.head?.appendChild(style);
 
-        targetDocument.removeEventListener('touchstart', handleTouchStart);
-        targetDocument.addEventListener('touchstart', handleTouchStart, { passive: true });
-
-        targetDocument.removeEventListener('mousedown', handleMouseDown);
-        targetDocument.addEventListener('mousedown', handleMouseDown);
+        targetDocument.removeEventListener('pointerdown', handlePointerDown);
+        targetDocument.addEventListener('pointerdown', handlePointerDown, { passive: true });
 
         let lastTouchEnd = 0;
         targetDocument.addEventListener('touchend', (e) => {
@@ -363,8 +351,7 @@
       }
     }
 
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('pointerdown', handlePointerDown, { passive: true });
     
     viewer.addEventListener('load', () => {
       const doc = viewer.contentDocument || viewer.contentWindow.document;
@@ -390,6 +377,29 @@
       return stack.join('/');
     }
 
+    function getMimeType(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      const types = {
+        'html': 'text/html',
+        'htm': 'text/html',
+        'css': 'text/css',
+        'js': 'application/javascript',
+        'json': 'application/json',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+        'webp': 'image/webp',
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'mp4': 'video/mp4',
+        'webm': 'video/webm'
+      };
+      return types[ext] || 'application/octet-stream';
+    }
+
+    // HTMLファイル単体選択
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -403,97 +413,113 @@
       }
     });
 
-    folderInput.addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length === 0) return;
+    // ZIPファイル解凍・相対パス置換
+    zipInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
       clearBlobUrls();
 
-      let rootPrefix = '';
-      if (files[0].webkitRelativePath) {
-        const firstSlash = files[0].webkitRelativePath.indexOf('/');
-        if (firstSlash !== -1) {
-          rootPrefix = files[0].webkitRelativePath.substring(0, firstSlash + 1);
-        }
-      }
+      try {
+        const zip = await JSZip.loadAsync(file);
+        const fileMap = new Map();
+        let mainHtmlPath = null;
+        let htmlCandidates = [];
 
-      let mainHtmlFile = files.find(f => {
-        const rel = f.webkitRelativePath ? f.webkitRelativePath.slice(rootPrefix.length) : f.name;
-        const lower = rel.toLowerCase();
-        return lower === 'index.html' || lower === 'index.htm';
-      }) || files.find(f => {
-        const lower = f.name.toLowerCase();
-        return lower.endsWith('.html') || lower.endsWith('.htm');
-      });
+        // ZIP内の全ファイルを抽出して Blob URL に変換
+        for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
+          if (zipEntry.dir || relativePath.startsWith('__MACOSX/') || relativePath.includes('/.')) {
+            continue;
+          }
 
-      if (!mainHtmlFile) {
-        alert('フォルダ内にHTMLファイルが見つかりませんでした。');
-        return;
-      }
+          const mimeType = getMimeType(relativePath);
+          const blob = await zipEntry.async('blob');
+          const typedBlob = new Blob([blob], { type: mimeType });
+          const blobUrl = URL.createObjectURL(typedBlob);
+          createdBlobUrls.push(blobUrl);
 
-      const mainHtmlRelPath = mainHtmlFile.webkitRelativePath ? mainHtmlFile.webkitRelativePath.slice(rootPrefix.length) : mainHtmlFile.name;
-      const lastSlashIndex = mainHtmlRelPath.lastIndexOf('/');
-      const baseDir = lastSlashIndex !== -1 ? mainHtmlRelPath.substring(0, lastSlashIndex + 1) : '';
+          const normalized = normalizePath(relativePath);
+          fileMap.set(normalized, blobUrl);
 
-      const fileMap = new Map();
-      for (const file of files) {
-        const relPath = file.webkitRelativePath ? file.webkitRelativePath.slice(rootPrefix.length) : file.name;
-        const blobUrl = URL.createObjectURL(file);
-        createdBlobUrls.push(blobUrl);
-        fileMap.set(normalizePath(relPath), blobUrl);
-      }
-
-      function resolveUrl(urlStr) {
-        if (!urlStr || urlStr.startsWith('data:') || urlStr.startsWith('http://') || urlStr.startsWith('https://') || urlStr.startsWith('blob:') || urlStr.startsWith('#') || urlStr.startsWith('javascript:')) {
-          return urlStr;
-        }
-        const cleanUrl = urlStr.split('?')[0].split('#')[0];
-        const targetPath = normalizePath(baseDir + cleanUrl);
-        if (fileMap.has(targetPath)) {
-          return fileMap.get(targetPath);
-        }
-        const fileNameOnly = cleanUrl.split('/').pop();
-        for (const [k, v] of fileMap.entries()) {
-          if (k.endsWith('/' + fileNameOnly) || k === fileNameOnly) {
-            return v;
+          const lower = normalized.toLowerCase();
+          if (lower.endsWith('.html') || lower.endsWith('.htm')) {
+            htmlCandidates.push({ path: normalized, entry: zipEntry });
+            if (lower.endsWith('index.html') || lower.endsWith('index.htm')) {
+              mainHtmlPath = normalized;
+            }
           }
         }
-        return urlStr;
-      }
 
-      const htmlText = await mainHtmlFile.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlText, 'text/html');
+        if (htmlCandidates.length === 0) {
+          alert('ZIP内にHTMLファイルが見つかりませんでした。');
+          return;
+        }
 
-      doc.querySelectorAll('[src]').forEach(el => {
-        const src = el.getAttribute('src');
-        const newSrc = resolveUrl(src);
-        if (newSrc !== src) el.setAttribute('src', newSrc);
-      });
+        const selectedHtml = (mainHtmlPath && htmlCandidates.find(c => c.path === mainHtmlPath)) || htmlCandidates[0];
+        const mainHtmlEntry = selectedHtml.entry;
+        const mainPath = selectedHtml.path;
 
-      doc.querySelectorAll('link[href]').forEach(el => {
-        const href = el.getAttribute('href');
-        const newHref = resolveUrl(href);
-        if (newHref !== href) el.setAttribute('href', newHref);
-      });
+        const lastSlash = mainPath.lastIndexOf('/');
+        const baseDir = lastSlash !== -1 ? mainPath.substring(0, lastSlash + 1) : '';
 
-      function replaceCssUrls(cssText) {
-        return cssText.replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi, (match, quote, url) => {
-          const newUrl = resolveUrl(url.trim());
-          return `url("${newUrl}")`;
+        function resolveUrl(urlStr) {
+          if (!urlStr || urlStr.startsWith('data:') || urlStr.startsWith('http://') || urlStr.startsWith('https://') || urlStr.startsWith('blob:') || urlStr.startsWith('#') || urlStr.startsWith('javascript:')) {
+            return urlStr;
+          }
+          const cleanUrl = urlStr.split('?')[0].split('#')[0];
+          const targetPath = normalizePath(baseDir + cleanUrl);
+
+          if (fileMap.has(targetPath)) {
+            return fileMap.get(targetPath);
+          }
+
+          const fileNameOnly = cleanUrl.split('/').pop();
+          for (const [k, v] of fileMap.entries()) {
+            if (k.endsWith('/' + fileNameOnly) || k === fileNameOnly) {
+              return v;
+            }
+          }
+          return urlStr;
+        }
+
+        const htmlText = await mainHtmlEntry.async('text');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+
+        doc.querySelectorAll('[src]').forEach(el => {
+          const src = el.getAttribute('src');
+          const newSrc = resolveUrl(src);
+          if (newSrc !== src) el.setAttribute('src', newSrc);
         });
+
+        doc.querySelectorAll('link[href]').forEach(el => {
+          const href = el.getAttribute('href');
+          const newHref = resolveUrl(href);
+          if (newHref !== href) el.setAttribute('href', newHref);
+        });
+
+        function replaceCssUrls(cssText) {
+          return cssText.replace(/url\(\s*(['"]?)(.*?)\1\s*\)/gi, (match, quote, url) => {
+            const newUrl = resolveUrl(url.trim());
+            return `url("${newUrl}")`;
+          });
+        }
+
+        doc.querySelectorAll('style').forEach(el => {
+          el.textContent = replaceCssUrls(el.textContent);
+        });
+
+        doc.querySelectorAll('[style]').forEach(el => {
+          el.setAttribute('style', replaceCssUrls(el.getAttribute('style')));
+        });
+
+        viewer.srcdoc = doc.documentElement.outerHTML;
+        toggleUI(false);
+
+      } catch (err) {
+        console.error(err);
+        alert('ZIPファイルの解凍または読み込みに失敗しました。');
       }
-
-      doc.querySelectorAll('style').forEach(el => {
-        el.textContent = replaceCssUrls(el.textContent);
-      });
-
-      doc.querySelectorAll('[style]').forEach(el => {
-        el.setAttribute('style', replaceCssUrls(el.getAttribute('style')));
-      });
-
-      viewer.srcdoc = doc.documentElement.outerHTML;
-      toggleUI(false);
     });
 
     closeBtn.addEventListener('click', () => {
