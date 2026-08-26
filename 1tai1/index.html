@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>一つずつ配ろう</title>
+    <!-- ホーム画面追加用アイコン設定 -->
+    <link rel="apple-touch-icon" href="img.png">
+    <link rel="icon" href="img.png">
     <style>
         :root {
             --primary: #007AFF;
@@ -110,7 +113,7 @@
             border: none;
         }
 
-        /* 1問クリア時の視覚的フィードバック（画面中央上部のマル） */
+        /* 1問クリア時の視覚的フィードバック */
         #clear-mark {
             position: absolute;
             top: 15px;
@@ -192,10 +195,10 @@
             filter: grayscale(0.5) brightness(0.8);
         }
         
-        /* かげモード用のシルエット */
+        /* かげモード用のシルエット（皿の中心から2/5上の位置へ調整） */
         .plate-shadow {
             position: absolute;
-            top: 0;
+            top: 10%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: clamp(65px, 14vw, 140px);
@@ -366,7 +369,7 @@
 
         .sample-plate-shadow {
             position: absolute;
-            top: 0;
+            top: 10%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: clamp(30px, 15%, 55px);
@@ -540,7 +543,6 @@
     </style>
 </head>
 <body>
-
     <div id="settings-modal" class="hidden">
         <div class="ios-form-wrapper">
             <div class="ios-form-header">設定</div>
@@ -549,7 +551,7 @@
                 <!-- 左側：設定フォーム -->
                 <div class="ios-form-left">
                     
-                    <!-- 配るもの -->
+                    <!-- 配るもの（初期状態ですべての果物をON、丸のみOFF） -->
                     <div>
                         <div class="ios-section-title-wrap">
                             <span class="ios-section-title">配るもの</span>
@@ -561,35 +563,35 @@
                         <div class="ios-section">
                             <div class="ios-checkbox-group">
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="apple">
+                                    <input type="checkbox" name="setting-items" value="apple" checked>
                                     <span>🍎 りんご</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="orange">
+                                    <input type="checkbox" name="setting-items" value="orange" checked>
                                     <span>🍊 みかん</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="grape">
+                                    <input type="checkbox" name="setting-items" value="grape" checked>
                                     <span>🍇 ぶどう</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="strawberry">
+                                    <input type="checkbox" name="setting-items" value="strawberry" checked>
                                     <span>🍓 いちご</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="banana">
+                                    <input type="checkbox" name="setting-items" value="banana" checked>
                                     <span>🍌 ばなな</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="watermelon">
+                                    <input type="checkbox" name="setting-items" value="watermelon" checked>
                                     <span>🍉 すいか</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="peach">
+                                    <input type="checkbox" name="setting-items" value="peach" checked>
                                     <span>🍑 もも</span>
                                 </label>
                                 <label class="ios-chip">
-                                    <input type="checkbox" name="setting-items" value="cherry">
+                                    <input type="checkbox" name="setting-items" value="cherry" checked>
                                     <span>🍒 さくらんぼ</span>
                                 </label>
                                 <label class="ios-chip">
@@ -716,14 +718,14 @@
             totalRounds: 5,
             plateStyle: 'normal',
             soundType: 'se',
-            selectedItems: ['apple'],
+            selectedItems: ['apple', 'orange', 'grape', 'strawberry', 'banana', 'watermelon', 'peach', 'cherry'],
             itemPosMode: 'ordered',
-            orderMode: 'any' // 'any' (どこからでも) | 'sequential' (左上から順に)
+            orderMode: 'any'
         };
 
         let settings = JSON.parse(localStorage.getItem('1to1Settings')) || defaultSettings;
         if (!settings.selectedItems || !Array.isArray(settings.selectedItems) || settings.selectedItems.length === 0) {
-            settings.selectedItems = ['apple'];
+            settings.selectedItems = ['apple', 'orange', 'grape', 'strawberry', 'banana', 'watermelon', 'peach', 'cherry'];
         }
         if (!settings.itemPosMode) {
             settings.itemPosMode = 'ordered';
@@ -883,7 +885,7 @@
             document.getElementById('start-screen').classList.remove('hidden');
         }
 
-        // 皿のハイライト状態（順番モード時の光・減光）の更新
+        /* 皿のハイライト状態更新 */
         function updatePlateHighlights() {
             const plates = document.querySelectorAll('.plate');
             if (plates.length === 0) return;
@@ -895,7 +897,6 @@
                 return;
             }
 
-            // 配るべき「一番小さい未配置インデックス」を探す
             let nextTargetIdx = -1;
             for (let i = 0; i < plates.length; i++) {
                 const plate = document.querySelector(`.plate[data-index="${i}"]`);
@@ -910,12 +911,10 @@
                 p.classList.remove('target-plate', 'dimmed-plate');
 
                 if (p.dataset.hasItem === "true") {
-                    // 配置済み：通常表示
+                    // 配置済み
                 } else if (idx === nextTargetIdx) {
-                    // 目標の皿：光らせる
                     p.classList.add('target-plate');
                 } else {
-                    // その他の未配置皿：暗くする
                     p.classList.add('dimmed-plate');
                 }
             });
@@ -977,7 +976,7 @@
                 createPlateRow(bottomCount, topCount, 'pos-2-5');
             }
 
-            // 果物の配置（順に並べる / ゆったり重ならないランダム配置）
+            // 果物の配置
             if (settings.itemPosMode === 'ordered') {
                 function createItemRow(countInRow, startIndex, posClass) {
                     if (countInRow === 0) return;
@@ -1009,7 +1008,7 @@
                     createItemRow(bottomCount, topCount, 'pos-4-5');
                 }
             } else {
-                // ランダム配置：さらにゆったり離して配置
+                // ランダム配置：Y座標の下限（開始位置）を少し上側（50vh〜82vh）に持ち上げる
                 const itemWidthPx = Math.min(window.innerWidth * 0.15, 140);
                 const minDistancePx = itemWidthPx * 1.35;
                 const placedPositions = [];
@@ -1029,7 +1028,7 @@
                     do {
                         overlap = false;
                         randX = 7 + Math.random() * 72;
-                        randY = 58 + Math.random() * 25;
+                        randY = 50 + Math.random() * 32; // 少し上側に調整（50vh〜82vh）
 
                         pxX = (randX / 100) * window.innerWidth;
                         pxY = (randY / 100) * window.innerHeight;
@@ -1063,7 +1062,6 @@
                 }
             }
 
-            // ハイライト状態を初計算
             updatePlateHighlights();
         }
 
@@ -1127,7 +1125,6 @@
             let closestPlate = null;
             let minDistance = Infinity;
 
-            // 順番モードの場合はターゲットの皿だけを候補にする
             let targetIdxNeeded = -1;
             if (settings.orderMode === 'sequential') {
                 for (let i = 0; i < plates.length; i++) {
@@ -1142,7 +1139,6 @@
             for (let plate of plates) {
                 if (plate.dataset.hasItem === "true") continue;
 
-                // 順番モードの時、目印の皿以外はスナップ不可
                 if (settings.orderMode === 'sequential') {
                     if (parseInt(plate.dataset.index) !== targetIdxNeeded) continue;
                 }
@@ -1171,7 +1167,8 @@
                 
                 activeItem.style.transition = 'left 0.2s, top 0.2s';
                 activeItem.style.left = (plateCenterX - itemWidth / 2) + 'px';
-                activeItem.style.top = (plateCenterY - itemHeight / 2 - (plateRect.height * 0.5)) + 'px'; 
+                /* 配置位置の微調整：皿の高さの2/5 (0.4) だけ上に配置 */
+                activeItem.style.top = (plateCenterY - itemHeight / 2 - (plateRect.height * 0.4)) + 'px'; 
                 
                 AudioController.play('snap');
                 updatePlateHighlights();
@@ -1287,7 +1284,6 @@
                 bottomCount = Math.floor(count / 2);
             }
 
-            // 皿の描画
             function createSamplePlateRow(countInRow, posClass, startIndex) {
                 if (countInRow === 0) return;
                 const row = document.createElement('div');
@@ -1325,7 +1321,6 @@
                 createSamplePlateRow(bottomCount, 'sample-pos-2-5', topCount);
             }
 
-            // 果物の描画
             if (posMode === 'ordered') {
                 function createSampleItemRow(countInRow, posClass) {
                     if (countInRow === 0) return;
@@ -1358,7 +1353,7 @@
                     do {
                         overlap = false;
                         rx = 8 + Math.random() * 70;
-                        ry = 58 + Math.random() * 26;
+                        ry = 50 + Math.random() * 32;
 
                         for (let p of placedPos) {
                             if (Math.hypot(rx - p.x, ry - p.y) < minSampleDist) {
