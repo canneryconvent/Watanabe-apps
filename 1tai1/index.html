@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="apple-touch-icon" href="img.png">
     <title>一つずつ配ろう</title>
     <style>
-        /* CSS リセットと基本設定 */
         :root {
-            --primary: #4CAF50;
+            --primary: #007AFF;
+            --primary-active: #0056b3;
             --bg-color: #ffffff;
-            --text-color: #333;
+            --text-color: #000000;
+            --ios-gray-bg: #f2f2f7;
+            --ios-card-bg: #ffffff;
+            --ios-border: #e5e5ea;
         }
         * {
             box-sizing: border-box;
-            /* 誤操作防止: 長押しや選択を無効化 */
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
@@ -24,13 +25,12 @@
             padding: 0;
             width: 100vw;
             height: 100vh;
-            overflow: hidden; /* スクロール無効化 */
+            overflow: hidden;
             background-color: var(--bg-color);
-            font-family: 'Hiragino Maru Gothic ProN', 'Arial Rounded MT Bold', sans-serif;
-            touch-action: none; /* スワイプやピンチズーム等のブラウザジェスチャーを無効化 */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+            touch-action: none;
         }
 
-        /* 画面の共通クラス */
         .screen {
             position: absolute;
             top: 0;
@@ -39,7 +39,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease;
         }
         .hidden {
             opacity: 0;
@@ -51,295 +51,694 @@
         #start-screen {
             justify-content: center;
             align-items: center;
-            background-color: #ffffff;
+            background-color: var(--bg-color);
+            gap: 1.5rem;
         }
-        #start-btn {
-            font-size: 5rem;
-            padding: 1.5rem 5rem;
+        .btn-ios-primary {
+            font-size: 2.2rem;
+            padding: 1rem 4rem;
             border: none;
-            border-radius: 60px;
+            border-radius: 16px;
             background-color: #ff9800;
             color: white;
             cursor: pointer;
-            box-shadow: 0 12px 0 #e65100;
-            transition: transform 0.1s, box-shadow 0.1s;
-            font-weight: bold;
-            font-family: inherit;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            transition: opacity 0.15s;
         }
-        #start-btn:active {
-            transform: translateY(12px);
-            box-shadow: 0 0 0 #e65100;
+        .btn-ios-primary:active {
+            opacity: 0.7;
         }
 
-        /* --- プレイ画面 --- */
+        .btn-ios-secondary {
+            font-size: 1.2rem;
+            padding: 0.8rem 2.5rem;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--ios-gray-bg);
+            color: #3a3a3c;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: opacity 0.15s;
+        }
+        .btn-ios-secondary:active {
+            opacity: 0.7;
+        }
+        .sub-text {
+            font-size: 0.75rem;
+            color: #8e8e93;
+            font-weight: normal;
+        }
+
+        /* 右上の問題数表示 */
         #score-board {
             position: absolute;
-            top: 25px;
-            left: 25px;
+            top: 20px;
+            right: 25px;
             z-index: 10;
         }
         .score-badge {
-            background-color: #ff9800;
-            color: white;
-            font-size: 3rem;
-            padding: 0.6rem 2.5rem;
-            border-radius: 20px;
-            border: 5px solid #e65100;
-            font-weight: bold;
+            background-color: transparent;
+            color: #8e8e93;
+            font-size: 1.3rem;
+            padding: 0;
+            font-weight: 600;
+            box-shadow: none;
+            border: none;
         }
 
-        /* レイアウト用のコンテナ */
-        #plates-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            gap: 3vh;
-            padding: 30px;
-            padding-bottom: 6vh;
+        /* 1問クリア時の視覚的フィードバック（画面中央上部のマル） */
+        #clear-mark {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.3);
+            font-size: clamp(70px, 14vw, 120px);
+            color: #ff3b30;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            line-height: 1;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
         }
-        #items-container {
-            height: 42vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            gap: 3vh;
-            padding: 30px;
-            padding-top: 6vh;
-            background-color: rgba(240, 240, 240, 0.5);
-            border-top: 5px dashed #ccc;
+        #clear-mark.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
         }
 
+        /* 画面全体のステージ領域 */
+        #stage-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 指定位置（20vh, 40vh, 60vh, 80vh）に配置する行 */
         .row {
+            position: absolute;
+            left: 0;
+            width: 100%;
             display: flex;
             justify-content: center;
             gap: 3vw;
-            width: 100%;
+            transform: translateY(-50%);
         }
 
-        /* オブジェクトのサイズ */
+        /* 高さ指定用クラス */
+        .pos-1-5 { top: 20vh; }
+        .pos-2-5 { top: 40vh; }
+        .pos-3-5 { top: 60vh; }
+        .pos-4-5 { top: 80vh; }
+
+        /* オブジェクトサイズ */
         .plate {
-            width: clamp(100px, 22vw, 240px);
+            width: clamp(90px, 18vw, 210px);
             aspect-ratio: 2 / 1;
             position: relative;
+            transition: filter 0.3s ease, opacity 0.3s ease;
         }
         .plate-svg {
             width: 100%;
             height: 100%;
         }
+
+        /* 目印の皿（光るアニメーション） */
+        .plate.target-plate {
+            opacity: 1 !important;
+            filter: drop-shadow(0 0 14px #ffcc00) drop-shadow(0 0 4px #ff9800) !important;
+            animation: plate-pulse 1.2s infinite alternate ease-in-out;
+        }
+        @keyframes plate-pulse {
+            0% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 8px #ffcc00);
+            }
+            100% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 20px #ffcc00) drop-shadow(0 0 8px #ff9800);
+            }
+        }
+
+        /* 暗く表示される皿 */
+        .plate.dimmed-plate {
+            opacity: 0.32;
+            filter: grayscale(0.5) brightness(0.8);
+        }
+        
+        /* かげモード用のシルエット */
         .plate-shadow {
             position: absolute;
-            top: 50%;
+            top: 0;
             left: 50%;
-            transform: translate(-50%, -60%);
-            width: 60%;
-            height: 60%;
+            transform: translate(-50%, -50%);
+            width: clamp(65px, 14vw, 140px);
+            height: clamp(65px, 14vw, 140px);
             pointer-events: none;
-            filter: brightness(0) invert(0.3) opacity(0.6);
+            filter: brightness(0) opacity(0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(45px, 10vw, 100px);
+            line-height: 1;
         }
 
         .item-slot {
-            width: clamp(70px, 16vw, 160px);
+            width: clamp(65px, 14vw, 140px);
             aspect-ratio: 1 / 1;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .item {
-            width: 100%;
-            height: 100%;
+            width: clamp(65px, 14vw, 140px);
+            height: clamp(65px, 14vw, 140px);
             position: absolute;
             top: 0;
             left: 0;
             cursor: grab;
-            transform-origin: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(45px, 10vw, 100px);
+            line-height: 1;
+            user-select: none;
         }
         .item:active {
             cursor: grabbing;
         }
         .item.dragging {
-            transform: scale(1.2);
-            filter: drop-shadow(0 20px 20px rgba(0,0,0,0.3));
+            transform: scale(1.18);
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.25));
             z-index: 1000;
         }
 
-        /* --- 設定モーダル --- */
+        /* モーダル表示 */
         #settings-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.7);
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 10000;
+            padding: 2vw;
         }
-        .modal-content {
-            background-color: white;
-            padding: 2.5rem 3.5rem;
-            border-radius: 25px;
-            min-width: 350px;
-            max-width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            font-size: 1.4rem;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-        }
-        .modal-content h2 {
-            margin-top: 0;
-            text-align: center;
-            color: var(--primary);
-            font-size: 2rem;
-        }
-        .setting-item {
-            margin-bottom: 2rem;
-        }
-        .setting-item label {
-            display: block;
-            margin-bottom: 0.8rem;
-            font-weight: bold;
-        }
-        .radio-group {
+        .ios-form-wrapper {
+            background-color: var(--ios-gray-bg);
+            width: 96vw;
+            height: 92vh;
+            border-radius: 20px;
             display: flex;
-            gap: 1.2rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
         }
-        .radio-group label {
-            font-weight: normal;
+        .ios-form-header {
+            padding: 1.2rem;
+            background-color: var(--ios-card-bg);
+            border-bottom: 1px solid var(--ios-border);
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #000;
+        }
+        .ios-form-body-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        @media (max-width: 800px) {
+            .ios-form-body-container {
+                flex-direction: column;
+            }
+        }
+
+        .ios-form-left {
+            flex: 1.2;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            border-right: 1px solid var(--ios-border);
+        }
+
+        .ios-form-right {
+            flex: 1;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            padding: 1.2rem;
+            overflow: hidden;
+            position: relative;
+        }
+        .sample-view-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.8rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: space-between;
+        }
+        .sample-badge {
+            background-color: #e5f1ff;
+            color: var(--primary);
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .sample-stage {
+            flex: 1;
+            border: 2px dashed var(--ios-border);
+            border-radius: 16px;
+            background-color: #fafafa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* サンプルビュー内での位置指定 */
+        .sample-row {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 2%;
+            transform: translateY(-50%);
+        }
+        .sample-row.sample-pos-1-5 { top: 20%; }
+        .sample-row.sample-pos-2-5 { top: 40%; }
+        .sample-row.sample-pos-3-5 { top: 60%; }
+        .sample-row.sample-pos-4-5 { top: 80%; }
+
+        .sample-plate {
+            width: clamp(45px, 20%, 90px);
+            aspect-ratio: 2 / 1;
+            position: relative;
+            transition: filter 0.3s, opacity 0.3s;
+        }
+        .sample-plate.sample-target {
+            opacity: 1 !important;
+            filter: drop-shadow(0 0 8px #ffcc00) !important;
+        }
+        .sample-plate.sample-dimmed {
+            opacity: 0.3;
+            filter: grayscale(0.5);
+        }
+
+        .sample-plate-shadow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: clamp(30px, 15%, 55px);
+            height: clamp(30px, 15%, 55px);
+            pointer-events: none;
+            filter: brightness(0) opacity(0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(20px, 4vw, 38px);
+            line-height: 1;
+        }
+        .sample-item-slot {
+            width: clamp(30px, 15%, 55px);
+            aspect-ratio: 1 / 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(20px, 4vw, 38px);
+            line-height: 1;
+        }
+
+        .ios-section {
+            background-color: var(--ios-card-bg);
+            border-radius: 14px;
+            border: 1px solid var(--ios-border);
+            overflow: hidden;
+        }
+        .ios-section-title-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.2rem 0.5rem 0.3rem 0.5rem;
+        }
+        .ios-section-title {
+            font-size: 0.85rem;
+            color: #6c6c70;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .ios-btn-group-mini {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .ios-btn-mini {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            background-color: #e5f1ff;
+            color: var(--primary);
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
-            background: #f5f5f5;
-            padding: 0.7rem 1.2rem;
-            border-radius: 12px;
+            font-weight: 600;
+        }
+        .ios-btn-mini:active {
+            opacity: 0.6;
+        }
+
+        .ios-slider-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            padding: 0.9rem 1.2rem;
+            border-bottom: 1px solid var(--ios-border);
+        }
+        .ios-slider-row:last-child {
+            border-bottom: none;
+        }
+        .ios-slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #000;
         }
         input[type="range"] {
             width: 100%;
-            height: 40px;
+            height: 32px;
+            accent-color: var(--primary);
+            cursor: pointer;
         }
-        input[type="radio"] {
-            width: 30px;
-            height: 30px;
+
+        .ios-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.2rem;
+            border-bottom: 1px solid var(--ios-border);
+            font-size: 1.05rem;
         }
-        .primary-btn {
-            display: block;
+        .ios-row:last-child {
+            border-bottom: none;
+        }
+        .ios-row label {
+            font-weight: 500;
+            color: #000;
+        }
+
+        .ios-checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            padding: 0.8rem 1rem;
+        }
+        .ios-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background-color: var(--ios-gray-bg);
+            padding: 0.6rem 1.1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+        }
+        .ios-chip input {
+            display: none;
+        }
+        .ios-chip:has(input:checked) {
+            background-color: #e5f1ff;
+            border-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .ios-segmented {
+            display: flex;
+            background-color: var(--ios-gray-bg);
+            padding: 3px;
+            border-radius: 10px;
+        }
+        .ios-segmented-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #000;
+            transition: background 0.15s;
+        }
+        .ios-segmented-btn:has(input:checked) {
+            background-color: var(--ios-card-bg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+            font-weight: 600;
+        }
+        .ios-segmented-btn input {
+            display: none;
+        }
+
+        .ios-form-footer {
+            padding: 1rem 1.5rem 1.2rem 1.5rem;
+            background-color: var(--ios-gray-bg);
+            border-top: 1px solid var(--ios-border);
+        }
+        .ios-btn-done {
             width: 100%;
-            padding: 1.2rem;
-            font-size: 1.8rem;
+            padding: 1rem;
             background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 15px;
-            margin-top: 2rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .primary-btn:active {
-            background-color: #388E3C;
-        }
-
-        /* --- トリプルタップ用隠しボタン --- */
-        #settings-trigger {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            width: 100px;
-            height: 100px;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0.15;
+            border-radius: 14px;
+            font-size: 1.2rem;
+            font-weight: 700;
             cursor: pointer;
         }
-        #settings-trigger svg {
-            width: 50px;
-            height: 50px;
-            fill: #333;
+        .ios-btn-done:active {
+            background-color: var(--primary-active);
         }
     </style>
-    <script src="../common/core.js"></script>
 </head>
 <body>
 
-    <div id="settings-trigger">
-        <svg viewBox="0 0 24 24">
-            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
-        </svg>
-    </div>
-
     <div id="settings-modal" class="hidden">
-        <div class="modal-content">
-            <h2>設定</h2>
-            <div class="setting-item">
-                <label>皿の数: <span id="plate-count-disp">3</span></label>
-                <input type="range" id="setting-count" min="1" max="10" value="3">
-            </div>
-            <div class="setting-item">
-                <label>問題数: <span id="round-total-disp">5</span></label>
-                <input type="range" id="setting-total-rounds" min="1" max="20" value="5">
-            </div>
-            <div class="setting-item">
-                <label>のせるもの (汎化)</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="setting-item-type" value="apple"> りんご</label>
-                    <label><input type="radio" name="setting-item-type" value="orange"> みかん</label>
-                    <label><input type="radio" name="setting-item-type" value="grape"> ぶどう</label>
-                    <label><input type="radio" name="setting-item-type" value="strawberry"> いちご</label>
-                    <label><input type="radio" name="setting-item-type" value="red-circle"> 赤い丸</label>
-                    <label><input type="radio" name="setting-item-type" value="random"> ランダム</label>
+        <div class="ios-form-wrapper">
+            <div class="ios-form-header">設定</div>
+            
+            <div class="ios-form-body-container">
+                <!-- 左側：設定フォーム -->
+                <div class="ios-form-left">
+                    
+                    <!-- 配るもの -->
+                    <div>
+                        <div class="ios-section-title-wrap">
+                            <span class="ios-section-title">配るもの</span>
+                            <div class="ios-btn-group-mini">
+                                <button type="button" id="btn-select-all" class="ios-btn-mini">全選択</button>
+                                <button type="button" id="btn-deselect-all" class="ios-btn-mini">全解除</button>
+                            </div>
+                        </div>
+                        <div class="ios-section">
+                            <div class="ios-checkbox-group">
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="apple">
+                                    <span>🍎 りんご</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="orange">
+                                    <span>🍊 みかん</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="grape">
+                                    <span>🍇 ぶどう</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="strawberry">
+                                    <span>🍓 いちご</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="banana">
+                                    <span>🍌 ばなな</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="watermelon">
+                                    <span>🍉 すいか</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="peach">
+                                    <span>🍑 もも</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="cherry">
+                                    <span>🍒 さくらんぼ</span>
+                                </label>
+                                <label class="ios-chip">
+                                    <input type="checkbox" name="setting-items" value="red-circle">
+                                    <span>🔴 赤い丸</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 問題設定 -->
+                    <div>
+                        <div class="ios-section-title">問題設定</div>
+                        <div class="ios-section">
+                            <div class="ios-slider-row">
+                                <div class="ios-slider-header">
+                                    <span>皿の数</span>
+                                    <span id="plate-count-disp" class="ios-val-disp">3</span>
+                                </div>
+                                <input type="range" id="setting-count" min="1" max="10" value="3">
+                            </div>
+                            <div class="ios-slider-row">
+                                <div class="ios-slider-header">
+                                    <span>問題数</span>
+                                    <span id="round-total-disp" class="ios-val-disp">5</span>
+                                </div>
+                                <input type="range" id="setting-total-rounds" min="1" max="20" value="5">
+                            </div>
+                            <div class="ios-row">
+                                <label>配る順番</label>
+                                <div class="ios-segmented">
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-order-mode" value="any"> どこからでも
+                                    </label>
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-order-mode" value="sequential"> 左上から順に
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="ios-row">
+                                <label>果物の初期位置</label>
+                                <div class="ios-segmented">
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-pos-mode" value="ordered"> 順に並べる
+                                    </label>
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-pos-mode" value="random"> ランダム
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 表示と効果音 -->
+                    <div>
+                        <div class="ios-section-title">表示と効果音</div>
+                        <div class="ios-section">
+                            <div class="ios-row">
+                                <label>皿の表示</label>
+                                <div class="ios-segmented">
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-style" value="normal"> ふつう
+                                    </label>
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-style" value="shadow"> かげ
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="ios-row">
+                                <label>効果音</label>
+                                <div class="ios-segmented">
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-sound" value="se"> あり
+                                    </label>
+                                    <label class="ios-segmented-btn">
+                                        <input type="radio" name="setting-sound" value="none"> なし
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 右側：サンプルビュー -->
+                <div class="ios-form-right">
+                    <div class="sample-view-header">
+                        <span>リアルタイムプレビュー</span>
+                        <span class="sample-badge">サンプル</span>
+                    </div>
+                    <div class="sample-stage">
+                        <div id="sample-stage-area"></div>
+                    </div>
                 </div>
             </div>
-            <div class="setting-item">
-                <label>皿の表示</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="setting-style" value="normal"> ふつう</label>
-                    <label><input type="radio" name="setting-style" value="shadow"> かげ</label>
-                </div>
+
+            <div class="ios-form-footer">
+                <button id="close-settings-btn" class="ios-btn-done">完了</button>
             </div>
-            <div class="setting-item">
-                <label>音</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="setting-sound" value="se"> 効果音</label>
-                    <label><input type="radio" name="setting-sound" value="none"> なし</label>
-                </div>
-            </div>
-            <button id="close-settings-btn" class="primary-btn">とじる</button>
         </div>
     </div>
 
+    <!-- スタート画面 -->
     <div id="start-screen" class="screen">
-        <button id="start-btn">スタート</button>
+        <button id="start-btn" class="btn-ios-primary">スタート</button>
+        <button id="setting-trigger-btn" class="btn-ios-secondary">
+            設定 <span class="sub-text">※トリプルタップ</span>
+        </button>
     </div>
 
+    <!-- プレイ画面 -->
     <div id="play-screen" class="screen hidden">
         <div id="score-board">
             <div id="round-count" class="score-badge">1 / 5</div>
         </div>
-        <div id="plates-container"></div>
-        <div id="items-container"></div>
+        <!-- クリア時の丸フィードバック -->
+        <div id="clear-mark">⭕️</div>
+        <div id="stage-area"></div>
     </div>
 
     <script>
-        // --- 状態管理と初期設定 ---
         const defaultSettings = {
             plateCount: 3,
             totalRounds: 5,
             plateStyle: 'normal',
             soundType: 'se',
-            itemType: 'apple'
+            selectedItems: ['apple'],
+            itemPosMode: 'ordered',
+            orderMode: 'any' // 'any' (どこからでも) | 'sequential' (左上から順に)
         };
+
         let settings = JSON.parse(localStorage.getItem('1to1Settings')) || defaultSettings;
+        if (!settings.selectedItems || !Array.isArray(settings.selectedItems) || settings.selectedItems.length === 0) {
+            settings.selectedItems = ['apple'];
+        }
+        if (!settings.itemPosMode) {
+            settings.itemPosMode = 'ordered';
+        }
+        if (!settings.orderMode) {
+            settings.orderMode = 'any';
+        }
+
         let round = 1;
         let activeItem = null;
         let offsetX = 0;
         let offsetY = 0;
         let currentItemType = 'apple';
-        let isClearing = false; // クリア演出中の操作無効化フラグ
+        let isClearing = false;
 
-        // --- 音声・効果音コントローラー ---
         const AudioController = {
             ctx: null,
             init() {
@@ -354,13 +753,13 @@
                 if (settings.soundType === 'none') return;
 
                 this.init();
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
                 const now = this.ctx.currentTime;
 
                 if (type === 'snap') {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(400, now);
                     osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
@@ -370,6 +769,10 @@
                     osc.start(now);
                     osc.stop(now + 0.2);
                 } else if (type === 'clear') {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, now);     
                     osc.frequency.setValueAtTime(659.25, now + 0.1); 
@@ -379,53 +782,83 @@
                     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
                     osc.start(now);
                     osc.stop(now + 0.6);
+                } else if (type === 'all_clear') {
+                    const notes = [
+                        { freq: 523.25, time: 0, dur: 0.15 },    // C5
+                        { freq: 659.25, time: 0.15, dur: 0.15 }, // E5
+                        { freq: 783.99, time: 0.30, dur: 0.15 }, // G5
+                        { freq: 1046.50, time: 0.45, dur: 0.8 }  // C6
+                    ];
+
+                    notes.forEach(note => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(note.freq, now + note.time);
+                        gain.gain.setValueAtTime(0, now + note.time);
+                        gain.gain.linearRampToValueAtTime(0.4, now + note.time + 0.03);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + note.dur);
+                        osc.start(now + note.time);
+                        osc.stop(now + note.time + note.dur);
+                    });
+
+                    [523.25, 659.25, 783.99].forEach(freq => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + 0.45);
+                        gain.gain.setValueAtTime(0, now + 0.45);
+                        gain.gain.linearRampToValueAtTime(0.25, now + 0.48);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.25);
+                        osc.start(now + 0.45);
+                        osc.stop(now + 1.25);
+                    });
                 }
             }
         };
 
-        // --- SVG生成関数 ---
-        function getItemSVG(type) {
-            if (type === 'apple') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <path d="M 50 30 Q 55 10 70 5" stroke="#4a3000" stroke-width="4" fill="none" stroke-linecap="round"/>
-                    <path d="M 50 30 Q 60 25 75 30 Q 60 40 50 30" fill="#4CAF50" />
-                    <path d="M 50 25 C 20 20 0 40 10 70 C 20 90 40 95 50 85 C 60 95 80 90 90 70 C 100 40 80 20 50 25 Z" fill="#ff2a2a" stroke="#cc0000" stroke-width="2"/>
-                    <path d="M 25 45 Q 20 60 30 70" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
-                </svg>`;
-            } else if (type === 'orange') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <path d="M 50 20 Q 65 10 75 25 Q 60 35 50 20" fill="#4CAF50" />
-                    <circle cx="50" cy="55" r="35" fill="#FF9800" stroke="#E65100" stroke-width="2"/>
-                    <path d="M 30 45 Q 25 55 35 65" stroke="rgba(255,255,255,0.4)" stroke-width="4" fill="none" stroke-linecap="round"/>
-                </svg>`;
-            } else if (type === 'grape') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <path d="M 50 20 Q 55 5 65 10" stroke="#4a3000" stroke-width="3" fill="none"/>
-                    <circle cx="40" cy="35" r="12" fill="#9C27B0"/>
-                    <circle cx="60" cy="35" r="12" fill="#9C27B0"/>
-                    <circle cx="50" cy="50" r="12" fill="#9C27B0"/>
-                    <circle cx="35" cy="55" r="12" fill="#7B1FA2"/>
-                    <circle cx="65" cy="55" r="12" fill="#7B1FA2"/>
-                    <circle cx="50" cy="70" r="12" fill="#7B1FA2"/>
-                </svg>`;
-            } else if (type === 'strawberry') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <path d="M 50 20 L 40 10 L 50 15 L 60 10 Z" fill="#4CAF50" />
-                    <path d="M 50 20 C 20 20 25 80 50 90 C 75 80 80 20 50 20 Z" fill="#FF5252" stroke="#D32F2F" stroke-width="2"/>
-                    <circle cx="40" cy="40" r="1" fill="#FFF"/>
-                    <circle cx="60" cy="45" r="1" fill="#FFF"/>
-                    <circle cx="50" cy="60" r="1" fill="#FFF"/>
-                    <circle cx="45" cy="75" r="1" fill="#FFF"/>
-                </svg>`;
-            } else if (type === 'red-circle') {
-                return `<svg viewBox="0 0 100 100" width="100%" height="100%">
-                    <circle cx="50" cy="50" r="35" fill="#F44336" stroke="#D32F2F" stroke-width="2"/>
-                </svg>`;
+        function getItemEmoji(type) {
+            switch (type) {
+                case 'apple': return '🍎';
+                case 'orange': return '🍊';
+                case 'grape': return '🍇';
+                case 'strawberry': return '🍓';
+                case 'banana': return '🍌';
+                case 'watermelon': return '🍉';
+                case 'peach': return '🍑';
+                case 'cherry': return '🍒';
+                case 'red-circle': return '🔴';
+                default: return '🍎';
             }
-            return '';
         }
 
-        // --- ゲーム進行ロジック ---
+        /* 白くリアルで立体的な皿SVG */
+        function getPlateSVG() {
+            return `<svg viewBox="0 0 200 100" width="100%" height="100%" class="plate-svg">
+                <defs>
+                    <radialGradient id="plateBase" cx="50%" cy="35%" r="60%">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="70%" stop-color="#f4f4f6"/>
+                        <stop offset="100%" stop-color="#dcdce0"/>
+                    </radialGradient>
+                    <radialGradient id="plateInner" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#e8e8ed"/>
+                        <stop offset="85%" stop-color="#f8f8fa"/>
+                        <stop offset="100%" stop-color="#ffffff"/>
+                    </radialGradient>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.18"/>
+                    </filter>
+                </defs>
+                <ellipse cx="100" cy="50" rx="92" ry="42" fill="url(#plateBase)" stroke="#000000" stroke-width="4.5" filter="url(#shadow)"/>
+                <ellipse cx="100" cy="50" rx="64" ry="26" fill="url(#plateInner)" stroke="#d0d0d5" stroke-width="1.5"/>
+            </svg>`;
+        }
+
         function startGame() {
             AudioController.init();
             document.getElementById('start-screen').classList.add('hidden');
@@ -441,24 +874,65 @@
 
         function returnToHome() {
             isClearing = false;
+            document.getElementById('clear-mark').classList.remove('show');
+            document.querySelectorAll('.item').forEach(el => el.remove());
+            const stageArea = document.getElementById('stage-area');
+            if (stageArea) stageArea.innerHTML = '';
+
             document.getElementById('play-screen').classList.add('hidden');
             document.getElementById('start-screen').classList.remove('hidden');
         }
 
+        // 皿のハイライト状態（順番モード時の光・減光）の更新
+        function updatePlateHighlights() {
+            const plates = document.querySelectorAll('.plate');
+            if (plates.length === 0) return;
+
+            if (settings.orderMode !== 'sequential') {
+                plates.forEach(p => {
+                    p.classList.remove('target-plate', 'dimmed-plate');
+                });
+                return;
+            }
+
+            // 配るべき「一番小さい未配置インデックス」を探す
+            let nextTargetIdx = -1;
+            for (let i = 0; i < plates.length; i++) {
+                const plate = document.querySelector(`.plate[data-index="${i}"]`);
+                if (plate && plate.dataset.hasItem !== "true") {
+                    nextTargetIdx = i;
+                    break;
+                }
+            }
+
+            plates.forEach(p => {
+                const idx = parseInt(p.dataset.index);
+                p.classList.remove('target-plate', 'dimmed-plate');
+
+                if (p.dataset.hasItem === "true") {
+                    // 配置済み：通常表示
+                } else if (idx === nextTargetIdx) {
+                    // 目標の皿：光らせる
+                    p.classList.add('target-plate');
+                } else {
+                    // その他の未配置皿：暗くする
+                    p.classList.add('dimmed-plate');
+                }
+            });
+        }
+
         function initRound() {
             isClearing = false;
+            document.getElementById('clear-mark').classList.remove('show');
             document.querySelectorAll('.item').forEach(el => el.remove());
 
-            const pContainer = document.getElementById('plates-container');
-            const aContainer = document.getElementById('items-container');
-            pContainer.innerHTML = '';
-            aContainer.innerHTML = '';
+            const stageArea = document.getElementById('stage-area');
+            stageArea.innerHTML = '';
 
-            currentItemType = settings.itemType;
-            if (currentItemType === 'random') {
-                const types = ['apple', 'orange', 'grape', 'strawberry', 'red-circle'];
-                currentItemType = types[Math.floor(Math.random() * types.length)];
-            }
+            const activePool = (settings.selectedItems && settings.selectedItems.length > 0) 
+                ? settings.selectedItems 
+                : ['apple'];
+            currentItemType = activePool[Math.floor(Math.random() * activePool.length)];
 
             const count = settings.plateCount;
             let topCount, bottomCount;
@@ -470,60 +944,129 @@
                 bottomCount = Math.floor(count / 2);
             }
 
-            function createRow(container, countInRow, isPlate, startIndex) {
+            function createPlateRow(countInRow, startIndex, posClass) {
                 if (countInRow === 0) return;
                 const row = document.createElement('div');
-                row.className = 'row';
+                row.className = `row ${posClass}`;
                 
                 for (let i = 0; i < countInRow; i++) {
-                    const index = startIndex + i;
-                    if (isPlate) {
-                        const plate = document.createElement('div');
-                        plate.className = 'plate';
-                        plate.dataset.index = index;
-                        plate.dataset.hasItem = "false";
-                        
-                        const svgContainer = document.createElement('div');
-                        svgContainer.className = 'plate-svg';
-                        svgContainer.innerHTML = `
-                            <svg viewBox="0 0 200 100" width="100%" height="100%">
-                                <ellipse cx="100" cy="50" rx="90" ry="40" fill="#fff5cc" stroke="#e6b800" stroke-width="4"/>
-                                <ellipse cx="100" cy="50" rx="60" ry="25" fill="#ffe066" />
-                            </svg>`;
-                        plate.appendChild(svgContainer);
+                    const idx = startIndex + i;
+                    const plate = document.createElement('div');
+                    plate.className = 'plate';
+                    plate.dataset.index = idx;
+                    plate.dataset.hasItem = "false";
+                    
+                    plate.innerHTML = getPlateSVG();
 
-                        if (settings.plateStyle === 'shadow') {
-                            const shadow = document.createElement('div');
-                            shadow.className = 'plate-shadow';
-                            shadow.innerHTML = getItemSVG(currentItemType);
-                            plate.appendChild(shadow);
-                        }
-                        row.appendChild(plate);
-                    } else {
+                    if (settings.plateStyle === 'shadow') {
+                        const shadow = document.createElement('div');
+                        shadow.className = 'plate-shadow';
+                        shadow.innerText = getItemEmoji(currentItemType);
+                        plate.appendChild(shadow);
+                    }
+                    row.appendChild(plate);
+                }
+                stageArea.appendChild(row);
+            }
+
+            // 皿の配置
+            if (count <= 5) {
+                createPlateRow(topCount, 0, 'pos-2-5');
+            } else {
+                createPlateRow(topCount, 0, 'pos-1-5');
+                createPlateRow(bottomCount, topCount, 'pos-2-5');
+            }
+
+            // 果物の配置（順に並べる / ゆったり重ならないランダム配置）
+            if (settings.itemPosMode === 'ordered') {
+                function createItemRow(countInRow, startIndex, posClass) {
+                    if (countInRow === 0) return;
+                    const row = document.createElement('div');
+                    row.className = `row ${posClass}`;
+                    
+                    for (let i = 0; i < countInRow; i++) {
+                        const idx = startIndex + i;
                         const slot = document.createElement('div');
                         slot.className = 'item-slot';
-                        slot.dataset.slotIndex = index;
+                        slot.dataset.slotIndex = idx;
 
                         const item = document.createElement('div');
                         item.className = 'item';
-                        item.dataset.originalSlot = index;
-                        item.innerHTML = getItemSVG(currentItemType);
+                        item.dataset.originalSlot = idx;
+                        item.innerText = getItemEmoji(currentItemType);
                         item.addEventListener('pointerdown', handlePointerDown);
 
                         slot.appendChild(item);
                         row.appendChild(slot);
                     }
+                    stageArea.appendChild(row);
                 }
-                container.appendChild(row);
+
+                if (count <= 5) {
+                    createItemRow(topCount, 0, 'pos-3-5');
+                } else {
+                    createItemRow(topCount, 0, 'pos-3-5');
+                    createItemRow(bottomCount, topCount, 'pos-4-5');
+                }
+            } else {
+                // ランダム配置：さらにゆったり離して配置
+                const itemWidthPx = Math.min(window.innerWidth * 0.15, 140);
+                const minDistancePx = itemWidthPx * 1.35;
+                const placedPositions = [];
+
+                for (let i = 0; i < count; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'item-slot';
+                    slot.dataset.slotIndex = i;
+                    slot.style.position = 'absolute';
+                    slot.style.pointerEvents = 'none';
+                    slot.style.visibility = 'hidden';
+
+                    let randX, randY, pxX, pxY;
+                    let attempts = 0;
+                    let overlap = false;
+
+                    do {
+                        overlap = false;
+                        randX = 7 + Math.random() * 72;
+                        randY = 58 + Math.random() * 25;
+
+                        pxX = (randX / 100) * window.innerWidth;
+                        pxY = (randY / 100) * window.innerHeight;
+
+                        for (let pos of placedPositions) {
+                            const dist = Math.hypot(pxX - pos.x, pxY - pos.y);
+                            if (dist < minDistancePx) {
+                                overlap = true;
+                                break;
+                            }
+                        }
+                        attempts++;
+                    } while (overlap && attempts < 200);
+
+                    placedPositions.push({ x: pxX, y: pxY });
+
+                    slot.style.left = `${randX}vw`;
+                    slot.style.top = `${randY}vh`;
+
+                    const item = document.createElement('div');
+                    item.className = 'item';
+                    item.dataset.originalSlot = i;
+                    item.style.position = 'fixed';
+                    item.style.left = `${randX}vw`;
+                    item.style.top = `${randY}vh`;
+                    item.innerText = getItemEmoji(currentItemType);
+                    item.addEventListener('pointerdown', handlePointerDown);
+
+                    stageArea.appendChild(slot);
+                    document.body.appendChild(item);
+                }
             }
 
-            createRow(pContainer, topCount, true, 0);
-            createRow(pContainer, bottomCount, true, topCount);
-            createRow(aContainer, topCount, false, 0);
-            createRow(aContainer, bottomCount, false, topCount);
+            // ハイライト状態を初計算
+            updatePlateHighlights();
         }
 
-        // --- ドラッグ＆ドロップ処理 ---
         function handlePointerDown(e) {
             if (activeItem || !e.isPrimary || isClearing) return; 
             e.preventDefault();
@@ -535,13 +1078,13 @@
                 const plate = document.querySelector(`.plate[data-index="${activeItem.dataset.snappedPlate}"]`);
                 if (plate) plate.dataset.hasItem = "false";
                 activeItem.dataset.snappedPlate = "";
+                updatePlateHighlights();
             }
 
             const rect = activeItem.getBoundingClientRect();
             offsetX = e.clientX - rect.left;
             offsetY = e.clientY - rect.top;
 
-            // レイアウト上のサイズを維持
             const layoutWidth = activeItem.offsetWidth;
             const layoutHeight = activeItem.offsetHeight;
             activeItem.style.width = layoutWidth + 'px';
@@ -581,10 +1124,28 @@
             const itemCenterY = itemRect.top + itemRect.height / 2;
 
             const plates = document.querySelectorAll('.plate');
-            let snapped = false;
+            let closestPlate = null;
+            let minDistance = Infinity;
+
+            // 順番モードの場合はターゲットの皿だけを候補にする
+            let targetIdxNeeded = -1;
+            if (settings.orderMode === 'sequential') {
+                for (let i = 0; i < plates.length; i++) {
+                    const plate = document.querySelector(`.plate[data-index="${i}"]`);
+                    if (plate && plate.dataset.hasItem !== "true") {
+                        targetIdxNeeded = i;
+                        break;
+                    }
+                }
+            }
 
             for (let plate of plates) {
                 if (plate.dataset.hasItem === "true") continue;
+
+                // 順番モードの時、目印の皿以外はスナップ不可
+                if (settings.orderMode === 'sequential') {
+                    if (parseInt(plate.dataset.index) !== targetIdxNeeded) continue;
+                }
 
                 const plateRect = plate.getBoundingClientRect();
                 const plateCenterX = plateRect.left + plateRect.width / 2;
@@ -592,27 +1153,34 @@
 
                 const dist = Math.hypot(itemCenterX - plateCenterX, itemCenterY - plateCenterY);
                 
-                if (dist < plateRect.width / 1.5) {
-                    snapped = true;
-                    plate.dataset.hasItem = "true";
-                    activeItem.dataset.snappedPlate = plate.dataset.index;
-                    
-                    // 中央配置のための計算修正
-                    activeItem.style.transition = 'left 0.2s, top 0.2s';
-                    activeItem.style.left = (plateCenterX - itemWidth / 2) + 'px';
-                    activeItem.style.top = (plateCenterY - itemHeight / 2 - (plateRect.height * 0.2)) + 'px'; 
-                    
-                    AudioController.play('snap');
-
-                    const currentItem = activeItem;
-                    setTimeout(() => {
-                        if(currentItem) currentItem.style.transition = '';
-                    }, 200);
-                    break;
+                if (dist < plateRect.width / 1.3) {
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestPlate = plate;
+                    }
                 }
             }
 
-            if (!snapped) {
+            if (closestPlate) {
+                const plateRect = closestPlate.getBoundingClientRect();
+                const plateCenterX = plateRect.left + plateRect.width / 2;
+                const plateCenterY = plateRect.top + plateRect.height / 2;
+
+                closestPlate.dataset.hasItem = "true";
+                activeItem.dataset.snappedPlate = closestPlate.dataset.index;
+                
+                activeItem.style.transition = 'left 0.2s, top 0.2s';
+                activeItem.style.left = (plateCenterX - itemWidth / 2) + 'px';
+                activeItem.style.top = (plateCenterY - itemHeight / 2 - (plateRect.height * 0.5)) + 'px'; 
+                
+                AudioController.play('snap');
+                updatePlateHighlights();
+
+                const currentItem = activeItem;
+                setTimeout(() => {
+                    if (currentItem) currentItem.style.transition = '';
+                }, 200);
+            } else {
                 const originalSlotIndex = activeItem.dataset.originalSlot;
                 const targetSlot = document.querySelector(`.item-slot[data-slot-index="${originalSlotIndex}"]`);
                 
@@ -626,12 +1194,14 @@
                     setTimeout(() => {
                         if (currentItem && targetSlot) {
                             currentItem.style.transition = '';
-                            currentItem.style.position = 'absolute';
-                            currentItem.style.left = '0';
-                            currentItem.style.top = '0';
-                            currentItem.style.width = '100%';
-                            currentItem.style.height = '100%';
-                            targetSlot.appendChild(currentItem);
+                            if (settings.itemPosMode === 'ordered') {
+                                currentItem.style.position = 'absolute';
+                                currentItem.style.left = '0';
+                                currentItem.style.top = '0';
+                                currentItem.style.width = '100%';
+                                currentItem.style.height = '100%';
+                                targetSlot.appendChild(currentItem);
+                            }
                         }
                     }, 100);
                 }
@@ -657,13 +1227,15 @@
 
             if (allFilled) {
                 isClearing = true;
-                AudioController.play('clear');
+                document.getElementById('clear-mark').classList.add('show');
                 
                 if (round >= settings.totalRounds) {
+                    AudioController.play('all_clear');
                     setTimeout(() => {
                         returnToHome();
-                    }, 2000);
+                    }, 2200);
                 } else {
+                    AudioController.play('clear');
                     round++;
                     setTimeout(() => {
                         updateScoreDisplay();
@@ -673,36 +1245,8 @@
             }
         }
 
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                repositionSnappedItems();
-            }, 200);
-        });
-
-        function repositionSnappedItems() {
-            const items = document.querySelectorAll('.item');
-            items.forEach(item => {
-                if (item === activeItem) return;
-                
-                const snappedIndex = item.dataset.snappedPlate;
-                if (snappedIndex) {
-                    const plate = document.querySelector(`.plate[data-index="${snappedIndex}"]`);
-                    if (plate) {
-                        const plateRect = plate.getBoundingClientRect();
-                        const plateCenterX = plateRect.left + plateRect.width / 2;
-                        const plateCenterY = plateRect.top + plateRect.height / 2;
-                        
-                        item.style.left = (plateCenterX - item.offsetWidth / 2) + 'px';
-                        item.style.top = (plateCenterY - item.offsetHeight / 2 - (plateRect.height * 0.2)) + 'px';
-                    }
-                }
-            });
-        }
-
         let tapTimes = [];
-        document.getElementById('settings-trigger').addEventListener('pointerdown', (e) => {
+        document.getElementById('setting-trigger-btn').addEventListener('pointerdown', (e) => {
             e.preventDefault();
             const now = Date.now();
             tapTimes.push(now);
@@ -713,6 +1257,132 @@
             }
         });
 
+        document.getElementById('btn-select-all').addEventListener('click', () => {
+            document.querySelectorAll('input[name="setting-items"]').forEach(cb => cb.checked = true);
+            updateSampleView();
+        });
+        document.getElementById('btn-deselect-all').addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('input[name="setting-items"]');
+            checkboxes.forEach((cb, idx) => cb.checked = (idx === 0));
+            updateSampleView();
+        });
+
+        function updateSampleView() {
+            const count = parseInt(slider.value) || 3;
+            const style = document.querySelector('input[name="setting-style"]:checked')?.value || 'normal';
+            const posMode = document.querySelector('input[name="setting-pos-mode"]:checked')?.value || 'ordered';
+            const orderMode = document.querySelector('input[name="setting-order-mode"]:checked')?.value || 'any';
+            const checkedBoxes = Array.from(document.querySelectorAll('input[name="setting-items"]:checked')).map(cb => cb.value);
+            const sampleType = checkedBoxes.length > 0 ? checkedBoxes[0] : 'apple';
+
+            const sampleStageArea = document.getElementById('sample-stage-area');
+            sampleStageArea.innerHTML = '';
+
+            let topCount, bottomCount;
+            if (count <= 5) {
+                topCount = count;
+                bottomCount = 0;
+            } else {
+                topCount = Math.ceil(count / 2);
+                bottomCount = Math.floor(count / 2);
+            }
+
+            // 皿の描画
+            function createSamplePlateRow(countInRow, posClass, startIndex) {
+                if (countInRow === 0) return;
+                const row = document.createElement('div');
+                row.className = `sample-row ${posClass}`;
+                
+                for (let i = 0; i < countInRow; i++) {
+                    const idx = startIndex + i;
+                    const plate = document.createElement('div');
+                    plate.className = 'sample-plate';
+                    plate.innerHTML = getPlateSVG();
+
+                    if (orderMode === 'sequential') {
+                        if (idx === 0) {
+                            plate.classList.add('sample-target');
+                        } else {
+                            plate.classList.add('sample-dimmed');
+                        }
+                    }
+
+                    if (style === 'shadow') {
+                        const shadow = document.createElement('div');
+                        shadow.className = 'sample-plate-shadow';
+                        shadow.innerText = getItemEmoji(sampleType);
+                        plate.appendChild(shadow);
+                    }
+                    row.appendChild(plate);
+                }
+                sampleStageArea.appendChild(row);
+            }
+
+            if (count <= 5) {
+                createSamplePlateRow(topCount, 'sample-pos-2-5', 0);
+            } else {
+                createSamplePlateRow(topCount, 'sample-pos-1-5', 0);
+                createSamplePlateRow(bottomCount, 'sample-pos-2-5', topCount);
+            }
+
+            // 果物の描画
+            if (posMode === 'ordered') {
+                function createSampleItemRow(countInRow, posClass) {
+                    if (countInRow === 0) return;
+                    const row = document.createElement('div');
+                    row.className = `sample-row ${posClass}`;
+                    
+                    for (let i = 0; i < countInRow; i++) {
+                        const slot = document.createElement('div');
+                        slot.className = 'sample-item-slot';
+                        slot.innerText = getItemEmoji(sampleType);
+                        row.appendChild(slot);
+                    }
+                    sampleStageArea.appendChild(row);
+                }
+
+                if (count <= 5) {
+                    createSampleItemRow(topCount, 'sample-pos-3-5');
+                } else {
+                    createSampleItemRow(topCount, 'sample-pos-3-5');
+                    createSampleItemRow(bottomCount, 'sample-pos-4-5');
+                }
+            } else {
+                const placedPos = [];
+                const minSampleDist = 18;
+
+                for (let i = 0; i < count; i++) {
+                    let rx, ry, overlap;
+                    let attempts = 0;
+
+                    do {
+                        overlap = false;
+                        rx = 8 + Math.random() * 70;
+                        ry = 58 + Math.random() * 26;
+
+                        for (let p of placedPos) {
+                            if (Math.hypot(rx - p.x, ry - p.y) < minSampleDist) {
+                                overlap = true;
+                                break;
+                            }
+                        }
+                        attempts++;
+                    } while (overlap && attempts < 100);
+
+                    placedPos.push({ x: rx, y: ry });
+
+                    const slot = document.createElement('div');
+                    slot.className = 'sample-item-slot';
+                    slot.style.position = 'absolute';
+                    slot.style.left = `${rx}%`;
+                    slot.style.top = `${ry}%`;
+                    slot.style.transform = 'translate(-50%, -50%)';
+                    slot.innerText = getItemEmoji(sampleType);
+                    sampleStageArea.appendChild(slot);
+                }
+            }
+        }
+
         const slider = document.getElementById('setting-count');
         const countDisp = document.getElementById('plate-count-disp');
         const totalRoundsSlider = document.getElementById('setting-total-rounds');
@@ -720,9 +1390,16 @@
 
         slider.addEventListener('input', (e) => {
             countDisp.innerText = e.target.value;
+            updateSampleView();
         });
         totalRoundsSlider.addEventListener('input', (e) => {
             totalRoundsDisp.innerText = e.target.value;
+        });
+
+        document.querySelectorAll('input[name="setting-style"], input[name="setting-items"], input[name="setting-pos-mode"], input[name="setting-order-mode"]').forEach(input => {
+            input.addEventListener('change', () => {
+                updateSampleView();
+            });
         });
 
         function openSettings() {
@@ -730,16 +1407,19 @@
             countDisp.innerText = settings.plateCount;
             totalRoundsSlider.value = settings.totalRounds || 5;
             totalRoundsDisp.innerText = settings.totalRounds || 5;
+            
             document.querySelector(`input[name="setting-style"][value="${settings.plateStyle}"]`).checked = true;
             document.querySelector(`input[name="setting-sound"][value="${settings.soundType}"]`).checked = true;
-            
-            // 古い設定データの救済
-            if(!settings.itemType || ['star', 'blue-circle'].includes(settings.itemType)) {
-                settings.itemType = 'apple';
-            }
-            document.querySelector(`input[name="setting-item-type"][value="${settings.itemType}"]`).checked = true;
-            
+            document.querySelector(`input[name="setting-pos-mode"][value="${settings.itemPosMode || 'ordered'}"]`).checked = true;
+            document.querySelector(`input[name="setting-order-mode"][value="${settings.orderMode || 'any'}"]`).checked = true;
+
+            const checkboxes = document.querySelectorAll('input[name="setting-items"]');
+            checkboxes.forEach(cb => {
+                cb.checked = settings.selectedItems.includes(cb.value);
+            });
+
             document.getElementById('settings-modal').classList.remove('hidden');
+            updateSampleView();
         }
 
         document.getElementById('close-settings-btn').addEventListener('click', () => {
@@ -747,8 +1427,12 @@
             settings.totalRounds = parseInt(totalRoundsSlider.value);
             settings.plateStyle = document.querySelector('input[name="setting-style"]:checked').value;
             settings.soundType = document.querySelector('input[name="setting-sound"]:checked').value;
-            settings.itemType = document.querySelector('input[name="setting-item-type"]:checked').value;
-            
+            settings.itemPosMode = document.querySelector('input[name="setting-pos-mode"]:checked').value;
+            settings.orderMode = document.querySelector('input[name="setting-order-mode"]:checked').value;
+
+            const checkedBoxes = Array.from(document.querySelectorAll('input[name="setting-items"]:checked')).map(cb => cb.value);
+            settings.selectedItems = checkedBoxes.length > 0 ? checkedBoxes : ['apple'];
+
             localStorage.setItem('1to1Settings', JSON.stringify(settings));
             document.getElementById('settings-modal').classList.add('hidden');
             
