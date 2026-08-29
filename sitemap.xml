@@ -1,134 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- トップページ -->
+  <!-- ポータル トップ -->
   <url>
     <loc>https://watanabe-apps.github.io/apps/</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-
-  <!-- 系統マップ -->
   <url>
     <loc>https://watanabe-apps.github.io/apps/keitou_map/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- 国語 -->
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/hiragana_nazori_utsushi/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/keyboard/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/keyboard_quiz/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <url><loc>https://watanabe-apps.github.io/apps/hiragana_nazori_utsushi/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/keyboard/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/keyboard_quiz/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/karuta/index.html</loc></url>
 
   <!-- 算数 -->
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/1tai1/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/ookii_chiisai/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/kazoeyou_kiso/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/suuji_narabe/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/suuji_touch/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/ikutsuto_ikutsu/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/suuji_narabe_2/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <url><loc>https://watanabe-apps.github.io/apps/1tai1/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/ookii_chiisai/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/kazoeyou_kiso/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/suuji_narabe/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/suuji_touch/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/ikutsuto_ikutsu/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/suuji_narabe_2/index.html</loc></url>
 
-  <!-- その他 -->
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/ten_tap/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/katachi_sagashi/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/ichi_matching/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/ten_tsunagi/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/maze/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/kiite_oboeyou/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <!-- その他・自立活動 -->
+  <url><loc>https://watanabe-apps.github.io/apps/ten_tap/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/katachi_sagashi/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/ichi_matching/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/ten_tsunagi/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/maze/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/kiite_oboeyou/index.html</loc></url>
 
   <!-- ツール -->
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/rythm_visualizer/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://watanabe-apps.github.io/apps/iPad_html_viewer/index.html</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <url><loc>https://watanabe-apps.github.io/apps/rythm_visualizer/index.html</loc></url>
+  <url><loc>https://watanabe-apps.github.io/apps/iPad_html_viewer/index.html</loc></url>
 </urlset>
