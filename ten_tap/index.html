@@ -23,7 +23,7 @@
     
     * {
       box-sizing: border-box;
-      user-select: none; /* テキスト選択を無効化 */
+      user-select: none;
       -webkit-user-select: none;
     }
 
@@ -33,10 +33,10 @@
       width: 100%;
       height: 100%;
       height: calc(var(--vh, 1vh) * 100);
-      overflow: hidden; /* 全体のスクロールを禁止 */
+      overflow: hidden;
       background-color: var(--bg-color);
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
-      touch-action: none; /* ピンチズームやスワイプを防止 */
+      touch-action: none;
     }
 
     /* 画面切り替え用のコンテナ */
@@ -45,7 +45,7 @@
       width: 100%;
       height: 100%;
       flex-direction: column;
-      position: relative; /* ZStack(オーバーレイ)の基準 */
+      position: relative;
     }
     .screen.active {
       display: flex;
@@ -90,7 +90,7 @@
     /* 設定画面 */
     #setting-screen {
       background-color: var(--setting-bg);
-      touch-action: auto; /* 設定画面のみスクロール許可 */
+      touch-action: auto;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -143,6 +143,10 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+    .range-slider {
+      width: 140px;
+      accent-color: var(--primary-color);
+    }
     
     /* トグルスイッチ */
     .switch {
@@ -182,7 +186,6 @@
     #play-screen {
       background-color: var(--bg-color);
     }
-    /* オーバーレイにする設定 (ZStackのような配置) */
     .play-header {
       position: absolute;
       top: 0;
@@ -192,8 +195,8 @@
       justify-content: space-between;
       align-items: flex-start;
       padding: 15px 20px;
-      z-index: 100; /* 最前面に配置 */
-      pointer-events: none; /* 裏側にある点をタップできるようにするため透過させる */
+      z-index: 100;
+      pointer-events: none;
     }
     .home-btn {
       background-color: rgba(242, 242, 247, 0.9);
@@ -206,8 +209,8 @@
       justify-content: center;
       align-items: center;
       color: #555;
-      pointer-events: auto; /* ボタン部分はタップを受け付けるように復活 */
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 少し浮き上がらせる */
+      pointer-events: auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     .status-text {
       font-size: 1.2rem;
@@ -215,10 +218,10 @@
       color: #333;
     }
     #status-time {
-      color: rgba(163, 163, 163, 0.8); /* 目立たないように薄く・少し透過 */
+      color: rgba(163, 163, 163, 0.8);
       font-size: 1.2rem;
       font-weight: normal;
-      margin-top: 10px; /* 上からの余白を少し取る */
+      margin-top: 10px;
       pointer-events: none;
     }
 
@@ -227,15 +230,15 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 20px; /* 画面端ギリギリにならないよう均等に余白を確保 */
+      padding: 20px;
       width: 100%;
       height: 100%;
       overflow: hidden;
+      position: relative;
     }
 
     .dot-grid {
       display: grid;
-      /* JSで縦横のサイズと構成を計算して、常に正方形のマス目にする */
       justify-items: center;
       align-items: center;
     }
@@ -246,7 +249,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      /* タッチ判定をマス全体に広く取る */
     }
 
     .circle {
@@ -258,17 +260,37 @@
       justify-content: center;
       align-items: center;
       color: white;
-      font-size: calc(var(--circle-size, 40px) * 0.4); /* 円の大きさに合わせて文字サイズも自然に追従 */
+      font-size: calc(var(--circle-size, 40px) * 0.4);
       font-weight: bold;
       transition: background-color 0.1s, transform 0.1s;
     }
 
-    /* ターゲット（次に押す点）のスタイル */
+    /* ターゲットのスタイル */
     .circle.target {
       background-color: var(--target-color);
-      transform: scale(1.1); /* 少しだけ目立たせる */
+      transform: scale(1.1);
     }
 
+    /* 紙吹雪風の弾ける演出アニメーション */
+    @keyframes confetti-burst {
+      0% {
+        transform: translate(0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1.1);
+        opacity: 1;
+      }
+      80% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) scale(0.5);
+        opacity: 0;
+      }
+    }
+    .confetti-particle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 60;
+      animation: confetti-burst 0.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    }
   </style>
 </head>
 <body>
@@ -296,9 +318,23 @@
         <input type="number" id="input-cols" class="setting-input" min="2" max="15" value="7">
       </div>
       <div class="setting-item">
+        <span>タップ回数</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="range" id="input-target-count" class="range-slider" min="1" max="49" value="49">
+          <span id="target-count-val" style="min-width: 35px; text-align: right; font-weight: bold;">49回</span>
+        </div>
+      </div>
+      <div class="setting-item">
         <span>数字を表示する</span>
         <label class="switch">
           <input type="checkbox" id="input-show-number" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item">
+        <span>タップ時の演出</span>
+        <label class="switch">
+          <input type="checkbox" id="input-show-effect" checked>
           <span class="slider"></span>
         </label>
       </div>
@@ -318,7 +354,7 @@
       <button class="home-btn" id="btn-home">🏠</button>
       <div class="status-text" id="status-time">0分0秒</div>
     </div>
-    <div class="play-area">
+    <div class="play-area" id="play-area">
       <div id="dot-grid" class="dot-grid"></div>
     </div>
   </div>
@@ -327,7 +363,9 @@
     // --- 状態管理・設定 ---
     let numOfRows = 7;
     let numOfCols = 7;
+    let targetCount = 49;
     let showNumber = true;
+    let showEffect = true;
     let showHomeBtn = false;
     
     let orders = [];
@@ -340,19 +378,15 @@
       const grid = document.getElementById('dot-grid');
       if (!playArea || !grid) return;
 
-      // 余白（padding）を除いた、純粋に使えるエリアの幅と高さを取得
       const style = window.getComputedStyle(playArea);
       const availableWidth = playArea.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
       const availableHeight = playArea.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
 
-      // 縦・横どちらが先に画面の限界に達するかを計算し、1マスの大きさを決定（完全な正方形を維持）
       const cellSize = Math.min(availableWidth / numOfCols, availableHeight / numOfRows);
 
-      // グリッド全体のサイズを計算したマス目にぴったり合わせる
       grid.style.width = `${cellSize * numOfCols}px`;
       grid.style.height = `${cellSize * numOfRows}px`;
       
-      // 円の大きさはマスの大きさの約65%にして、自然な隙間を作る（最低でも10pxは確保）
       const circleSize = Math.max(cellSize * 0.65, 10);
       grid.style.setProperty('--circle-size', `${circleSize}px`);
     }
@@ -361,23 +395,87 @@
     function setAppHeight() {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
-      adjustGrid(); // 画面の向きが変わったりリサイズされたりした時にもグリッドを再計算
+      adjustGrid();
     }
     window.addEventListener('resize', setAppHeight);
     window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
     setAppHeight();
 
+    // --- カラフルな紙吹雪風タップ演出（サイズを2倍に拡大） ---
+    function triggerBurstEffect(x, y) {
+      const playArea = document.getElementById('play-area');
+      const particleCount = 28;
+      const colors = [
+        '#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#00c7be',
+        '#30b0c7', '#007aff', '#5856d6', '#af52de', '#ff2d55'
+      ];
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'confetti-particle';
+        
+        // 紙吹雪チップ（長方形・正方形・丸）のサイズを従来の2倍に設定
+        const shapeType = Math.random();
+        let width, height, borderRadius;
+        
+        if (shapeType < 0.5) {
+          // 長方形の紙吹雪チップ (倍サイズ: 12〜24px × 16〜36px)
+          width = Math.random() * 12 + 12;
+          height = Math.random() * 20 + 16;
+          borderRadius = '3px';
+        } else if (shapeType < 0.8) {
+          // 正方形チップ (倍サイズ: 12〜26px)
+          width = Math.random() * 14 + 12;
+          height = width;
+          borderRadius = '3px';
+        } else {
+          // 丸いスパンコール (倍サイズ: 直径10〜24px)
+          width = Math.random() * 14 + 10;
+          height = width;
+          borderRadius = '50%';
+        }
+        
+        particle.style.width = `${width}px`;
+        particle.style.height = `${height}px`;
+        particle.style.borderRadius = borderRadius;
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        particle.style.left = `${x - width / 2}px`;
+        particle.style.top = `${y - height / 2}px`;
+        
+        // 飛び散る距離もチップの大きさに合わせてやや広めに調整
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 75 + 45;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance - (Math.random() * 20);
+        
+        // 3D回転
+        const rx = `${Math.random() * 720 - 360}deg`;
+        const ry = `${Math.random() * 720 - 360}deg`;
+        const rz = `${Math.random() * 720 - 360}deg`;
+        
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+        particle.style.setProperty('--rx', rx);
+        particle.style.setProperty('--ry', ry);
+        particle.style.setProperty('--rz', rz);
+        
+        playArea.appendChild(particle);
+        
+        setTimeout(() => {
+          particle.remove();
+        }, 500);
+      }
+    }
 
     // --- 音声・サウンド管理 (Web Audio API & Speech API) ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = new AudioContext();
 
-    // iOSの音声制限解除（スタートボタン等を押した時に発火させる）
     function unlockAudio() {
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-      // 無音のオシレーターを鳴らしてAudioContextをアクティブにする
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       gain.gain.value = 0;
@@ -386,20 +484,17 @@
       osc.start();
       osc.stop(audioCtx.currentTime + 0.01);
 
-      // Speech APIも空読み上げでアクティブにする
       window.speechSynthesis.cancel();
       const ut = new SpeechSynthesisUtterance('');
       ut.volume = 0;
       window.speechSynthesis.speak(ut);
     }
 
-    // 「カチッ」音
     function playClickSound() {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'square';
-      // 高音から低音へ急激に落とすことでクリック感（カチッ）を出す
       osc.frequency.setValueAtTime(800, audioCtx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
       gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
@@ -410,7 +505,6 @@
       osc.stop(audioCtx.currentTime + 0.05);
     }
 
-    // 「ピンポン」音（正解・クリア時）
     function playCorrectSound() {
       if (!audioCtx) return;
       const playTone = (freq, startTime, duration) => {
@@ -427,11 +521,10 @@
       };
       
       const now = audioCtx.currentTime;
-      playTone(880, now, 0.3); // 高い音
-      playTone(1046.50, now + 0.15, 0.4); // さらに高い音
+      playTone(880, now, 0.3);
+      playTone(1046.50, now + 0.15, 0.4);
     }
 
-    // 読み上げ
     function speechWord(word) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(String(word));
@@ -440,22 +533,46 @@
       window.speechSynthesis.speak(utterance);
     }
 
+    // スライダーの最大値と表示の更新
+    function updateTargetCountRange() {
+      const rows = parseInt(document.getElementById('input-rows').value, 10) || 7;
+      const cols = parseInt(document.getElementById('input-cols').value, 10) || 7;
+      const maxVal = rows * cols;
+      const slider = document.getElementById('input-target-count');
+      const valDisplay = document.getElementById('target-count-val');
+      
+      slider.max = maxVal;
+      if (parseInt(slider.value, 10) > maxVal) {
+        slider.value = maxVal;
+      }
+      valDisplay.textContent = `${slider.value}回`;
+    }
 
     // LocalStorageからの読み込み
     function loadSettings() {
       const savedRows = localStorage.getItem('dot_numOfRows');
       const savedCols = localStorage.getItem('dot_numOfCols');
+      const savedTargetCount = localStorage.getItem('dot_targetCount');
       const savedShow = localStorage.getItem('dot_showNumber');
+      const savedEffect = localStorage.getItem('dot_showEffect');
       const savedShowHome = localStorage.getItem('dot_showHomeBtn');
       
       if (savedRows) numOfRows = parseInt(savedRows, 10);
       if (savedCols) numOfCols = parseInt(savedCols, 10);
+      targetCount = savedTargetCount ? parseInt(savedTargetCount, 10) : (numOfRows * numOfCols);
       if (savedShow) showNumber = (savedShow === 'true');
+      if (savedEffect) showEffect = (savedEffect === 'true');
       if (savedShowHome) showHomeBtn = (savedShowHome === 'true');
 
       document.getElementById('input-rows').value = numOfRows;
       document.getElementById('input-cols').value = numOfCols;
+      
+      updateTargetCountRange();
+      document.getElementById('input-target-count').value = Math.min(targetCount, numOfRows * numOfCols);
+      document.getElementById('target-count-val').textContent = `${document.getElementById('input-target-count').value}回`;
+      
       document.getElementById('input-show-number').checked = showNumber;
+      document.getElementById('input-show-effect').checked = showEffect;
       document.getElementById('input-show-home-btn').checked = showHomeBtn;
     }
 
@@ -463,21 +580,23 @@
     function saveSettings() {
       numOfRows = parseInt(document.getElementById('input-rows').value, 10) || 7;
       numOfCols = parseInt(document.getElementById('input-cols').value, 10) || 7;
+      targetCount = parseInt(document.getElementById('input-target-count').value, 10) || (numOfRows * numOfCols);
       showNumber = document.getElementById('input-show-number').checked;
+      showEffect = document.getElementById('input-show-effect').checked;
       showHomeBtn = document.getElementById('input-show-home-btn').checked;
       
       localStorage.setItem('dot_numOfRows', numOfRows);
       localStorage.setItem('dot_numOfCols', numOfCols);
+      localStorage.setItem('dot_targetCount', targetCount);
       localStorage.setItem('dot_showNumber', showNumber);
+      localStorage.setItem('dot_showEffect', showEffect);
       localStorage.setItem('dot_showHomeBtn', showHomeBtn);
     }
-
 
     // --- 画面遷移制御 ---
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
-      // プレイ画面が表示されたらサイズを再計算
       if (screenId === 'play-screen') {
         setTimeout(adjustGrid, 10); 
       }
@@ -506,7 +625,6 @@
       timerId = null;
     }
 
-
     // --- ゲームロジック ---
     function initGame() {
       const grid = document.getElementById('dot-grid');
@@ -514,24 +632,24 @@
       grid.style.gridTemplateRows = `repeat(${numOfRows}, 1fr)`;
       grid.innerHTML = '';
       
-      adjustGrid(); // 生成時にグリッドサイズと点の大きさを計算
+      adjustGrid();
 
-      orders = [];
       const totalDots = numOfRows * numOfCols;
+      const allIndices = [];
       for (let i = 0; i < totalDots; i++) {
-        orders.push(i);
+        allIndices.push(i);
       }
-      // シャッフル
-      orders.sort(() => Math.random() - 0.5);
+      allIndices.sort(() => Math.random() - 0.5);
+      
+      const currentTargetCount = Math.min(targetCount, totalDots);
+      orders = allIndices.slice(0, currentTargetCount);
       
       startTime = null;
       stopTimer();
       updateTime();
 
-      // 設定に基づいてホームへ戻るボタンの表示・非表示を切り替え
       document.getElementById('btn-home').style.visibility = showHomeBtn ? 'visible' : 'hidden';
 
-      // 点の生成
       for (let i = 0; i < totalDots; i++) {
         const wrapper = document.createElement('div');
         wrapper.className = 'dot-wrapper';
@@ -542,10 +660,9 @@
         wrapper.appendChild(circle);
         grid.appendChild(wrapper);
 
-        // ※触れた瞬間（onpointerdown）に反応させる
         wrapper.onpointerdown = (e) => {
-          e.preventDefault(); // ダブルタップズームなどを防止
-          handleDotTap(i, circle);
+          e.preventDefault();
+          handleDotTap(i, circle, e);
         };
       }
       
@@ -555,13 +672,14 @@
     function updateDots() {
       const wrappers = document.querySelectorAll('.dot-wrapper');
       const targetIndex = orders.length > 0 ? orders[0] : -1;
+      const currentTargetCount = Math.min(targetCount, numOfRows * numOfCols);
       
       wrappers.forEach((wrapper, i) => {
         const circle = wrapper.querySelector('.circle');
         if (i === targetIndex) {
           circle.classList.add('target');
           if (showNumber) {
-            circle.textContent = (numOfRows * numOfCols) - orders.length + 1;
+            circle.textContent = currentTargetCount - orders.length + 1;
           } else {
             circle.textContent = '';
           }
@@ -572,62 +690,70 @@
       });
     }
 
-    function handleDotTap(index, circleElement) {
-      // 最初のタップでタイマー開始
-      if (orders.length === numOfRows * numOfCols && startTime === null) {
+    function handleDotTap(index, circleElement, event) {
+      const currentTargetCount = Math.min(targetCount, numOfRows * numOfCols);
+
+      if (orders.length === currentTargetCount && startTime === null) {
         startTime = new Date();
         startTimer();
       }
 
-      // 正解の点をタップした場合
       if (orders.length > 0 && orders[0] === index) {
-        orders.shift(); // 先頭を削除
+        if (showEffect) {
+          const rect = circleElement.getBoundingClientRect();
+          const playAreaRect = document.getElementById('play-area').getBoundingClientRect();
+          const centerX = (rect.left + rect.width / 2) - playAreaRect.left;
+          const centerY = (rect.top + rect.height / 2) - playAreaRect.top;
+          triggerBurstEffect(centerX, centerY);
+        }
+
+        orders.shift();
         
         if (orders.length === 0) {
-          // --- 全問クリア処理 ---
-          stopTimer(); // タイマー停止
-          updateTime(); // 最終タイムを更新
+          stopTimer();
+          updateTime();
           
-          playCorrectSound(); // クリア音
+          playCorrectSound();
           
           if (showNumber) {
-             // 最後に読み上げる数は全体の個数
-            speechWord(numOfRows * numOfCols);
+            speechWord(currentTargetCount);
           }
           
-          // フィードバック（音や読み上げ）の後、約2秒後にホームへ戻る
           setTimeout(() => {
             showScreen('home-screen');
           }, 2000);
           
         } else {
-          // --- 通常の正解処理 ---
           if (showNumber) {
-            const numForSpeech = (numOfRows * numOfCols) - orders.length;
+            const numForSpeech = currentTargetCount - orders.length;
             speechWord(numForSpeech);
           } else {
-            playClickSound(); // 数字表示なし時はカチッという音
+            playClickSound();
           }
           updateDots();
         }
       }
     }
 
-
     // --- イベントリスナー設定 ---
     document.addEventListener('DOMContentLoaded', () => {
       loadSettings();
 
-      // ホーム画面のボタン
+      document.getElementById('input-rows').addEventListener('input', updateTargetCountRange);
+      document.getElementById('input-cols').addEventListener('input', updateTargetCountRange);
+      
+      document.getElementById('input-target-count').addEventListener('input', (e) => {
+        document.getElementById('target-count-val').textContent = `${e.target.value}回`;
+      });
+
       document.getElementById('btn-start').onpointerdown = (e) => {
         e.preventDefault();
-        unlockAudio(); // iOS音声制限解除
+        unlockAudio();
         saveSettings();
         initGame();
         showScreen('play-screen');
       };
 
-      // トリプルタップの実装
       let tapCount = 0;
       let tapTimeout = null;
       document.getElementById('btn-setting').onpointerdown = (e) => {
@@ -637,7 +763,7 @@
         if (tapCount === 1) {
           tapTimeout = setTimeout(() => {
             tapCount = 0;
-          }, 800); // 0.8秒以内に3回タップ
+          }, 800);
         }
         
         if (tapCount === 3) {
@@ -647,14 +773,12 @@
         }
       };
 
-      // 設定画面の閉じるボタン
       document.getElementById('btn-setting-close').onpointerdown = (e) => {
         e.preventDefault();
         saveSettings();
         showScreen('home-screen');
       };
 
-      // プレイ画面のホームボタン
       document.getElementById('btn-home').onpointerdown = (e) => {
         e.preventDefault();
         showScreen('home-screen');
