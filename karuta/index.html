@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="img.png">
+    <link rel="icon" href="img.png">
+    <title>カルタ</title>
+
+    <!-- Klee One Web Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        @font-face {
+            font-family: 'KleeOne-Local';
+            src: url('./KleeOne-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: block;
+        }
+
+        :root {
+            --vh: 1vh;
+            --font-family: 'KleeOne-Local', 'Klee One', 'UD Digi Kyokasho N-R', 'Hiragino Sans', sans-serif;
+            --primary-color: #007aff;
+            --bg-color: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            height: calc(var(--vh, 1vh) * 100);
+            overflow: hidden;
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: #333;
+            touch-action: manipulation;
+        }
+
+        /* 画面共通切替 */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- スタート画面 --- */
+        #home-screen {
+            gap: 26px;
+        }
+
+        .btn-start {
+            font-family: var(--font-family);
+            font-size: 2.2rem;
+            padding: 14px 44px;
+            background: #f0f0f5;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-start:active {
+            background: #e0e0e5;
+        }
+
+        .setting-trigger-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .setting-label {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .setting-sub {
+            font-size: 0.9rem;
+            color: #8e8e93;
+        }
+
+        /* --- プレイ画面 --- */
+        #play-screen {
+            justify-content: flex-start;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .play-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 48px;
+            padding: 0 8px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .header-right {
+            width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .btn-back {
+            font-size: 0.95rem;
+            font-family: var(--font-family);
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 6px 14px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .btn-back:active {
+            background: #f0f0f0;
+        }
+
+        .score-counter {
+            font-size: 0.95rem;
+            color: #8e8e93;
+            font-weight: 500;
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+
+        .play-center-group {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .word-display {
+            font-size: 2.1rem;
+            font-weight: 600;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        .icon-btn-inline {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn-inline:active {
+            transform: scale(0.92);
+        }
+
+        .grid-container {
+            flex: 1;
+            width: 100%;
+            display: grid;
+            gap: 8px;
+            justify-content: center;
+            align-content: center;
+            overflow: hidden;
+        }
+
+        /* --- カードスタイル --- */
+        .card-slot {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-item {
+            position: relative;
+            background-color: #fff;
+            border: 2px solid #000;
+            border-radius: 4px;
+            display: flex;
+            overflow: hidden;
+            cursor: pointer;
+            box-sizing: border-box;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-text-container {
+            position: absolute;
+            z-index: 2;
+            line-height: 1;
+            white-space: nowrap !important;
+            overflow: visible;
+            box-sizing: border-box;
+            padding: 2px;
+            pointer-events: none;
+        }
+
+        .card-text-container.writing-horizontal {
+            writing-mode: horizontal-tb !important;
+            -webkit-writing-mode: horizontal-tb !important;
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+        }
+
+        .card-text-container.writing-vertical {
+            writing-mode: vertical-rl !important;
+            -webkit-writing-mode: vertical-rl !important;
+            text-orientation: upright !important;
+            display: block !important;
+            text-align: center;
+            word-break: keep-all !important;
+        }
+
+        .first-char, .remaining-char {
+            font-weight: 600;
+            color: #000;
+            text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+            line-height: 1;
+            white-space: nowrap !important;
+            text-align: center;
+        }
+
+        .writing-horizontal .first-char,
+        .writing-horizontal .remaining-char {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .writing-vertical .first-char,
+        .writing-vertical .remaining-char {
+            display: inline !important;
+            letter-spacing: 0;
+        }
+
+        .card-image-container {
+            position: absolute;
+            display: flex;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .card-image-container .emoji-img {
+            line-height: 1;
+        }
+
+        /* 正誤オーバーレイ */
+        .card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .mark-correct {
+            border: 6px solid #ff3b30;
+            border-radius: 50%;
+            box-sizing: border-box;
+        }
+
+        .mark-wrong {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        /* --- 全画面設定モーダル --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f2f2f7;
+            z-index: 100;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-header {
+            background: #fff;
+            padding: 10px 16px;
+            border-bottom: 1px solid #c6c6c8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .modal-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 0;
+            pointer-events: none;
+        }
+
+        .modal-nav-tabs {
+            display: flex;
+            background: #e3e3e8;
+            padding: 3px;
+            border-radius: 8px;
+            margin: 8px 14px 4px 14px;
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            background: none;
+            font-size: 0.92rem;
+            font-family: var(--font-family);
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+
+        /* 設定画面レイアウト */
+        .settings-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            padding: 8px 12px;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .settings-content-wrapper {
+                flex-direction: column;
+            }
+        }
+
+        .settings-scroll-pane {
+            flex: 1.1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
+        }
+
+        .preview-pane {
+            flex: 0.9;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #d1d1d6;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            min-height: 220px;
+        }
+
+        .preview-header-label {
+            background: #f8f8fa;
+            padding: 6px 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #e5e5ea;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .preview-screen-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e5e5ea;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .preview-screen-container {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #c6c6c8;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .preview-mini-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 4px 6px 4px;
+            color: #333;
+            border-bottom: 1px dashed #d1d1d6;
+            margin-bottom: 6px;
+        }
+
+        .preview-mini-grid {
+            flex: 1;
+            display: grid;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* フォーム部品 */
+        .setting-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 8px 12px;
+            border: 1px solid #e5e5ea;
+        }
+
+        .setting-card-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f5;
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label-text {
+            font-size: 0.88rem;
+            color: #222;
+        }
+
+        .stepper-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stepper-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--primary-color);
+            background: #fff;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .range-slider {
+            width: 55%;
+        }
+
+        .select-menu {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #c6c6c8;
+            background: #f8f8fa;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            outline: none;
+            max-width: 180px;
+        }
+
+        .btn-pos-selector {
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid #c6c6c8;
+            background: #fff;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        /* 9位置ポップアップモーダル */
+        .pos-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pos-modal-overlay.active {
+            display: flex;
+        }
+
+        .pos-popup-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 260px;
+        }
+
+        .pos-popup-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .pos-popup-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 72px);
+            grid-template-rows: repeat(3, 44px);
+            gap: 6px;
+            background: #e5e5ea;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .pos-popup-cell {
+            background: #fff;
+            border: 1px solid #d1d1d6;
+            border-radius: 6px;
+            font-family: var(--font-family);
+            font-size: 0.8rem;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .pos-popup-cell.active {
+            background: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color);
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: 1px solid #c6c6c8;
+            background: #fff;
+            cursor: pointer;
+            font-family: var(--font-family);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-action.small {
+            padding: 3px 8px;
+            font-size: 0.75rem;
+        }
+
+        .btn-action.primary {
+            background: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color);
+        }
+
+        .btn-action.success {
+            background: #34c759;
+            color: #fff;
+            border-color: #34c759;
+        }
+
+        .btn-action.warning {
+            background: #ff9500;
+            color: #fff;
+            border-color: #ff9500;
+        }
+
+        .words-content-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 8px 14px;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .compact-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .batch-select-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .card-list-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #d1d1d6;
+        }
+
+        .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0px;
+        }
+
+        .card-list-item {
+            background: #fff;
+            padding: 3px 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #e5e5ea;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+
+        .card-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .card-list-item.selected-row {
+            background: #f0f7ff;
+        }
+
+        /* 停止中の行全体グレーアウト */
+        .card-list-item.inactive-row {
+            background: #f8f8fa;
+            color: #8e8e93;
+        }
+
+        .card-list-item.inactive-row .item-thumb {
+            opacity: 0.45;
+            filter: grayscale(80%);
+        }
+
+        .card-list-item.inactive-row .item-name-text {
+            color: #8e8e93;
+        }
+
+        .item-checkbox {
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+        }
+
+        .item-thumb {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e5e5ea;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            overflow: hidden;
+            background: #fafafa;
+            flex-shrink: 0;
+        }
+
+        .item-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .item-name-box {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .item-name-text {
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .btn-edit-word {
+            background: none;
+            border: none;
+            color: #8e8e93;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .btn-audio {
+            padding: 2px 5px;
+            font-size: 0.72rem;
+            border-radius: 4px;
+            border: 1px solid #c6c6c8;
+            background: #f9f9f9;
+            cursor: pointer;
+            font-family: var(--font-family);
+        }
+
+        .btn-audio.recording {
+            background: #ff3b30;
+            color: #fff;
+            border-color: #ff3b30;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .item-status-btn {
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-weight: 600;
+        }
+
+        .item-status-btn.active {
+            background: #e5f1ff;
+            color: var(--primary-color);
+        }
+
+        .item-status-btn.inactive {
+            background: #e5e5ea;
+            color: #8e8e93;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ff3b30;
+            font-size: 0.95rem;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        /* ローディング＆トースト＆ダイアログ */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 300;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            color: #fff;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            z-index: 400;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast-notification.show {
+            opacity: 1;
+        }
+
+        .edit-dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-dialog-overlay.active {
+            display: flex;
+        }
+
+        .edit-dialog {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .edit-dialog-input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: var(--font-family);
+            font-size: 1rem;
+        }
+
+        .edit-dialog-btns {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 1. ホーム画面 -->
+    <div id="home-screen" class="screen active">
+        <button class="btn-start" onclick="startGame()">スタート</button>
+        <div class="setting-trigger-container" id="setting-trigger">
+            <span class="setting-label">設定</span>
+            <span class="setting-sub">(トリプルタップ)</span>
+        </div>
+    </div>
+
+    <!-- 2. プレイ画面 -->
+    <div id="play-screen" class="screen">
+        <div class="play-header">
+            <div class="header-left">
+                <button class="btn-back" id="btn-play-back" onclick="stopGame()">もどる</button>
+            </div>
+            <div class="play-center-group">
+                <span class="word-display" id="word-display-text"></span>
+                <button class="icon-btn-inline" id="btn-replay-inline" onclick="replaySpeech()">🔊</button>
+            </div>
+            <div class="header-right">
+                <span class="score-counter" id="score-text">○: 0  ×: 0</span>
+            </div>
+        </div>
+        <div class="grid-container" id="grid-container"></div>
+    </div>
+
+    <!-- 3. 設定・単語リスト 全画面モーダル -->
+    <div class="modal-overlay" id="setting-modal">
+        <div class="modal-header">
+            <button class="btn-back" onclick="closeSettingModal()">閉じる</button>
+            <h3 class="modal-title">設定メニュー</h3>
+            <div style="width: 54px;"></div>
+        </div>
+        
+        <div class="modal-nav-tabs">
+            <button class="tab-btn active" onclick="switchModalTab('settings')">設定</button>
+            <button class="tab-btn" onclick="switchModalTab('words')">単語リスト</button>
+        </div>
+
+        <!-- 設定タブ -->
+        <div class="settings-content-wrapper" id="tab-settings">
+            <div class="settings-scroll-pane">
+                <!-- 1. 枚数・出題設定 -->
+                <div class="setting-card">
+                    <div class="setting-card-title">📐 枚数・出題設定</div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">縦の枚数</span>
+                        <div class="stepper-control">
+                            <button class="stepper-btn" onclick="changeGridSize('rows', -1)">-</button>
+                            <span id="rows-val" style="min-width: 16px; text-align: center; font-weight:600;">2</span>
+                            <button class="stepper-btn" onclick="changeGridSize('rows', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">横の枚数</span>
+                        <div class="stepper-control">
+                            <button class="stepper-btn" onclick="changeGridSize('columns', -1)">-</button>
+                            <span id="cols-val" style="min-width: 16px; text-align: center; font-weight:600;">2</span>
+                            <button class="stepper-btn" onclick="changeGridSize('columns', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">終了までの枚数 (<span id="question-count-val">4</span>枚)</span>
+                        <input type="range" class="range-slider" min="1" max="100" step="1" id="slider-question-count" oninput="updateSetting('questionCount', parseInt(this.value))">
+                    </div>
+                </div>
+
+                <!-- 2. カードの文字と絵の設定 -->
+                <div class="setting-card">
+                    <div class="setting-card-title">🎴 カードの表示・配置設定</div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">もどるボタンを表示する</span>
+                        <input type="checkbox" id="toggle-show-back-btn" onchange="updateSetting('showBackButton', this.checked)">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">上部に単語を表示する</span>
+                        <input type="checkbox" id="toggle-show-word" onchange="updateSetting('showWord', this.checked)">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">イラストを表示する</span>
+                        <input type="checkbox" id="toggle-show-picture" onchange="updateSetting('showPicture', this.checked)">
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">文字の向き</span>
+                        <select class="select-menu" id="select-writing-mode" onchange="updateSetting('writingMode', this.value)">
+                            <option value="horizontal">横書き</option>
+                            <option value="vertical">縦書き</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">カードの形 (比率)</span>
+                        <select class="select-menu" id="select-card-aspect" onchange="updateSetting('cardAspectRatio', this.value)">
+                            <option value="standard">カルタ比率 (向き連動)</option>
+                            <option value="square">正方形 (1:1)</option>
+                            <option value="auto">全画面フィット</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">文字の表示方法</span>
+                        <select class="select-menu" id="select-text-display" onchange="updateSetting('textDisplay', this.value)">
+                            <option value="sameSize">すべて同じ大きさ</option>
+                            <option value="headLarge">頭文字大、他小</option>
+                            <option value="headOnly">頭文字のみ</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label-text">文字の配置</span>
+                        <button class="btn-pos-selector" id="btn-text-pos" onclick="openPosModal('text')">左上 ▾</button>
+                    </div>
+                    <div class="setting-row" id="row-pic-pos">
+                        <span class="setting-label-text">絵の配置</span>
+                        <button class="btn-pos-selector" id="btn-pic-pos" onclick="openPosModal('picture')">右下 ▾</button>
+                    </div>
+                </div>
+
+                <!-- 3. サイズ比率調整 -->
+                <div class="setting-card">
+                    <div class="setting-card-title">🔍 サイズ比率調整</div>
+                    <div class="setting-row" id="row-slider-char-size">
+                        <span class="setting-label-text" id="label-char-size">文字サイズ比率</span>
+                        <input type="range" class="range-slider" min="0.1" max="0.9" step="0.05" id="slider-char-size" oninput="onCharSizeSliderChange(parseFloat(this.value))">
+                    </div>
+                    <div class="setting-row" id="row-slider-picture">
+                        <span class="setting-label-text">絵のサイズ比率</span>
+                        <input type="range" class="range-slider" min="0.1" max="0.9" step="0.05" id="slider-picture" oninput="updateSetting('ratioOfPicture', parseFloat(this.value))">
+                    </div>
+                </div>
+
+                <!-- 4. データ管理 -->
+                <div class="setting-card">
+                    <div class="setting-card-title">💾 データ管理 (バックアップ)</div>
+                    <div class="compact-filter-bar" style="margin-top: 6px;">
+                        <button class="btn-action primary" style="flex:1;" onclick="exportData()">📤 エクスポート</button>
+                        <button class="btn-action" style="flex:1;" onclick="document.getElementById('import-file-input').click()">📥 インポート</button>
+                        <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importData(event)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：画面全体リアルタイムサンプルビュー -->
+            <div class="preview-pane">
+                <div class="preview-header-label">
+                    <span>📺 プレイ画面サンプル (全体)</span>
+                    <span id="preview-grid-info">2×2</span>
+                </div>
+                <div class="preview-screen-wrapper" id="preview-screen-wrapper">
+                    <div class="preview-screen-container" id="preview-screen-container">
+                        <div class="preview-mini-header">
+                            <span id="preview-mini-back" style="opacity:0.6; font-size:0.7rem;">もどる</span>
+                            <span id="preview-word-target" style="color:var(--primary-color);">おにぎり 🔊</span>
+                            <span style="font-size:0.7rem; color:#8e8e93;">○: 0  ×: 0</span>
+                        </div>
+                        <div class="preview-mini-grid" id="preview-grid-target"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 単語リストタブ -->
+        <div class="words-content-pane" id="tab-words" style="display: none;">
+            <div class="compact-filter-bar">
+                <input type="text" id="new-word-input" placeholder="新しい単語 (例: ぶどう)" style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:6px; font-family:var(--font-family); font-size:0.85rem;">
+                <input type="file" id="new-word-file" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+                <button class="btn-action" onclick="document.getElementById('new-word-file').click()">画像選択</button>
+                <button class="btn-action primary" onclick="addNewCard()">追加</button>
+            </div>
+
+            <div class="compact-filter-bar">
+                <input type="file" id="batch-image-file" accept="image/*" multiple style="display:none;" onchange="handleBatchFileSelect(event)">
+                <button class="btn-action primary" style="width:100%;" onclick="document.getElementById('batch-image-file').click()">📁 画像一括登録 (ファイル名＝単語)</button>
+            </div>
+
+            <div class="compact-filter-bar">
+                <div style="display:flex; align-items:center; gap:4px; flex:1;">
+                    <span style="font-size:0.75rem; color:#666;">並替:</span>
+                    <select class="select-menu" style="flex:1;" id="select-sort" onchange="setSortOption(this.value)">
+                        <option value="alphabetical">五十音順</option>
+                        <option value="lengthAsc">文字数昇順</option>
+                        <option value="lengthDesc">文字数降順</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; flex:1;">
+                    <span style="font-size:0.75rem; color:#666;">絞込:</span>
+                    <select class="select-menu" style="flex:1;" id="select-filter" onchange="setFilterOption(this.value)">
+                        <option value="none">すべて</option>
+                        <option value="sokuon">促音のみ (っ)</option>
+                        <option value="yoon">拗音のみ (ゃ/ゅ/ょ)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="batch-select-bar">
+                <button class="btn-action small" onclick="selectFilteredCards(true)">表示中を全選択</button>
+                <button class="btn-action small" onclick="selectFilteredCards(false)">選択解除</button>
+                <span id="selected-count-label" style="font-size:0.75rem; color:#666; margin: 0 4px;">0件選択中</span>
+                <button class="btn-action small success" onclick="applyBatchActive(true)">使用する</button>
+                <button class="btn-action small warning" onclick="applyBatchActive(false)">使用しない</button>
+            </div>
+
+            <div class="card-list-scroll">
+                <div id="card-list-container" class="card-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9位置配置選択ポップアップモーダル -->
+    <div id="pos-modal-overlay" class="pos-modal-overlay" onclick="closePosModal(event)">
+        <div class="pos-popup-card" onclick="event.stopPropagation()">
+            <h4 class="pos-popup-title" id="pos-modal-title">配置の選択</h4>
+            <div class="pos-popup-grid" id="pos-popup-grid">
+                <button class="pos-popup-cell" data-pos="top-left" onclick="selectPos('top-left')">左上</button>
+                <button class="pos-popup-cell" data-pos="top-center" onclick="selectPos('top-center')">上中央</button>
+                <button class="pos-popup-cell" data-pos="top-right" onclick="selectPos('top-right')">右上</button>
+                <button class="pos-popup-cell" data-pos="middle-left" onclick="selectPos('middle-left')">中央左</button>
+                <button class="pos-popup-cell" data-pos="center" onclick="selectPos('center')">中央</button>
+                <button class="pos-popup-cell" data-pos="middle-right" onclick="selectPos('middle-right')">中央右</button>
+                <button class="pos-popup-cell" data-pos="bottom-left" onclick="selectPos('bottom-left')">左下</button>
+                <button class="pos-popup-cell" data-pos="bottom-center" onclick="selectPos('bottom-center')">下中央</button>
+                <button class="pos-popup-cell" data-pos="bottom-right" onclick="selectPos('bottom-right')">右下</button>
+            </div>
+            <button class="btn-action" style="width:100%;" onclick="closePosModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- 単語名編集ダイアログ -->
+    <div id="edit-dialog-overlay" class="edit-dialog-overlay">
+        <div class="edit-dialog">
+            <h4 style="margin:0; font-size:1rem; font-weight:600;">単語名の編集</h4>
+            <input type="text" id="edit-word-input" class="edit-dialog-input" placeholder="単語名を入力">
+            <div class="edit-dialog-btns">
+                <button class="btn-action" onclick="closeEditDialog()">キャンセル</button>
+                <button class="btn-action primary" onclick="saveEditedWord()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 読み込み中オーバーレイ -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div id="loading-text" style="font-size:0.95rem; font-weight:600;">読み込み中...</div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="toast-notification"></div>
+
+    <script>
+        // --- 1. アプリ状態と50音網羅単語リストの初期化 ---
+        const DEFAULT_CARDS = [
+            // --- あ行 ---
+            { id: "1", name: "あり", emoji: "🐜", imageData: null, audioData: null, isActive: true },
+            { id: "2", name: "あいす", emoji: "🍨", imageData: null, audioData: null, isActive: true },
+            { id: "3", name: "あめ", emoji: "🍬", imageData: null, audioData: null, isActive: true },
+            { id: "4", name: "いぬ", emoji: "🐶", imageData: null, audioData: null, isActive: true },
+            { id: "5", name: "いちご", emoji: "🍓", imageData: null, audioData: null, isActive: true },
+            { id: "6", name: "いか", emoji: "🦑", imageData: null, audioData: null, isActive: true },
+            { id: "7", name: "うし", emoji: "🐮", imageData: null, audioData: null, isActive: true },
+            { id: "8", name: "うさぎ", emoji: "🐰", imageData: null, audioData: null, isActive: true },
+            { id: "9", name: "うま", emoji: "🐴", imageData: null, audioData: null, isActive: true },
+            { id: "10", name: "えんぴつ", emoji: "✏️", imageData: null, audioData: null, isActive: true },
+            { id: "11", name: "えだまめ", emoji: "🫛", imageData: null, audioData: null, isActive: true },
+            { id: "12", name: "おにぎり", emoji: "🍙", imageData: null, audioData: null, isActive: true },
+            { id: "13", name: "おに", emoji: "👹", imageData: null, audioData: null, isActive: true },
+
+            // --- か行 ---
+            { id: "14", name: "かえる", emoji: "🐸", imageData: null, audioData: null, isActive: true },
+            { id: "15", name: "かに", emoji: "🦀", imageData: null, audioData: null, isActive: true },
+            { id: "16", name: "かめ", emoji: "🐢", imageData: null, audioData: null, isActive: true },
+            { id: "17", name: "かさ", emoji: "☂️", imageData: null, audioData: null, isActive: true },
+            { id: "18", name: "きつね", emoji: "🦊", imageData: null, audioData: null, isActive: true },
+            { id: "19", name: "きりん", emoji: "🦒", imageData: null, audioData: null, isActive: true },
+            { id: "20", name: "きのこ", emoji: "🍄", imageData: null, audioData: null, isActive: true },
+            { id: "21", name: "くま", emoji: "🐻", imageData: null, audioData: null, isActive: true },
+            { id: "22", name: "くるま", emoji: "🚗", imageData: null, audioData: null, isActive: true },
+            { id: "23", name: "くつ", emoji: "👞", imageData: null, audioData: null, isActive: true },
+            { id: "24", name: "くも", emoji: "☁️", imageData: null, audioData: null, isActive: true },
+            { id: "25", name: "けーき", emoji: "🍰", imageData: null, audioData: null, isActive: true },
+            { id: "26", name: "こっぷ", emoji: "🥛", imageData: null, audioData: null, isActive: true },
+            { id: "27", name: "こうもり", emoji: "🦇", imageData: null, audioData: null, isActive: true },
+
+            // --- さ行 ---
+            { id: "28", name: "さかな", emoji: "🐟", imageData: null, audioData: null, isActive: true },
+            { id: "29", name: "さる", emoji: "🐵", imageData: null, audioData: null, isActive: true },
+            { id: "30", name: "しか", emoji: "🦌", imageData: null, audioData: null, isActive: true },
+            { id: "31", name: "しんかんせん", emoji: "🚅", imageData: null, audioData: null, isActive: true },
+            { id: "32", name: "すいか", emoji: "🍉", imageData: null, audioData: null, isActive: true },
+            { id: "33", name: "そうじき", emoji: "🧹", imageData: null, audioData: null, isActive: true },
+
+            // --- た行 ---
+            { id: "34", name: "たこ", emoji: "🐙", imageData: null, audioData: null, isActive: true },
+            { id: "35", name: "たまご", emoji: "🥚", imageData: null, audioData: null, isActive: true },
+            { id: "36", name: "ちーず", emoji: "🧀", imageData: null, audioData: null, isActive: true },
+            { id: "37", name: "つき", emoji: "🌙", imageData: null, audioData: null, isActive: true },
+            { id: "38", name: "てがみ", emoji: "✉️", imageData: null, audioData: null, isActive: true },
+            { id: "39", name: "てんとうむし", emoji: "🐞", imageData: null, audioData: null, isActive: true },
+            { id: "40", name: "とけい", emoji: "⌚", imageData: null, audioData: null, isActive: true },
+            { id: "41", name: "とまと", emoji: "🍅", imageData: null, audioData: null, isActive: true },
+
+            // --- な行 ---
+            { id: "42", name: "なす", emoji: "🍆", imageData: null, audioData: null, isActive: true },
+            { id: "43", name: "にわとり", emoji: "🐔", imageData: null, audioData: null, isActive: true },
+            { id: "44", name: "にんじん", emoji: "🥕", imageData: null, audioData: null, isActive: true },
+            { id: "45", name: "ねこ", emoji: "🐱", imageData: null, audioData: null, isActive: true },
+            { id: "46", name: "ねずみ", emoji: "🐭", imageData: null, audioData: null, isActive: true },
+            { id: "47", name: "のこぎり", emoji: "🪚", imageData: null, audioData: null, isActive: true },
+
+            // --- は行 ---
+            { id: "48", name: "はち", emoji: "🐝", imageData: null, audioData: null, isActive: true },
+            { id: "49", name: "はさみ", emoji: "✂️", imageData: null, audioData: null, isActive: true },
+            { id: "50", name: "ひまわり", emoji: "🌻", imageData: null, audioData: null, isActive: true },
+            { id: "51", name: "ひこうき", emoji: "✈️", imageData: null, audioData: null, isActive: true },
+            { id: "52", name: "ひつじ", emoji: "🐑", imageData: null, audioData: null, isActive: true },
+            { id: "53", name: "ふね", emoji: "🚢", imageData: null, audioData: null, isActive: true },
+            { id: "54", name: "ふうせん", emoji: "🎈", imageData: null, audioData: null, isActive: true },
+            { id: "55", name: "ふくろう", emoji: "🦉", imageData: null, audioData: null, isActive: true },
+            { id: "56", name: "へび", emoji: "🐍", imageData: null, audioData: null, isActive: true },
+            { id: "57", name: "へりこぷたー", emoji: "🚁", imageData: null, audioData: null, isActive: true },
+            { id: "58", name: "ほし", emoji: "⭐️", imageData: null, audioData: null, isActive: true },
+            { id: "59", name: "ほん", emoji: "📖", imageData: null, audioData: null, isActive: true },
+
+            // --- ま行 ---
+            { id: "60", name: "まいく", emoji: "🎤", imageData: null, audioData: null, isActive: true },
+            { id: "61", name: "みかん", emoji: "🍊", imageData: null, audioData: null, isActive: true },
+            { id: "62", name: "みみ", emoji: "👂", imageData: null, audioData: null, isActive: true },
+            { id: "63", name: "むしめがね", emoji: "🔍", imageData: null, audioData: null, isActive: true },
+            { id: "64", name: "めがね", emoji: "👓", imageData: null, audioData: null, isActive: true },
+            { id: "65", name: "めろん", emoji: "🍈", imageData: null, audioData: null, isActive: true },
+            { id: "66", name: "もも", emoji: "🍑", imageData: null, audioData: null, isActive: true },
+            { id: "67", name: "もぐら", emoji: "🦔", imageData: null, audioData: null, isActive: true },
+
+            // --- や行 ---
+            { id: "68", name: "やま", emoji: "⛰️", imageData: null, audioData: null, isActive: true },
+            { id: "69", name: "ゆきだるま", emoji: "⛄", imageData: null, audioData: null, isActive: true },
+            { id: "70", name: "よっと", emoji: "⛵", imageData: null, audioData: null, isActive: true },
+
+            // --- ら行・わ行 ---
+            { id: "71", name: "らっぱ", emoji: "🎺", imageData: null, audioData: null, isActive: true },
+            { id: "72", name: "らいおん", emoji: "🦁", imageData: null, audioData: null, isActive: true },
+            { id: "73", name: "らくだ", emoji: "🐪", imageData: null, audioData: null, isActive: true },
+            { id: "74", name: "りんご", emoji: "🍎", imageData: null, audioData: null, isActive: true },
+            { id: "75", name: "りす", emoji: "🐿️", imageData: null, audioData: null, isActive: true },
+            { id: "76", name: "れもん", emoji: "🍋", imageData: null, audioData: null, isActive: true },
+            { id: "77", name: "ろけっと", emoji: "🚀", imageData: null, audioData: null, isActive: true },
+            { id: "78", name: "ろうそく", emoji: "🕯️", imageData: null, audioData: null, isActive: true },
+            { id: "79", name: "わに", emoji: "🐊", imageData: null, audioData: null, isActive: true },
+
+            // --- 濁音・半濁音・拗音 ---
+            { id: "80", name: "がっこう", emoji: "🏫", imageData: null, audioData: null, isActive: true },
+            { id: "81", name: "ぎょうざ", emoji: "🥟", imageData: null, audioData: null, isActive: true },
+            { id: "82", name: "ぎたー", emoji: "🎸", imageData: null, audioData: null, isActive: true },
+            { id: "83", name: "げーむ", emoji: "🎮", imageData: null, audioData: null, isActive: true },
+            { id: "84", name: "ごりら", emoji: "🦍", imageData: null, audioData: null, isActive: true },
+            { id: "85", name: "じてんしゃ", emoji: "🚲", imageData: null, audioData: null, isActive: true },
+            { id: "86", name: "ずぼん", emoji: "👖", imageData: null, audioData: null, isActive: true },
+            { id: "87", name: "ぞう", emoji: "🐘", imageData: null, audioData: null, isActive: true },
+            { id: "88", name: "でんしゃ", emoji: "🚃", imageData: null, audioData: null, isActive: true },
+            { id: "89", name: "でんわ", emoji: "☎️", imageData: null, audioData: null, isActive: true },
+            { id: "90", name: "ばなな", emoji: "🍌", imageData: null, audioData: null, isActive: true },
+            { id: "91", name: "ばいく", emoji: "🏍️", imageData: null, audioData: null, isActive: true },
+            { id: "92", name: "びょういん", emoji: "🏥", imageData: null, audioData: null, isActive: true },
+            { id: "93", name: "ぶどう", emoji: "🍇", imageData: null, audioData: null, isActive: true },
+            { id: "94", name: "ぶた", emoji: "🐷", imageData: null, audioData: null, isActive: true },
+            { id: "95", name: "ぼーる", emoji: "⚽", imageData: null, audioData: null, isActive: true },
+            { id: "96", name: "ぼうし", emoji: "🧢", imageData: null, audioData: null, isActive: true },
+            { id: "97", name: "ぱんだ", emoji: "🐼", imageData: null, audioData: null, isActive: true },
+            { id: "98", name: "ぱん", emoji: "🍞", imageData: null, audioData: null, isActive: true },
+            { id: "99", name: "ぴあの", emoji: "🎹", imageData: null, audioData: null, isActive: true },
+            { id: "100", name: "ぴざ", emoji: "🍕", imageData: null, audioData: null, isActive: true },
+            { id: "101", name: "ぷりん", emoji: "🍮", imageData: null, audioData: null, isActive: true },
+            { id: "102", name: "ぽっぷこーん", emoji: "🍿", imageData: null, audioData: null, isActive: true },
+            { id: "103", name: "きょうりゅう", emoji: "🦖", imageData: null, audioData: null, isActive: true },
+            { id: "104", name: "しゃつ", emoji: "👕", imageData: null, audioData: null, isActive: true },
+            { id: "105", name: "ちょこれーと", emoji: "🍫", imageData: null, audioData: null, isActive: true },
+            { id: "106", name: "にんじゃ", emoji: "🥷", imageData: null, audioData: null, isActive: true },
+            { id: "107", name: "りゅっく", emoji: "🎒", imageData: null, audioData: null, isActive: true }
+        ];
+
+        let setting = {
+            rows: 2,
+            columns: 2,
+            questionCount: 4,
+            showBackButton: true,
+            showWord: true,
+            showPicture: true,
+            writingMode: 'horizontal',
+            cardAspectRatio: 'standard',
+            textDisplay: 'sameSize',
+            textPosition: 'top-left',
+            picturePosition: 'bottom-right',
+            ratioSameSize: 0.35,
+            ratioHeadLargeFirst: 0.45,
+            ratioHeadOnly: 0.5,
+            ratioOfPicture: 0.4
+        };
+
+        const POS_LABELS = {
+            'top-left': '左上',
+            'top-center': '上中央',
+            'top-right': '右上',
+            'middle-left': '中央左',
+            'center': '中央',
+            'middle-right': '中央右',
+            'bottom-left': '左下',
+            'bottom-center': '下中央',
+            'bottom-right': '右下'
+        };
+
+        let currentPosTarget = 'text';
+        let cards = [];
+        let selectedCardIds = new Set();
+        let sortOption = 'alphabetical';
+        let filterOption = 'none';
+        let tempImageBase64 = null;
+        let editingCardId = null;
+
+        let gameTargetCards = [];
+        let stockQueue = [];
+        let gridSlots = [];
+        let targetCard = null;
+        let corrects = 0;
+        let wrongs = 0;
+        let clearedCount = 0;
+        let totalQuestionsInCurrentGame = 0;
+        let ableToTap = true;
+        let audioCtx = null;
+        let currentUtterance = null; // GC破棄バグ防止用
+
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingCardId = null;
+
+        function updateVh() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        window.addEventListener('resize', () => {
+            updateVh();
+            renderSamplePreviewScreen();
+            if (document.getElementById('play-screen').classList.contains('active')) {
+                refreshAllGridStyles();
+            }
+        });
+        window.addEventListener('orientationchange', updateVh);
+        updateVh();
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        function showLoading(text) {
+            const overlay = document.getElementById('loading-overlay');
+            document.getElementById('loading-text').innerText = text || '読み込み中...';
+            overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.remove('active');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCardsData();
+            loadSettings();
+            initTripleTap();
+            renderSamplePreviewScreen();
+        });
+
+        // --- 設定の読み込み・保存 ---
+        function loadSettings() {
+            const saved = localStorage.getItem('karuta_setting');
+            if (saved) {
+                try {
+                    setting = { ...setting, ...JSON.parse(saved) };
+                } catch(e) {}
+            }
+            updateQuestionCountSliderRange();
+            syncSettingUI();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('karuta_setting', JSON.stringify(setting));
+            syncSettingUI();
+            renderSamplePreviewScreen();
+            if (document.getElementById('play-screen').classList.contains('active')) {
+                refreshAllGridStyles();
+            }
+        }
+
+        function syncSettingUI() {
+            document.getElementById('rows-val').innerText = setting.rows;
+            document.getElementById('cols-val').innerText = setting.columns;
+            document.getElementById('preview-grid-info').innerText = `${setting.rows}×${setting.columns}`;
+            document.getElementById('toggle-show-back-btn').checked = setting.showBackButton !== false;
+            document.getElementById('toggle-show-word').checked = setting.showWord;
+            document.getElementById('toggle-show-picture').checked = setting.showPicture !== false;
+            document.getElementById('select-writing-mode').value = setting.writingMode;
+            document.getElementById('select-card-aspect').value = setting.cardAspectRatio || 'standard';
+            document.getElementById('select-text-display').value = setting.textDisplay;
+
+            const playBackBtn = document.getElementById('btn-play-back');
+            if (playBackBtn) {
+                playBackBtn.style.display = (setting.showBackButton !== false) ? 'inline-block' : 'none';
+            }
+            const previewBack = document.getElementById('preview-mini-back');
+            if (previewBack) {
+                previewBack.style.visibility = (setting.showBackButton !== false) ? 'visible' : 'hidden';
+            }
+
+            const textPosBtn = document.getElementById('btn-text-pos');
+            if (textPosBtn) textPosBtn.innerText = (POS_LABELS[setting.textPosition] || '左上') + ' ▾';
+
+            const picPosBtn = document.getElementById('btn-pic-pos');
+            if (picPosBtn) picPosBtn.innerText = (POS_LABELS[setting.picturePosition || 'bottom-right'] || '右下') + ' ▾';
+
+            const charSlider = document.getElementById('slider-char-size');
+            const charLabel = document.getElementById('label-char-size');
+            if (setting.textDisplay === 'sameSize') {
+                charLabel.innerText = '文字サイズ比率';
+                charSlider.value = setting.ratioSameSize || 0.35;
+            } else if (setting.textDisplay === 'headLarge') {
+                charLabel.innerText = '頭文字サイズ比率 (他は自動連動)';
+                charSlider.value = setting.ratioHeadLargeFirst || 0.45;
+            } else {
+                charLabel.innerText = '頭文字サイズ比率';
+                charSlider.value = setting.ratioHeadOnly || 0.5;
+            }
+
+            document.getElementById('slider-picture').value = setting.ratioOfPicture;
+            document.getElementById('row-slider-picture').style.display = (setting.showPicture !== false) ? 'flex' : 'none';
+            document.getElementById('row-pic-pos').style.display = (setting.showPicture !== false) ? 'flex' : 'none';
+
+            updateQuestionCountSliderRange();
+        }
+
+        function openPosModal(target) {
+            initAudio();
+            currentPosTarget = target;
+            document.getElementById('pos-modal-title').innerText = target === 'text' ? '文字の配置を選択' : '絵の配置を選択';
+            const currentVal = target === 'text' ? (setting.textPosition || 'top-left') : (setting.picturePosition || 'bottom-right');
+            const cells = document.querySelectorAll('#pos-popup-grid .pos-popup-cell');
+            cells.forEach(c => {
+                c.classList.toggle('active', c.dataset.pos === currentVal);
+            });
+            document.getElementById('pos-modal-overlay').classList.add('active');
+        }
+
+        function closePosModal(e) {
+            if (e && e.target !== e.currentTarget && !e.target.classList.contains('btn-action')) return;
+            document.getElementById('pos-modal-overlay').classList.remove('active');
+        }
+
+        function selectPos(pos) {
+            if (currentPosTarget === 'text') {
+                setting.textPosition = pos;
+            } else {
+                setting.picturePosition = pos;
+            }
+            saveSettings();
+            document.getElementById('pos-modal-overlay').classList.remove('active');
+        }
+
+        function onCharSizeSliderChange(val) {
+            if (setting.textDisplay === 'sameSize') {
+                setting.ratioSameSize = val;
+            } else if (setting.textDisplay === 'headLarge') {
+                setting.ratioHeadLargeFirst = val;
+            } else {
+                setting.ratioHeadOnly = val;
+            }
+            saveSettings();
+        }
+
+        function updateQuestionCountSliderRange() {
+            const activeCards = cards.filter(c => c.isActive);
+            const activeCount = activeCards.length;
+            const maxVal = Math.max(1, activeCount);
+            
+            const qSlider = document.getElementById('slider-question-count');
+            const qVal = document.getElementById('question-count-val');
+            
+            if (qSlider) {
+                qSlider.max = maxVal;
+                qSlider.value = Math.min(setting.questionCount || 4, maxVal);
+            }
+            if (qVal) {
+                qVal.innerText = Math.min(setting.questionCount || 4, maxVal);
+            }
+        }
+
+        function loadCardsData() {
+            const saved = localStorage.getItem('karuta_cards');
+            if (saved) {
+                try {
+                    cards = JSON.parse(saved);
+                    cards.forEach(c => {
+                        if (c.name) c.name = c.name.normalize('NFC');
+                    });
+                } catch(e) {
+                    cards = [...DEFAULT_CARDS];
+                }
+            } else {
+                cards = [...DEFAULT_CARDS];
+            }
+        }
+
+        function saveCardsData() {
+            localStorage.setItem('karuta_cards', JSON.stringify(cards));
+            updateQuestionCountSliderRange();
+            renderCardList();
+            renderSamplePreviewScreen();
+        }
+
+        // --- トリプルタップ設定起動 ---
+        function initTripleTap() {
+            const trigger = document.getElementById('setting-trigger');
+            let tapCount = 0;
+            let timer = null;
+
+            trigger.addEventListener('pointerdown', (e) => {
+                initAudio();
+                tapCount++;
+                if (tapCount === 1) {
+                    timer = setTimeout(() => {
+                        tapCount = 0;
+                    }, 600);
+                } else if (tapCount === 3) {
+                    clearTimeout(timer);
+                    tapCount = 0;
+                    openSettingModal();
+                }
+            });
+        }
+
+        function openSettingModal() {
+            initAudio();
+            updateQuestionCountSliderRange();
+            document.getElementById('setting-modal').classList.add('active');
+            renderCardList();
+            renderSamplePreviewScreen();
+        }
+
+        function closeSettingModal() {
+            const activeCards = cards.filter(c => c.isActive);
+            const activeCount = activeCards.length;
+
+            if (activeCount > 0 && setting.questionCount > activeCount) {
+                setting.questionCount = activeCount;
+                saveSettings();
+                showToast(`終了までの枚数を出題可能な ${activeCount} 枚に調整しました`);
+            } else if (activeCount === 0) {
+                setting.questionCount = 1;
+                saveSettings();
+            }
+
+            document.getElementById('setting-modal').classList.remove('active');
+        }
+
+        function switchModalTab(tab) {
+            const tabs = document.querySelectorAll('.modal-nav-tabs .tab-btn');
+            tabs[0].classList.toggle('active', tab === 'settings');
+            tabs[1].classList.toggle('active', tab === 'words');
+
+            document.getElementById('tab-settings').style.display = tab === 'settings' ? 'flex' : 'none';
+            document.getElementById('tab-words').style.display = tab === 'words' ? 'flex' : 'none';
+            
+            updateQuestionCountSliderRange();
+        }
+
+        function changeGridSize(type, delta) {
+            if (type === 'rows') {
+                setting.rows = Math.max(1, Math.min(5, setting.rows + delta));
+            } else {
+                setting.columns = Math.max(1, Math.min(5, setting.columns + delta));
+            }
+            saveSettings();
+        }
+
+        function updateSetting(key, val) {
+            setting[key] = val;
+            saveSettings();
+        }
+
+        // --- 2. カードテキスト解析・サイズ & 9位置配置計算ロジック ---
+        function parseCardText(name) {
+            const normalized = (name || '').normalize('NFC');
+            const youons = ["ゃ", "ゅ", "ょ", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ"];
+            let isYouon = false;
+            if (normalized.length >= 2) {
+                const prefix2 = normalized.substring(0, 2);
+                for (let y of youons) {
+                    if (prefix2.includes(y)) {
+                        isYouon = true;
+                        break;
+                    }
+                }
+            }
+
+            let firstChar = "";
+            let remainingChar = "";
+
+            if (isYouon) {
+                firstChar = normalized.substring(0, 2);
+                remainingChar = normalized.substring(2);
+            } else {
+                firstChar = normalized.substring(0, 1);
+                remainingChar = normalized.substring(1);
+            }
+
+            return { firstChar, remainingChar, isYouon, fullLength: normalized.length };
+        }
+
+        function getMaxWordLength() {
+            const activeList = cards.filter(c => c.isActive);
+            if (activeList.length === 0) return 4;
+            let maxLen = 0;
+            activeList.forEach(c => {
+                if (c.name.length > maxLen) maxLen = c.name.length;
+            });
+            return Math.max(maxLen, 3);
+        }
+
+        function createCardElement(card, isSample = false) {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'card-item';
+            
+            const inner = document.createElement('div');
+            inner.className = 'card-inner';
+
+            const parsed = parseCardText(card.name);
+
+            const textContainer = document.createElement('div');
+            textContainer.className = `card-text-container ${setting.writingMode === 'vertical' ? 'writing-vertical' : 'writing-horizontal'}`;
+
+            if (!setting.showWord) {
+                textContainer.style.display = 'none';
+            }
+
+            const firstSpan = document.createElement('span');
+            firstSpan.className = 'first-char';
+            firstSpan.innerText = parsed.firstChar;
+
+            const remainingSpan = document.createElement('span');
+            remainingSpan.className = 'remaining-char';
+            remainingSpan.innerText = (setting.textDisplay === 'headOnly') ? '' : parsed.remainingChar;
+
+            textContainer.appendChild(firstSpan);
+            if (setting.textDisplay !== 'headOnly') {
+                textContainer.appendChild(remainingSpan);
+            }
+
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'card-image-container';
+
+            if (setting.showPicture === false) {
+                imgContainer.style.display = 'none';
+            }
+
+            if (card.imageData) {
+                const img = document.createElement('img');
+                img.src = card.imageData;
+                imgContainer.appendChild(img);
+            } else if (card.emoji) {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'emoji-img';
+                emojiSpan.innerText = card.emoji;
+                imgContainer.appendChild(emojiSpan);
+            }
+
+            inner.appendChild(textContainer);
+            inner.appendChild(imgContainer);
+            cardEl.appendChild(inner);
+
+            requestAnimationFrame(() => {
+                applyCardStyles(cardEl, textContainer, firstSpan, remainingSpan, imgContainer, parsed.isYouon, isSample);
+            });
+
+            return cardEl;
+        }
+
+        function applyCardStyles(cardEl, textContainer, firstSpan, remainingSpan, imgContainer, isYouon, isSample) {
+            const slot = cardEl.parentElement;
+            if (!slot) return;
+            const slotRect = slot.getBoundingClientRect();
+            const slotW = Math.max(slotRect.width, 30);
+            const slotH = Math.max(slotRect.height, 30);
+
+            const aspectMode = setting.cardAspectRatio || 'standard';
+            let targetCardW = slotW;
+            let targetCardH = slotH;
+
+            if (aspectMode === 'square') {
+                const side = Math.min(slotW, slotH);
+                targetCardW = side;
+                targetCardH = side;
+            } else if (aspectMode === 'standard') {
+                const isVert = setting.writingMode === 'vertical';
+                const ratio = isVert ? (3 / 4) : (4 / 3);
+
+                if (slotW / slotH > ratio) {
+                    targetCardH = slotH;
+                    targetCardW = slotH * ratio;
+                } else {
+                    targetCardW = slotW;
+                    targetCardH = slotW / ratio;
+                }
+            } else {
+                targetCardW = slotW;
+                targetCardH = slotH;
+            }
+
+            cardEl.style.width = `${targetCardW}px`;
+            cardEl.style.height = `${targetCardH}px`;
+
+            const w = targetCardW;
+            const h = targetCardH;
+
+            const ratioPic = setting.ratioOfPicture || 0.4;
+            const maxLen = getMaxWordLength();
+            const hasPic = setting.showPicture !== false;
+            const textPos = setting.textPosition || 'top-left';
+            const picPos = setting.picturePosition || 'bottom-right';
+
+            if (hasPic) {
+                imgContainer.style.display = 'flex';
+                const picSize = Math.min(w, h) * ratioPic;
+                imgContainer.style.width = `${picSize}px`;
+                imgContainer.style.height = `${picSize}px`;
+
+                apply9Position(imgContainer, picPos);
+
+                const emojiChild = imgContainer.querySelector('.emoji-img');
+                if (emojiChild) {
+                    emojiChild.style.fontSize = `${picSize * 0.75}px`;
+                }
+            } else {
+                imgContainer.style.display = 'none';
+            }
+
+            if (!setting.showWord) {
+                textContainer.style.display = 'none';
+                return;
+            } else {
+                textContainer.style.display = setting.writingMode === 'vertical' ? 'block' : 'flex';
+            }
+
+            let firstSize = 0;
+            let remainingSize = 0;
+            const headCharLen = isYouon ? 2 : 1;
+            const remCharLen = Math.max(1, maxLen - headCharLen);
+
+            if (setting.writingMode === 'horizontal') {
+                const maxAllowedW = (w * 0.88) / maxLen;
+                const maxAllowedH = h * 0.45;
+
+                if (setting.textDisplay === 'sameSize') {
+                    const ratio = setting.ratioSameSize || 0.35;
+                    firstSize = Math.min(maxAllowedW, maxAllowedH, Math.min(w, h) * ratio);
+                    remainingSize = firstSize;
+                } else if (setting.textDisplay === 'headOnly') {
+                    const ratio = setting.ratioHeadOnly || 0.5;
+                    const maxHeadW = isYouon ? (w * 0.82) / 1.7 : w * 0.82;
+                    firstSize = Math.min(maxHeadW, maxAllowedH, Math.min(w, h) * ratio * (isYouon ? 0.85 : 1.0));
+                    remainingSize = 0;
+                } else {
+                    const ratioFirst = setting.ratioHeadLargeFirst || 0.45;
+                    const headWidthFactor = isYouon ? 1.7 : 1.0;
+                    const effectiveLen = headWidthFactor + remCharLen * 0.65;
+                    const safeFirstSize = (w * 0.88) / effectiveLen;
+
+                    firstSize = Math.min(safeFirstSize, maxAllowedH, Math.min(w, h) * ratioFirst * (isYouon ? 0.82 : 1.0));
+                    
+                    const availW = Math.max(w * 0.88 - (firstSize * headWidthFactor), 8);
+                    const autoRest = availW / remCharLen;
+                    remainingSize = Math.min(autoRest, firstSize * 0.6, maxAllowedH * 0.7);
+                }
+
+                textContainer.style.height = 'auto';
+                textContainer.style.width = 'auto';
+                textContainer.style.maxWidth = '95%';
+                textContainer.style.maxHeight = '95%';
+            } else {
+                const maxAllowedH = (h * 0.88) / maxLen;
+                const maxAllowedW = w * 0.45;
+
+                if (setting.textDisplay === 'sameSize') {
+                    const ratio = setting.ratioSameSize || 0.35;
+                    firstSize = Math.min(maxAllowedH, maxAllowedW, Math.min(w, h) * ratio);
+                    remainingSize = firstSize;
+                } else if (setting.textDisplay === 'headOnly') {
+                    const ratio = setting.ratioHeadOnly || 0.5;
+                    const maxHeadH = isYouon ? (h * 0.82) / 1.7 : h * 0.82;
+                    firstSize = Math.min(maxHeadH, maxAllowedW, Math.min(w, h) * ratio * (isYouon ? 0.85 : 1.0));
+                    remainingSize = 0;
+                } else {
+                    const ratioFirst = setting.ratioHeadLargeFirst || 0.45;
+                    const headHeightFactor = isYouon ? 1.7 : 1.0;
+                    const effectiveLen = headHeightFactor + remCharLen * 0.65;
+                    const safeFirstSize = (h * 0.88) / effectiveLen;
+
+                    firstSize = Math.min(safeFirstSize, maxAllowedW, Math.min(w, h) * ratioFirst * (isYouon ? 0.82 : 1.0));
+                    
+                    const availH = Math.max(h * 0.88 - (firstSize * headHeightFactor), 8);
+                    const autoRest = availH / remCharLen;
+                    remainingSize = Math.min(autoRest, firstSize * 0.6, maxAllowedW * 0.7);
+                }
+
+                textContainer.style.width = 'auto';
+                textContainer.style.height = 'auto';
+                textContainer.style.maxWidth = '95%';
+                textContainer.style.maxHeight = '95%';
+            }
+
+            apply9Position(textContainer, textPos);
+
+            firstSpan.style.fontSize = `${Math.max(firstSize, 6)}px`;
+            if (remainingSpan && setting.textDisplay !== 'headOnly') {
+                remainingSpan.style.fontSize = `${Math.max(remainingSize, 4)}px`;
+            }
+        }
+
+        function apply9Position(el, pos) {
+            if (pos.startsWith('top')) {
+                el.style.top = '4px';
+                el.style.bottom = 'auto';
+            } else if (pos.startsWith('middle') || pos === 'center') {
+                el.style.top = '50%';
+                el.style.bottom = 'auto';
+            } else if (pos.startsWith('bottom')) {
+                el.style.top = 'auto';
+                el.style.bottom = '4px';
+            }
+
+            if (pos.endsWith('left')) {
+                el.style.left = '4px';
+                el.style.right = 'auto';
+            } else if (pos.endsWith('center') || pos === 'center') {
+                el.style.left = '50%';
+                el.style.right = 'auto';
+            } else if (pos.endsWith('right')) {
+                el.style.left = 'auto';
+                el.style.right = '4px';
+            }
+
+            let tx = '0';
+            let ty = '0';
+            if (pos.endsWith('center') || pos === 'center') tx = '-50%';
+            if (pos.startsWith('middle') || pos === 'center') ty = '-50%';
+
+            if (tx !== '0' || ty !== '0') {
+                el.style.transform = `translate(${tx}, ${ty})`;
+            } else {
+                el.style.transform = 'none';
+            }
+        }
+
+        function refreshAllGridStyles() {
+            const playContainer = document.getElementById('grid-container');
+            if (playContainer && playContainer.children.length > 0) {
+                const slots = playContainer.querySelectorAll('.card-slot');
+                slots.forEach((slot, slotIndex) => {
+                    const cardItem = slot.querySelector('.card-item');
+                    if (cardItem) {
+                        const cardData = gridSlots[slotIndex]?.card;
+                        if (cardData) {
+                            const textContainer = cardItem.querySelector('.card-text-container');
+                            const firstSpan = cardItem.querySelector('.first-char');
+                            const remainingSpan = cardItem.querySelector('.remaining-char');
+                            const imgContainer = cardItem.querySelector('.card-image-container');
+                            const parsed = parseCardText(cardData.name);
+                            applyCardStyles(cardItem, textContainer, firstSpan, remainingSpan, imgContainer, parsed.isYouon, false);
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderSamplePreviewScreen() {
+            const wrapper = document.getElementById('preview-screen-wrapper');
+            const screenContainer = document.getElementById('preview-screen-container');
+            const gridContainer = document.getElementById('preview-grid-target');
+            if (!wrapper || !screenContainer || !gridContainer) return;
+
+            const screenRatio = window.innerWidth / (window.innerHeight || 1);
+            const wrapRect = wrapper.getBoundingClientRect();
+            const maxW = wrapRect.width - 16;
+            const maxH = wrapRect.height - 16;
+
+            let targetW = maxW;
+            let targetH = targetW / screenRatio;
+
+            if (targetH > maxH) {
+                targetH = maxH;
+                targetW = targetH * screenRatio;
+            }
+
+            screenContainer.style.width = `${targetW}px`;
+            screenContainer.style.height = `${targetH}px`;
+
+            gridContainer.innerHTML = '';
+            gridContainer.style.gridTemplateRows = `repeat(${setting.rows}, 1fr)`;
+            gridContainer.style.gridTemplateColumns = `repeat(${setting.columns}, 1fr)`;
+
+            const totalCells = setting.rows * setting.columns;
+            const activeList = cards.filter(c => c.isActive);
+            const sampleCardsPool = activeList.length > 0 ? activeList : DEFAULT_CARDS;
+
+            for (let i = 0; i < totalCells; i++) {
+                const slotEl = document.createElement('div');
+                slotEl.className = 'card-slot';
+                const cardData = sampleCardsPool[i % sampleCardsPool.length];
+                const cardEl = createCardElement(cardData, true);
+                slotEl.appendChild(cardEl);
+                gridContainer.appendChild(slotEl);
+            }
+
+            const targetWordLabel = document.getElementById('preview-word-target');
+            if (targetWordLabel) {
+                targetWordLabel.innerText = setting.showWord ? `${sampleCardsPool[0]?.name || 'おにぎり'} 🔊` : '🔊';
+            }
+
+            const previewBack = document.getElementById('preview-mini-back');
+            if (previewBack) {
+                previewBack.style.visibility = (setting.showBackButton !== false) ? 'visible' : 'hidden';
+            }
+        }
+
+        // --- 3. ゲームプレイロジック ---
+        function startGame() {
+            // スタートボタンタップ時に即座に同期アンロック
+            initAudio();
+            document.getElementById('word-display-text').innerText = '';
+
+            const activeCards = cards.filter(c => c.isActive);
+            if (activeCards.length === 0) {
+                showToast("使用できるカードがありません。単語リストから有効にしてください。");
+                return;
+            }
+
+            let shuffled = [...activeCards].sort(() => Math.random() - 0.5);
+            totalQuestionsInCurrentGame = Math.min(setting.questionCount, shuffled.length);
+            gameTargetCards = shuffled.slice(0, totalQuestionsInCurrentGame);
+
+            const capacity = setting.rows * setting.columns;
+            const initialCount = Math.min(capacity, totalQuestionsInCurrentGame);
+            gridSlots = [];
+            for (let i = 0; i < capacity; i++) {
+                if (i < initialCount) {
+                    gridSlots.push({ card: gameTargetCards[i], isDone: false });
+                } else {
+                    gridSlots.push(null);
+                }
+            }
+
+            stockQueue = gameTargetCards.slice(initialCount);
+
+            corrects = 0;
+            wrongs = 0;
+            clearedCount = 0;
+            updateScoreUI();
+
+            const backBtn = document.getElementById('btn-play-back');
+            if (backBtn) {
+                backBtn.style.display = (setting.showBackButton !== false) ? 'inline-block' : 'none';
+            }
+
+            document.getElementById('home-screen').classList.remove('active');
+            document.getElementById('play-screen').classList.add('active');
+
+            renderGrid();
+
+            setTimeout(() => {
+                nextQuestion();
+            }, 300);
+        }
+
+        function stopGame() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            document.getElementById('play-screen').classList.remove('active');
+            document.getElementById('home-screen').classList.add('active');
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            container.style.gridTemplateRows = `repeat(${setting.rows}, 1fr)`;
+            container.style.gridTemplateColumns = `repeat(${setting.columns}, 1fr)`;
+
+            gridSlots.forEach((slot, slotIndex) => {
+                const slotEl = document.createElement('div');
+                slotEl.className = 'card-slot';
+                slotEl.dataset.slotIndex = slotIndex;
+
+                if (slot && !slot.isDone && slot.card) {
+                    const cardEl = createCardElement(slot.card);
+                    cardEl.dataset.id = slot.card.id;
+                    cardEl.onpointerdown = (e) => {
+                        e.preventDefault();
+                        onCardTap(slotIndex, cardEl);
+                    };
+                    slotEl.appendChild(cardEl);
+                }
+
+                container.appendChild(slotEl);
+            });
+        }
+
+        function nextQuestion() {
+            const activeSlots = gridSlots.filter(s => s !== null && !s.isDone && s.card !== null);
+
+            if (activeSlots.length === 0 || clearedCount >= totalQuestionsInCurrentGame) {
+                document.getElementById('word-display-text').innerText = "おしまい！";
+                document.getElementById('btn-replay-inline').style.display = 'none';
+                playSound('finish');
+                setTimeout(() => {
+                    stopGame();
+                }, 2800);
+                return;
+            }
+
+            document.getElementById('btn-replay-inline').style.display = 'flex';
+            const randSlot = activeSlots[Math.floor(Math.random() * activeSlots.length)];
+            targetCard = randSlot.card;
+
+            if (setting.showWord) {
+                document.getElementById('word-display-text').innerText = targetCard.name;
+            } else {
+                document.getElementById('word-display-text').innerText = '';
+            }
+
+            speakOrPlayCardAudio(targetCard);
+            ableToTap = true;
+        }
+
+        function replaySpeech() {
+            if (targetCard && ableToTap) {
+                speakOrPlayCardAudio(targetCard);
+            }
+        }
+
+        function onCardTap(slotIndex, cardEl) {
+            if (!ableToTap) return;
+            const slot = gridSlots[slotIndex];
+            if (!slot || slot.isDone) return;
+
+            ableToTap = false;
+            const overlay = document.createElement('div');
+            overlay.className = 'card-overlay';
+
+            const markSize = Math.min(cardEl.clientWidth, cardEl.clientHeight) * 0.65;
+
+            if (slot.card.name === targetCard.name) {
+                playSound('correct');
+                corrects++;
+                clearedCount++;
+                slot.isDone = true;
+
+                const mark = document.createElement('div');
+                mark.className = 'mark-correct';
+                mark.style.width = `${markSize}px`;
+                mark.style.height = `${markSize}px`;
+
+                overlay.appendChild(mark);
+                cardEl.appendChild(overlay);
+
+                updateScoreUI();
+
+                setTimeout(() => {
+                    cardEl.remove();
+
+                    if (stockQueue.length > 0) {
+                        const nextCard = stockQueue.shift();
+                        gridSlots[slotIndex] = { card: nextCard, isDone: false };
+
+                        const slotContainer = document.querySelector(`.card-slot[data-slot-index="${slotIndex}"]`);
+                        if (slotContainer) {
+                            const newCardEl = createCardElement(nextCard);
+                            newCardEl.dataset.id = nextCard.id;
+                            newCardEl.onpointerdown = (e) => {
+                                e.preventDefault();
+                                onCardTap(slotIndex, newCardEl);
+                            };
+                            slotContainer.appendChild(newCardEl);
+                        }
+                    } else {
+                        gridSlots[slotIndex] = null;
+                    }
+
+                    nextQuestion();
+                }, 800);
+            } else {
+                playSound('incorrect');
+                wrongs++;
+
+                const mark = document.createElement('div');
+                mark.className = 'mark-wrong';
+                mark.style.width = `${markSize}px`;
+                mark.style.height = `${markSize}px`;
+                mark.innerHTML = `
+                    <svg width="100%" height="100%" viewBox="0 0 100 100" style="display:block;">
+                        <line x1="8" y1="8" x2="92" y2="92" stroke="#ff3b30" stroke-width="10" stroke-linecap="round" />
+                        <line x1="92" y1="8" x2="8" y2="92" stroke="#ff3b30" stroke-width="10" stroke-linecap="round" />
+                    </svg>
+                `;
+
+                overlay.appendChild(mark);
+                cardEl.appendChild(overlay);
+
+                updateScoreUI();
+
+                setTimeout(() => {
+                    overlay.remove();
+                    speakOrPlayCardAudio(targetCard);
+                    ableToTap = true;
+                }, 800);
+            }
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-text').innerText = `○: ${corrects}  ×: ${wrongs}`;
+        }
+
+        // --- 音声・Web Audio API ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.resume();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(659.25, now);
+                osc.frequency.setValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'incorrect') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'finish') {
+                const playTone = (freq, start, duration, gainVal = 0.15, toneType = 'sine') => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = toneType;
+                    osc.frequency.setValueAtTime(freq, now + start);
+                    gain.gain.setValueAtTime(gainVal, now + start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + start + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + start);
+                    osc.stop(now + start + duration);
+                };
+
+                // 1. 上昇ファンファーレ
+                playTone(523.25, 0.00, 0.22, 0.20, 'sine');
+                playTone(659.25, 0.12, 0.22, 0.20, 'sine');
+                playTone(783.99, 0.24, 0.22, 0.22, 'sine');
+                playTone(1046.50, 0.36, 0.45, 0.26, 'triangle');
+
+                // 2. 弾むフレーズ
+                playTone(880.00, 0.60, 0.20, 0.20, 'sine');
+                playTone(987.77, 0.72, 0.20, 0.22, 'sine');
+                playTone(1046.50, 0.84, 0.22, 0.25, 'sine');
+                playTone(1318.51, 0.98, 0.90, 0.28, 'triangle');
+
+                // 3. フィナーレ和音
+                playTone(523.25, 1.25, 1.30, 0.15, 'sine');
+                playTone(659.25, 1.25, 1.30, 0.15, 'sine');
+                playTone(783.99, 1.25, 1.30, 0.18, 'sine');
+                playTone(1046.50, 1.25, 1.45, 0.22, 'triangle');
+                playTone(2093.00, 1.25, 1.45, 0.12, 'sine');
+
+                // 4. キラキラ音
+                const sparkleNotes = [1318.51, 1567.98, 1760.00, 2093.00, 2637.02];
+                sparkleNotes.forEach((freq, idx) => {
+                    playTone(freq, 1.35 + idx * 0.08, 0.65, 0.09, 'sine');
+                });
+            }
+        }
+
+        function speakOrPlayCardAudio(card) {
+            if (card && card.audioData) {
+                const audio = new Audio(card.audioData);
+                audio.play().catch(() => {
+                    speakWord(card.name);
+                });
+            } else if (card) {
+                speakWord(card.name);
+            }
+        }
+
+        function hiraToKata(str) {
+            return (str || '').replace(/[\u3041-\u3096]/g, ch => 
+                String.fromCharCode(ch.charCodeAt(0) + 0x60)
+            );
+        }
+
+        function speakWord(text) {
+            if (!('speechSynthesis' in window)) return;
+
+            window.speechSynthesis.cancel();
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
+
+            const phoneticText = hiraToKata(text);
+            const utterance = new SpeechSynthesisUtterance(phoneticText);
+            utterance.lang = 'ja-JP';
+            utterance.rate = 0.9;
+
+            // iOS WebKit GC対策
+            currentUtterance = utterance;
+            utterance.onend = () => { currentUtterance = null; };
+            utterance.onerror = () => { currentUtterance = null; };
+
+            // cancel直後の衝突を防ぐ安全ディレイ
+            setTimeout(() => {
+                window.speechSynthesis.speak(utterance);
+            }, 60);
+        }
+
+        // --- 録音 ---
+        async function toggleRecord(cardId) {
+            if (recordingCardId === cardId) {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                return;
+            }
+            if (recordingCardId !== null) {
+                showToast("他の録音を停止してください");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                recordingCardId = cardId;
+                renderCardList();
+
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const card = cards.find(c => c.id === cardId);
+                        if (card) {
+                            card.audioData = reader.result;
+                            saveCardsData();
+                        }
+                        recordingCardId = null;
+                        renderCardList();
+                        showToast("録音を保存しました");
+                    };
+                    reader.readAsDataURL(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                mediaRecorder.start();
+            } catch(err) {
+                showToast("マイクへのアクセスが許可されていません");
+            }
+        }
+
+        function deleteRecord(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            if (card) {
+                card.audioData = null;
+                saveCardsData();
+                showToast("録音を削除しました");
+            }
+        }
+
+        // --- 4. 単語リスト管理 ---
+        function getFilteredCards() {
+            return cards.filter(card => {
+                const name = (card.name || '').normalize('NFC');
+                if (filterOption === 'sokuon') return name.includes('っ');
+                if (filterOption === 'yoon') return name.match(/[ゃゅょ]/);
+                return true;
+            });
+        }
+
+        function renderCardList() {
+            const container = document.getElementById('card-list-container');
+            container.innerHTML = '';
+
+            let filtered = getFilteredCards();
+
+            if (sortOption === 'alphabetical') {
+                filtered.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            } else if (sortOption === 'lengthAsc') {
+                filtered.sort((a, b) => a.name.length - b.name.length);
+            } else if (sortOption === 'lengthDesc') {
+                filtered.sort((a, b) => b.name.length - a.name.length);
+            }
+
+            document.getElementById('selected-count-label').innerText = `${selectedCardIds.size}件選択中`;
+
+            filtered.forEach(card => {
+                const isSelected = selectedCardIds.has(card.id);
+                const item = document.createElement('div');
+                item.className = `card-list-item ${isSelected ? 'selected-row' : ''} ${!card.isActive ? 'inactive-row' : ''}`;
+
+                const chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.className = 'item-checkbox';
+                chk.checked = isSelected;
+                chk.onchange = (e) => {
+                    if (e.target.checked) {
+                        selectedCardIds.add(card.id);
+                    } else {
+                        selectedCardIds.delete(card.id);
+                    }
+                    renderCardList();
+                };
+
+                const thumb = document.createElement('div');
+                thumb.className = 'item-thumb';
+                if (card.imageData) {
+                    thumb.innerHTML = `<img src="${card.imageData}">`;
+                } else {
+                    thumb.innerText = card.emoji || '🎴';
+                }
+
+                const nameBox = document.createElement('div');
+                nameBox.className = 'item-name-box';
+
+                const nameText = document.createElement('span');
+                nameText.className = 'item-name-text';
+                nameText.innerText = card.name;
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-edit-word';
+                editBtn.innerHTML = '✏️';
+                editBtn.title = '単語名を編集';
+                editBtn.onclick = () => openEditDialog(card.id);
+
+                nameBox.appendChild(nameText);
+                nameBox.appendChild(editBtn);
+
+                const audioCtrl = document.createElement('div');
+                audioCtrl.className = 'audio-controls';
+
+                const isRec = recordingCardId === card.id;
+                const recBtn = document.createElement('button');
+                recBtn.className = `btn-audio ${isRec ? 'recording' : ''}`;
+                recBtn.innerText = isRec ? '⏹' : '🎙';
+                recBtn.onclick = () => toggleRecord(card.id);
+                audioCtrl.appendChild(recBtn);
+
+                if (card.audioData) {
+                    const playBtn = document.createElement('button');
+                    playBtn.className = 'btn-audio';
+                    playBtn.innerText = '▶';
+                    playBtn.onclick = () => speakOrPlayCardAudio(card);
+
+                    const delAudioBtn = document.createElement('button');
+                    delAudioBtn.className = 'btn-audio';
+                    delAudioBtn.style.color = '#ff3b30';
+                    delAudioBtn.innerText = '✕';
+                    delAudioBtn.onclick = () => deleteRecord(card.id);
+
+                    audioCtrl.appendChild(playBtn);
+                    audioCtrl.appendChild(delAudioBtn);
+                }
+
+                const statusBtn = document.createElement('button');
+                statusBtn.className = `item-status-btn ${card.isActive ? 'active' : 'inactive'}`;
+                statusBtn.innerText = card.isActive ? '使用中' : '停止中';
+                statusBtn.onclick = () => {
+                    card.isActive = !card.isActive;
+                    saveCardsData();
+                };
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-delete';
+                delBtn.innerText = '🗑️';
+                delBtn.onclick = () => {
+                    cards = cards.filter(c => c.id !== card.id);
+                    selectedCardIds.delete(card.id);
+                    saveCardsData();
+                };
+
+                item.appendChild(chk);
+                item.appendChild(thumb);
+                item.appendChild(nameBox);
+                item.appendChild(audioCtrl);
+                item.appendChild(statusBtn);
+                item.appendChild(delBtn);
+                container.appendChild(item);
+            });
+        }
+
+        function openEditDialog(cardId) {
+            const card = cards.find(c => c.id === cardId);
+            if (!card) return;
+            editingCardId = cardId;
+            document.getElementById('edit-word-input').value = card.name;
+            document.getElementById('edit-dialog-overlay').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('edit-word-input').focus();
+            }, 100);
+        }
+
+        function closeEditDialog() {
+            document.getElementById('edit-dialog-overlay').classList.remove('active');
+            editingCardId = null;
+        }
+
+        function saveEditedWord() {
+            if (!editingCardId) return;
+            const newName = document.getElementById('edit-word-input').value.trim().normalize('NFC');
+            if (!newName) {
+                showToast("単語名を入力してください");
+                return;
+            }
+            const card = cards.find(c => c.id === editingCardId);
+            if (card) {
+                card.name = newName;
+                saveCardsData();
+                showToast("単語名を更新しました");
+            }
+            closeEditDialog();
+        }
+
+        function setSortOption(opt) {
+            sortOption = opt;
+            renderCardList();
+        }
+
+        function setFilterOption(opt) {
+            filterOption = opt;
+            selectedCardIds.clear();
+            renderCardList();
+        }
+
+        function selectFilteredCards(select) {
+            const filtered = getFilteredCards();
+            filtered.forEach(card => {
+                if (select) {
+                    selectedCardIds.add(card.id);
+                } else {
+                    selectedCardIds.delete(card.id);
+                }
+            });
+            renderCardList();
+        }
+
+        function applyBatchActive(activeState) {
+            if (selectedCardIds.size === 0) {
+                showToast("単語が選択されていません");
+                return;
+            }
+            let count = 0;
+            cards.forEach(card => {
+                if (selectedCardIds.has(card.id)) {
+                    card.isActive = activeState;
+                    count++;
+                }
+            });
+            saveCardsData();
+            showToast(`${count}件を「${activeState ? '使用中' : '停止中'}」に設定しました`);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempImageBase64 = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleBatchFileSelect(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const total = files.length;
+            showLoading(`画像を読み込み中 (0 / ${total})`);
+
+            let loadedCount = 0;
+            Array.from(files).forEach((file) => {
+                const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                const nameWithoutExt = rawName.normalize('NFC');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const newCard = {
+                        id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
+                        name: nameWithoutExt,
+                        emoji: null,
+                        imageData: e.target.result,
+                        audioData: null,
+                        isActive: true
+                    };
+                    cards.push(newCard);
+                    loadedCount++;
+                    document.getElementById('loading-text').innerText = `画像を読み込み中 (${loadedCount} / ${total})`;
+
+                    if (loadedCount === total) {
+                        saveCardsData();
+                        setTimeout(() => {
+                            hideLoading();
+                            showToast(`${loadedCount}件の単語を一括追加しました`);
+                        }, 200);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+        }
+
+        function addNewCard() {
+            const input = document.getElementById('new-word-input');
+            const name = input.value.trim().normalize('NFC');
+            if (!name) return;
+
+            const newCard = {
+                id: Date.now().toString(),
+                name: name,
+                emoji: tempImageBase64 ? null : '🎴',
+                imageData: tempImageBase64,
+                audioData: null,
+                isActive: true
+            };
+
+            cards.push(newCard);
+            saveCardsData();
+
+            input.value = '';
+            tempImageBase64 = null;
+            document.getElementById('new-word-file').value = '';
+            showToast("新しい単語を追加しました");
+        }
+
+        // --- 5. バックアップ（エクスポート / インポート） ---
+        function exportData() {
+            const backupObj = {
+                version: "2.0",
+                exportedAt: new Date().toISOString(),
+                setting: setting,
+                cards: cards
+            };
+            const jsonStr = JSON.stringify(backupObj, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `karuta_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("データをエクスポートしました");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoading("バックアップデータを復元中...");
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.setting) {
+                        setting = { ...setting, ...imported.setting };
+                    }
+                    if (imported.cards && Array.isArray(imported.cards)) {
+                        cards = imported.cards;
+                        cards.forEach(c => {
+                            if (c.name) c.name = c.name.normalize('NFC');
+                        });
+                    }
+                    selectedCardIds.clear();
+                    saveSettings();
+                    saveCardsData();
+                    setTimeout(() => {
+                        hideLoading();
+                        showToast("データを正常にインポートしました");
+                    }, 300);
+                } catch(err) {
+                    hideLoading();
+                    showToast("データの読み込みに失敗しました");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+    </script>
+</body>
+</html>
