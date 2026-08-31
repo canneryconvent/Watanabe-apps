@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="img.png">
@@ -39,18 +37,21 @@
             -webkit-user-select: none;
         }
 
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             height: calc(var(--vh, 1vh) * 100);
             overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overscroll-behavior: none;
+            touch-action: none;
             font-family: var(--font-family);
             background-color: var(--bg-color);
             color: #333;
-            touch-action: manipulation;
         }
 
         /* 画面共通切替 */
@@ -68,6 +69,8 @@
             padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            touch-action: none;
+            overflow: hidden;
         }
 
         .screen.active {
@@ -210,6 +213,7 @@
             justify-content: center;
             align-content: center;
             overflow: hidden;
+            touch-action: none;
         }
 
         /* --- カードスタイル --- */
@@ -220,6 +224,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            touch-action: none;
         }
 
         .card-item {
@@ -231,7 +236,8 @@
             overflow: hidden;
             cursor: pointer;
             box-sizing: border-box;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            touch-action: none;
         }
 
         .card-inner {
@@ -248,7 +254,7 @@
             white-space: nowrap !important;
             overflow: visible;
             box-sizing: border-box;
-            padding: 2px;
+            padding: 4px;
             pointer-events: none;
         }
 
@@ -271,8 +277,7 @@
             word-break: keep-all !important;
         }
 
-        .first-char,
-        .remaining-char {
+        .first-char, .remaining-char {
             font-weight: 600;
             color: #000;
             text-shadow: 0 0 3px #fff, 0 0 3px #fff;
@@ -356,6 +361,8 @@
             padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            overflow: hidden;
+            overscroll-behavior: none;
         }
 
         .modal-overlay.active {
@@ -406,7 +413,7 @@
         .tab-btn.active {
             background: #fff;
             font-weight: 600;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
         }
 
         /* 設定画面レイアウト */
@@ -429,6 +436,8 @@
             flex: 1.1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -443,7 +452,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             min-height: 220px;
         }
 
@@ -480,7 +489,7 @@
             overflow: hidden;
             border: 1px solid #c6c6c8;
             border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
         .preview-mini-header {
@@ -607,7 +616,7 @@
             background: #fff;
             border-radius: 14px;
             padding: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -723,6 +732,8 @@
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
             background: #fff;
             border-radius: 8px;
             border: 1px solid #d1d1d6;
@@ -752,6 +763,7 @@
             background: #f0f7ff;
         }
 
+        /* 停止中の行全体グレーアウト */
         .card-list-item.inactive-row {
             background: #f8f8fa;
             color: #8e8e93;
@@ -837,17 +849,9 @@
         }
 
         @keyframes pulse {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.6;
-            }
-
-            100% {
-                opacity: 1;
-            }
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
         }
 
         .item-status-btn {
@@ -888,6 +892,8 @@
             gap: 10px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
         }
 
         .weak-words-container {
@@ -985,9 +991,7 @@
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         .toast-notification {
@@ -1033,7 +1037,7 @@
             border-radius: 12px;
             width: 85%;
             max-width: 320px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -1054,7 +1058,6 @@
         }
     </style>
 </head>
-
 <body>
     <!-- 1. ホーム画面 -->
     <div id="home-screen" class="screen active">
@@ -1076,20 +1079,20 @@
                 <button class="icon-btn-inline" id="btn-replay-inline" onclick="replaySpeech()">🔊</button>
             </div>
             <div class="header-right">
-                <span class="score-counter" id="score-text">○: 0 ×: 0</span>
+                <span class="score-counter" id="score-text">○: 0  ×: 0</span>
             </div>
         </div>
         <div class="grid-container" id="grid-container"></div>
     </div>
 
-    <!-- 3. 設定・単語リスト・学習履歴 全画面モーダル -->
+    <!-- 3. 設定・単語リスト 全画面モーダル -->
     <div class="modal-overlay" id="setting-modal">
         <div class="modal-header">
             <button class="btn-back" onclick="closeSettingModal()">閉じる</button>
             <h3 class="modal-title">設定メニュー</h3>
             <div style="width: 54px;"></div>
         </div>
-
+        
         <div class="modal-nav-tabs">
             <button class="tab-btn active" onclick="switchModalTab('settings')">設定</button>
             <button class="tab-btn" onclick="switchModalTab('words')">単語リスト</button>
@@ -1120,8 +1123,7 @@
                     </div>
                     <div class="setting-row">
                         <span class="setting-label-text">終了までの枚数 (<span id="question-count-val">4</span>枚)</span>
-                        <input type="range" class="range-slider" min="1" max="100" step="1" id="slider-question-count"
-                            oninput="updateSetting('questionCount', parseInt(this.value))">
+                        <input type="range" class="range-slider" min="1" max="100" step="1" id="slider-question-count" oninput="updateSetting('questionCount', parseInt(this.value))">
                     </div>
                 </div>
 
@@ -1130,8 +1132,7 @@
                     <div class="setting-card-title">🎴 カードの表示・配置設定</div>
                     <div class="setting-row">
                         <span class="setting-label-text">もどるボタンを表示する</span>
-                        <input type="checkbox" id="toggle-show-back-btn"
-                            onchange="updateSetting('showBackButton', this.checked)">
+                        <input type="checkbox" id="toggle-show-back-btn" onchange="updateSetting('showBackButton', this.checked)">
                     </div>
                     <div class="setting-row">
                         <span class="setting-label-text">上部に単語を表示する</span>
@@ -1139,21 +1140,18 @@
                     </div>
                     <div class="setting-row">
                         <span class="setting-label-text">イラストを表示する</span>
-                        <input type="checkbox" id="toggle-show-picture"
-                            onchange="updateSetting('showPicture', this.checked)">
+                        <input type="checkbox" id="toggle-show-picture" onchange="updateSetting('showPicture', this.checked)">
                     </div>
                     <div class="setting-row">
                         <span class="setting-label-text">文字の向き</span>
-                        <select class="select-menu" id="select-writing-mode"
-                            onchange="updateSetting('writingMode', this.value)">
+                        <select class="select-menu" id="select-writing-mode" onchange="updateSetting('writingMode', this.value)">
                             <option value="horizontal">横書き</option>
                             <option value="vertical">縦書き</option>
                         </select>
                     </div>
                     <div class="setting-row">
                         <span class="setting-label-text">カードの形 (比率)</span>
-                        <select class="select-menu" id="select-card-aspect"
-                            onchange="updateSetting('cardAspectRatio', this.value)">
+                        <select class="select-menu" id="select-card-aspect" onchange="updateSetting('cardAspectRatio', this.value)">
                             <option value="standard">カルタ比率 (向き連動)</option>
                             <option value="square">正方形 (1:1)</option>
                             <option value="auto">全画面フィット</option>
@@ -1161,8 +1159,7 @@
                     </div>
                     <div class="setting-row">
                         <span class="setting-label-text">文字の表示方法</span>
-                        <select class="select-menu" id="select-text-display"
-                            onchange="updateSetting('textDisplay', this.value)">
+                        <select class="select-menu" id="select-text-display" onchange="updateSetting('textDisplay', this.value)">
                             <option value="sameSize">すべて同じ大きさ</option>
                             <option value="headLarge">頭文字大、他小</option>
                             <option value="headOnly">頭文字のみ</option>
@@ -1174,8 +1171,7 @@
                     </div>
                     <div class="setting-row" id="row-pic-pos">
                         <span class="setting-label-text">絵の配置</span>
-                        <button class="btn-pos-selector" id="btn-pic-pos" onclick="openPosModal('picture')">右下
-                            ▾</button>
+                        <button class="btn-pos-selector" id="btn-pic-pos" onclick="openPosModal('picture')">右下 ▾</button>
                     </div>
                 </div>
 
@@ -1184,13 +1180,11 @@
                     <div class="setting-card-title">🔍 サイズ比率調整</div>
                     <div class="setting-row" id="row-slider-char-size">
                         <span class="setting-label-text" id="label-char-size">文字サイズ比率</span>
-                        <input type="range" class="range-slider" min="0.1" max="0.9" step="0.05" id="slider-char-size"
-                            oninput="onCharSizeSliderChange(parseFloat(this.value))">
+                        <input type="range" class="range-slider" min="0.1" max="0.9" step="0.05" id="slider-char-size" oninput="onCharSizeSliderChange(parseFloat(this.value))">
                     </div>
                     <div class="setting-row" id="row-slider-picture">
                         <span class="setting-label-text">絵のサイズ比率</span>
-                        <input type="range" class="range-slider" min="0.1" max="0.9" step="0.05" id="slider-picture"
-                            oninput="updateSetting('ratioOfPicture', parseFloat(this.value))">
+                        <input type="range" class="range-slider" min="0.1" max="0.9" step="0.05" id="slider-picture" oninput="updateSetting('ratioOfPicture', parseFloat(this.value))">
                     </div>
                 </div>
 
@@ -1199,10 +1193,8 @@
                     <div class="setting-card-title">💾 データ管理 (バックアップ)</div>
                     <div class="compact-filter-bar" style="margin-top: 6px;">
                         <button class="btn-action primary" style="flex:1;" onclick="exportData()">📤 エクスポート</button>
-                        <button class="btn-action" style="flex:1;"
-                            onclick="document.getElementById('import-file-input').click()">📥 インポート</button>
-                        <input type="file" id="import-file-input" accept=".json" style="display:none;"
-                            onchange="importData(event)">
+                        <button class="btn-action" style="flex:1;" onclick="document.getElementById('import-file-input').click()">📥 インポート</button>
+                        <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importData(event)">
                     </div>
                 </div>
             </div>
@@ -1218,7 +1210,7 @@
                         <div class="preview-mini-header">
                             <span id="preview-mini-back" style="opacity:0.6; font-size:0.7rem;">もどる</span>
                             <span id="preview-word-target" style="color:var(--primary-color);">おにぎり 🔊</span>
-                            <span style="font-size:0.7rem; color:#8e8e93;">○: 0 ×: 0</span>
+                            <span style="font-size:0.7rem; color:#8e8e93;">○: 0  ×: 0</span>
                         </div>
                         <div class="preview-mini-grid" id="preview-grid-target"></div>
                     </div>
@@ -1229,19 +1221,15 @@
         <!-- 2. 単語リストタブ -->
         <div class="words-content-pane" id="tab-words" style="display: none;">
             <div class="compact-filter-bar">
-                <input type="text" id="new-word-input" placeholder="新しい単語 (例: ぶどう)"
-                    style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:6px; font-family:var(--font-family); font-size:0.85rem;">
-                <input type="file" id="new-word-file" accept="image/*" style="display:none;"
-                    onchange="handleFileSelect(event)">
+                <input type="text" id="new-word-input" placeholder="新しい単語 (例: ぶどう)" style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:6px; font-family:var(--font-family); font-size:0.85rem;">
+                <input type="file" id="new-word-file" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
                 <button class="btn-action" onclick="document.getElementById('new-word-file').click()">画像選択</button>
                 <button class="btn-action primary" onclick="addNewCard()">追加</button>
             </div>
 
             <div class="compact-filter-bar">
-                <input type="file" id="batch-image-file" accept="image/*" multiple style="display:none;"
-                    onchange="handleBatchFileSelect(event)">
-                <button class="btn-action primary" style="width:100%;"
-                    onclick="document.getElementById('batch-image-file').click()">📁 画像一括登録 (ファイル名＝単語)</button>
+                <input type="file" id="batch-image-file" accept="image/*" multiple style="display:none;" onchange="handleBatchFileSelect(event)">
+                <button class="btn-action primary" style="width:100%;" onclick="document.getElementById('batch-image-file').click()">📁 画像一括登録 (ファイル名＝単語)</button>
             </div>
 
             <div class="compact-filter-bar">
@@ -1255,8 +1243,7 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:4px; flex:1;">
                     <span style="font-size:0.75rem; color:#666;">絞込:</span>
-                    <select class="select-menu" style="flex:1;" id="select-filter"
-                        onchange="setFilterOption(this.value)">
+                    <select class="select-menu" style="flex:1;" id="select-filter" onchange="setFilterOption(this.value)">
                         <option value="none">すべて</option>
                         <option value="sokuon">促音のみ (っ)</option>
                         <option value="yoon">拗音のみ (ゃ/ゅ/ょ)</option>
@@ -1282,8 +1269,7 @@
             <div class="setting-card">
                 <div class="setting-card-title" style="justify-content: space-between;">
                     <span>⚠️ 間違えやすい単語 (累計)</span>
-                    <button class="btn-action small primary" id="btn-practice-weak" onclick="practiceWeakWords()"
-                        style="display:none;">この単語だけを練習</button>
+                    <button class="btn-action small primary" id="btn-practice-weak" onclick="practiceWeakWords()" style="display:none;">この単語だけを練習</button>
                 </div>
                 <div id="weak-words-container" class="weak-words-container">
                     <span style="font-size:0.82rem; color:#8e8e93;">まだ間違いの記録はありません。</span>
@@ -1314,8 +1300,7 @@
                 <button class="pos-popup-cell" data-pos="center" onclick="selectPos('center')">中央</button>
                 <button class="pos-popup-cell" data-pos="middle-right" onclick="selectPos('middle-right')">中央右</button>
                 <button class="pos-popup-cell" data-pos="bottom-left" onclick="selectPos('bottom-left')">左下</button>
-                <button class="pos-popup-cell" data-pos="bottom-center"
-                    onclick="selectPos('bottom-center')">下中央</button>
+                <button class="pos-popup-cell" data-pos="bottom-center" onclick="selectPos('bottom-center')">下中央</button>
                 <button class="pos-popup-cell" data-pos="bottom-right" onclick="selectPos('bottom-right')">右下</button>
             </div>
             <button class="btn-action" style="width:100%;" onclick="closePosModal()">閉じる</button>
@@ -1344,7 +1329,7 @@
     <div id="toast" class="toast-notification"></div>
 
     <script>
-        // --- 1. アプリ状態と50音網羅単語リストの初期化 ---
+        // --- 1. アプリ状態と50音網羅単語リストの初期化（もぐら削除・106語） ---
         const DEFAULT_CARDS = [
             // --- あ行 ---
             { id: "1", name: "あり", emoji: "🐜", imageData: null, audioData: null, isActive: true },
@@ -1425,53 +1410,52 @@
             { id: "64", name: "めがね", emoji: "👓", imageData: null, audioData: null, isActive: true },
             { id: "65", name: "めろん", emoji: "🍈", imageData: null, audioData: null, isActive: true },
             { id: "66", name: "もも", emoji: "🍑", imageData: null, audioData: null, isActive: true },
-            { id: "67", name: "もぐら", emoji: "🦔", imageData: null, audioData: null, isActive: true },
 
             // --- や行 ---
-            { id: "68", name: "やま", emoji: "⛰️", imageData: null, audioData: null, isActive: true },
-            { id: "69", name: "ゆきだるま", emoji: "⛄", imageData: null, audioData: null, isActive: true },
-            { id: "70", name: "よっと", emoji: "⛵", imageData: null, audioData: null, isActive: true },
+            { id: "67", name: "やま", emoji: "⛰️", imageData: null, audioData: null, isActive: true },
+            { id: "68", name: "ゆきだるま", emoji: "⛄", imageData: null, audioData: null, isActive: true },
+            { id: "69", name: "よっと", emoji: "⛵", imageData: null, audioData: null, isActive: true },
 
-            // --- ら・わ行 ---
-            { id: "71", name: "らっぱ", emoji: "🎺", imageData: null, audioData: null, isActive: true },
-            { id: "72", name: "らいおん", emoji: "🦁", imageData: null, audioData: null, isActive: true },
-            { id: "73", name: "らくだ", emoji: "🐪", imageData: null, audioData: null, isActive: true },
-            { id: "74", name: "りんご", emoji: "🍎", imageData: null, audioData: null, isActive: true },
-            { id: "75", name: "りす", emoji: "🐿️", imageData: null, audioData: null, isActive: true },
-            { id: "76", name: "れもん", emoji: "🍋", imageData: null, audioData: null, isActive: true },
-            { id: "77", name: "ろけっと", emoji: "🚀", imageData: null, audioData: null, isActive: true },
-            { id: "78", name: "ろうそく", emoji: "🕯️", imageData: null, audioData: null, isActive: true },
-            { id: "79", name: "わに", emoji: "🐊", imageData: null, audioData: null, isActive: true },
+            // --- ら行・わ行 ---
+            { id: "70", name: "らっぱ", emoji: "🎺", imageData: null, audioData: null, isActive: true },
+            { id: "71", name: "らいおん", emoji: "🦁", imageData: null, audioData: null, isActive: true },
+            { id: "72", name: "らくだ", emoji: "🐪", imageData: null, audioData: null, isActive: true },
+            { id: "73", name: "りんご", emoji: "🍎", imageData: null, audioData: null, isActive: true },
+            { id: "74", name: "りす", emoji: "🐿️", imageData: null, audioData: null, isActive: true },
+            { id: "75", name: "れもん", emoji: "🍋", imageData: null, audioData: null, isActive: true },
+            { id: "76", name: "ろけっと", emoji: "🚀", imageData: null, audioData: null, isActive: true },
+            { id: "77", name: "ろうそく", emoji: "🕯️", imageData: null, audioData: null, isActive: true },
+            { id: "78", name: "わに", emoji: "🐊", imageData: null, audioData: null, isActive: true },
 
             // --- 濁音・半濁音・拗音 ---
-            { id: "80", name: "がっこう", emoji: "🏫", imageData: null, audioData: null, isActive: true },
-            { id: "81", name: "ぎょうざ", emoji: "🥟", imageData: null, audioData: null, isActive: true },
-            { id: "82", name: "ぎたー", emoji: "🎸", imageData: null, audioData: null, isActive: true },
-            { id: "83", name: "げーむ", emoji: "🎮", imageData: null, audioData: null, isActive: true },
-            { id: "84", name: "ごりら", emoji: "🦍", imageData: null, audioData: null, isActive: true },
-            { id: "85", name: "じてんしゃ", emoji: "🚲", imageData: null, audioData: null, isActive: true },
-            { id: "86", name: "ずぼん", emoji: "👖", imageData: null, audioData: null, isActive: true },
-            { id: "87", name: "ぞう", emoji: "🐘", imageData: null, audioData: null, isActive: true },
-            { id: "88", name: "でんしゃ", emoji: "🚃", imageData: null, audioData: null, isActive: true },
-            { id: "89", name: "でんわ", emoji: "☎️", imageData: null, audioData: null, isActive: true },
-            { id: "90", name: "ばなな", emoji: "🍌", imageData: null, audioData: null, isActive: true },
-            { id: "91", name: "ばいく", emoji: "🏍️", imageData: null, audioData: null, isActive: true },
-            { id: "92", name: "びょういん", emoji: "🏥", imageData: null, audioData: null, isActive: true },
-            { id: "93", name: "ぶどう", emoji: "🍇", imageData: null, audioData: null, isActive: true },
-            { id: "94", name: "ぶた", emoji: "🐷", imageData: null, audioData: null, isActive: true },
-            { id: "95", name: "ぼーる", emoji: "⚽", imageData: null, audioData: null, isActive: true },
-            { id: "96", name: "ぼうし", emoji: "🧢", imageData: null, audioData: null, isActive: true },
-            { id: "97", name: "ぱんだ", emoji: "🐼", imageData: null, audioData: null, isActive: true },
-            { id: "98", name: "ぱん", emoji: "🍞", imageData: null, audioData: null, isActive: true },
-            { id: "99", name: "ぴあの", emoji: "🎹", imageData: null, audioData: null, isActive: true },
-            { id: "100", name: "ぴざ", emoji: "🍕", imageData: null, audioData: null, isActive: true },
-            { id: "101", name: "ぷりん", emoji: "🍮", imageData: null, audioData: null, isActive: true },
-            { id: "102", name: "ぽっぷこーん", emoji: "🍿", imageData: null, audioData: null, isActive: true },
-            { id: "103", name: "きょうりゅう", emoji: "🦖", imageData: null, audioData: null, isActive: true },
-            { id: "104", name: "しゃつ", emoji: "👕", imageData: null, audioData: null, isActive: true },
-            { id: "105", name: "ちょこれーと", emoji: "🍫", imageData: null, audioData: null, isActive: true },
-            { id: "106", name: "にんじゃ", emoji: "🥷", imageData: null, audioData: null, isActive: true },
-            { id: "107", name: "りゅっく", emoji: "🎒", imageData: null, audioData: null, isActive: true }
+            { id: "79", name: "がっこう", emoji: "🏫", imageData: null, audioData: null, isActive: true },
+            { id: "80", name: "ぎょうざ", emoji: "🥟", imageData: null, audioData: null, isActive: true },
+            { id: "81", name: "ぎたー", emoji: "🎸", imageData: null, audioData: null, isActive: true },
+            { id: "82", name: "げーむ", emoji: "🎮", imageData: null, audioData: null, isActive: true },
+            { id: "83", name: "ごりら", emoji: "🦍", imageData: null, audioData: null, isActive: true },
+            { id: "84", name: "じてんしゃ", emoji: "🚲", imageData: null, audioData: null, isActive: true },
+            { id: "85", name: "ずぼん", emoji: "👖", imageData: null, audioData: null, isActive: true },
+            { id: "86", name: "ぞう", emoji: "🐘", imageData: null, audioData: null, isActive: true },
+            { id: "87", name: "でんしゃ", emoji: "🚃", imageData: null, audioData: null, isActive: true },
+            { id: "88", name: "でんわ", emoji: "☎️", imageData: null, audioData: null, isActive: true },
+            { id: "89", name: "ばなな", emoji: "🍌", imageData: null, audioData: null, isActive: true },
+            { id: "90", name: "ばいく", emoji: "🏍️", imageData: null, audioData: null, isActive: true },
+            { id: "91", name: "びょういん", emoji: "🏥", imageData: null, audioData: null, isActive: true },
+            { id: "92", name: "ぶどう", emoji: "🍇", imageData: null, audioData: null, isActive: true },
+            { id: "93", name: "ぶた", emoji: "🐷", imageData: null, audioData: null, isActive: true },
+            { id: "94", name: "ぼーる", emoji: "⚽", imageData: null, audioData: null, isActive: true },
+            { id: "95", name: "ぼうし", emoji: "🧢", imageData: null, audioData: null, isActive: true },
+            { id: "96", name: "ぱんだ", emoji: "🐼", imageData: null, audioData: null, isActive: true },
+            { id: "97", name: "ぱん", emoji: "🍞", imageData: null, audioData: null, isActive: true },
+            { id: "98", name: "ぴあの", emoji: "🎹", imageData: null, audioData: null, isActive: true },
+            { id: "99", name: "ぴざ", emoji: "🍕", imageData: null, audioData: null, isActive: true },
+            { id: "100", name: "ぷりん", emoji: "🍮", imageData: null, audioData: null, isActive: true },
+            { id: "101", name: "ぽっぷこーん", emoji: "🍿", imageData: null, audioData: null, isActive: true },
+            { id: "102", name: "きょうりゅう", emoji: "🦖", imageData: null, audioData: null, isActive: true },
+            { id: "103", name: "しゃつ", emoji: "👕", imageData: null, audioData: null, isActive: true },
+            { id: "104", name: "ちょこれーと", emoji: "🍫", imageData: null, audioData: null, isActive: true },
+            { id: "105", name: "にんじゃ", emoji: "🥷", imageData: null, audioData: null, isActive: true },
+            { id: "106", name: "りゅっく", emoji: "🎒", imageData: null, audioData: null, isActive: true }
         ];
 
         let setting = {
@@ -1521,7 +1505,7 @@
         let wrongs = 0;
         let clearedCount = 0;
         let totalQuestionsInCurrentGame = 0;
-        let currentGameWrongWords = []; // 今回のゲームで間違えた単語ログ
+        let currentGameWrongWords = [];
         let ableToTap = true;
         let audioCtx = null;
         let currentUtterance = null;
@@ -1577,7 +1561,7 @@
             if (saved) {
                 try {
                     setting = { ...setting, ...JSON.parse(saved) };
-                } catch (e) { }
+                } catch(e) {}
             }
             updateQuestionCountSliderRange();
             syncSettingUI();
@@ -1680,10 +1664,10 @@
             const activeCards = cards.filter(c => c.isActive);
             const activeCount = activeCards.length;
             const maxVal = Math.max(1, activeCount);
-
+            
             const qSlider = document.getElementById('slider-question-count');
             const qVal = document.getElementById('question-count-val');
-
+            
             if (qSlider) {
                 qSlider.max = maxVal;
                 qSlider.value = Math.min(setting.questionCount || 4, maxVal);
@@ -1698,10 +1682,12 @@
             if (saved) {
                 try {
                     cards = JSON.parse(saved);
+                    // 「もぐら」が残っていた場合は自動除外
+                    cards = cards.filter(c => c.name !== 'もぐら');
                     cards.forEach(c => {
                         if (c.name) c.name = c.name.normalize('NFC');
                     });
-                } catch (e) {
+                } catch(e) {
                     cards = [...DEFAULT_CARDS];
                 }
             } else {
@@ -1722,7 +1708,7 @@
             if (saved) {
                 try {
                     historyList = JSON.parse(saved);
-                } catch (e) {
+                } catch(e) {
                     historyList = [];
                 }
             } else {
@@ -1742,13 +1728,14 @@
             showToast("学習履歴をクリアしました");
         }
 
-        // 間違えやすい単語（累計誤答ワースト）を集計
         function getWeakWordsStats() {
             const map = {};
             historyList.forEach(item => {
                 if (item.wrongWords && Array.isArray(item.wrongWords)) {
                     item.wrongWords.forEach(w => {
-                        map[w] = (map[w] || 0) + 1;
+                        if (w !== 'もぐら') {
+                            map[w] = (map[w] || 0) + 1;
+                        }
                     });
                 }
             });
@@ -1764,7 +1751,6 @@
 
             if (!weakContainer || !historyContainer) return;
 
-            // 1. 苦手単語ランキング描画
             const weakWords = getWeakWordsStats();
             weakContainer.innerHTML = '';
 
@@ -1781,7 +1767,6 @@
                 });
             }
 
-            // 2. プレイログ一覧描画
             historyContainer.innerHTML = '';
             if (historyList.length === 0) {
                 historyContainer.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.85rem; color:#8e8e93;">履歴はありません。</div>';
@@ -1790,8 +1775,9 @@
                     const card = document.createElement('div');
                     card.className = 'history-card-item';
 
-                    const hasWrong = item.wrongWords && item.wrongWords.length > 0;
-                    const wrongText = hasWrong ? `間違えた単語: ${[...new Set(item.wrongWords)].join('、')}` : '全問正解！🎉';
+                    const filteredWrongs = (item.wrongWords || []).filter(w => w !== 'もぐら');
+                    const hasWrong = filteredWrongs.length > 0;
+                    const wrongText = hasWrong ? `間違えた単語: ${[...new Set(filteredWrongs)].join('、')}` : '全問正解！🎉';
 
                     card.innerHTML = `
                         <div class="history-header-line">
@@ -1807,7 +1793,6 @@
             }
         }
 
-        // 間違えやすい単語のみを一括で「使用中」にして練習する
         function practiceWeakWords() {
             const weakWords = getWeakWordsStats();
             if (weakWords.length === 0) return;
@@ -1884,7 +1869,7 @@
             document.getElementById('tab-settings').style.display = tab === 'settings' ? 'flex' : 'none';
             document.getElementById('tab-words').style.display = tab === 'words' ? 'flex' : 'none';
             document.getElementById('tab-history').style.display = tab === 'history' ? 'flex' : 'none';
-
+            
             updateQuestionCountSliderRange();
             if (tab === 'history') {
                 renderHistoryUI();
@@ -1905,7 +1890,7 @@
             saveSettings();
         }
 
-        // --- 2. カードテキスト解析・サイズ & 9位置配置計算ロジック ---
+        // --- 2. カードテキスト解析・サイズ & 9位置配置計算ロジック（絵なし時のレイアウト完全最適化） ---
         function parseCardText(name) {
             const normalized = (name || '').normalize('NFC');
             const youons = ["ゃ", "ゅ", "ょ", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ"];
@@ -1947,7 +1932,7 @@
         function createCardElement(card, isSample = false) {
             const cardEl = document.createElement('div');
             cardEl.className = 'card-item';
-
+            
             const inner = document.createElement('div');
             inner.className = 'card-inner';
 
@@ -2045,6 +2030,7 @@
             const textPos = setting.textPosition || 'top-left';
             const picPos = setting.picturePosition || 'bottom-right';
 
+            // 1. 絵のサイズと配置
             if (hasPic) {
                 imgContainer.style.display = 'flex';
                 const picSize = Math.min(w, h) * ratioPic;
@@ -2068,32 +2054,36 @@
                 textContainer.style.display = setting.writingMode === 'vertical' ? 'block' : 'flex';
             }
 
+            // 2. 文字サイズ計算（絵の有無に応じて利用可能領域を動的に拡大）
             let firstSize = 0;
             let remainingSize = 0;
             const headCharLen = isYouon ? 2 : 1;
             const remCharLen = Math.max(1, maxLen - headCharLen);
 
             if (setting.writingMode === 'horizontal') {
+                // 横書き
                 const maxAllowedW = (w * 0.88) / maxLen;
-                const maxAllowedH = h * 0.45;
+                // 絵がない場合は高さの85%まで利用可能、絵がある場合は45%
+                const maxAllowedH = hasPic ? (h * 0.45) : (h * 0.85);
 
                 if (setting.textDisplay === 'sameSize') {
-                    const ratio = setting.ratioSameSize || 0.35;
+                    const ratio = (setting.ratioSameSize || 0.35) * (hasPic ? 1.0 : 1.4);
                     firstSize = Math.min(maxAllowedW, maxAllowedH, Math.min(w, h) * ratio);
                     remainingSize = firstSize;
                 } else if (setting.textDisplay === 'headOnly') {
-                    const ratio = setting.ratioHeadOnly || 0.5;
+                    const ratio = (setting.ratioHeadOnly || 0.5) * (hasPic ? 1.0 : 1.3);
                     const maxHeadW = isYouon ? (w * 0.82) / 1.7 : w * 0.82;
                     firstSize = Math.min(maxHeadW, maxAllowedH, Math.min(w, h) * ratio * (isYouon ? 0.85 : 1.0));
                     remainingSize = 0;
                 } else {
-                    const ratioFirst = setting.ratioHeadLargeFirst || 0.45;
+                    // headLarge
+                    const ratioFirst = (setting.ratioHeadLargeFirst || 0.45) * (hasPic ? 1.0 : 1.3);
                     const headWidthFactor = isYouon ? 1.7 : 1.0;
                     const effectiveLen = headWidthFactor + remCharLen * 0.65;
                     const safeFirstSize = (w * 0.88) / effectiveLen;
 
                     firstSize = Math.min(safeFirstSize, maxAllowedH, Math.min(w, h) * ratioFirst * (isYouon ? 0.82 : 1.0));
-
+                    
                     const availW = Math.max(w * 0.88 - (firstSize * headWidthFactor), 8);
                     const autoRest = availW / remCharLen;
                     remainingSize = Math.min(autoRest, firstSize * 0.6, maxAllowedH * 0.7);
@@ -2104,26 +2094,29 @@
                 textContainer.style.maxWidth = '95%';
                 textContainer.style.maxHeight = '95%';
             } else {
+                // 縦書き
                 const maxAllowedH = (h * 0.88) / maxLen;
-                const maxAllowedW = w * 0.45;
+                // 絵がない場合は幅の85%まで利用可能、絵がある場合は45%
+                const maxAllowedW = hasPic ? (w * 0.45) : (w * 0.85);
 
                 if (setting.textDisplay === 'sameSize') {
-                    const ratio = setting.ratioSameSize || 0.35;
+                    const ratio = (setting.ratioSameSize || 0.35) * (hasPic ? 1.0 : 1.4);
                     firstSize = Math.min(maxAllowedH, maxAllowedW, Math.min(w, h) * ratio);
                     remainingSize = firstSize;
                 } else if (setting.textDisplay === 'headOnly') {
-                    const ratio = setting.ratioHeadOnly || 0.5;
+                    const ratio = (setting.ratioHeadOnly || 0.5) * (hasPic ? 1.0 : 1.3);
                     const maxHeadH = isYouon ? (h * 0.82) / 1.7 : h * 0.82;
                     firstSize = Math.min(maxHeadH, maxAllowedW, Math.min(w, h) * ratio * (isYouon ? 0.85 : 1.0));
                     remainingSize = 0;
                 } else {
-                    const ratioFirst = setting.ratioHeadLargeFirst || 0.45;
+                    // headLarge
+                    const ratioFirst = (setting.ratioHeadLargeFirst || 0.45) * (hasPic ? 1.0 : 1.3);
                     const headHeightFactor = isYouon ? 1.7 : 1.0;
                     const effectiveLen = headHeightFactor + remCharLen * 0.65;
                     const safeFirstSize = (h * 0.88) / effectiveLen;
 
                     firstSize = Math.min(safeFirstSize, maxAllowedW, Math.min(w, h) * ratioFirst * (isYouon ? 0.82 : 1.0));
-
+                    
                     const availH = Math.max(h * 0.88 - (firstSize * headHeightFactor), 8);
                     const autoRest = availH / remCharLen;
                     remainingSize = Math.min(autoRest, firstSize * 0.6, maxAllowedW * 0.7);
@@ -2280,7 +2273,7 @@
             corrects = 0;
             wrongs = 0;
             clearedCount = 0;
-            currentGameWrongWords = []; // 間違いログ初期化
+            currentGameWrongWords = [];
             updateScoreUI();
 
             const backBtn = document.getElementById('btn-play-back');
@@ -2339,7 +2332,6 @@
                 document.getElementById('btn-replay-inline').style.display = 'none';
                 playSound('finish');
 
-                // ゲーム終了時に履歴を自動記録
                 const record = {
                     id: Date.now().toString(),
                     date: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
@@ -2349,7 +2341,7 @@
                     wrongWords: [...currentGameWrongWords]
                 };
                 historyList.unshift(record);
-                if (historyList.length > 50) historyList.pop(); // 最新50件まで保持
+                if (historyList.length > 50) historyList.pop();
                 saveHistoryData();
 
                 setTimeout(() => {
@@ -2431,7 +2423,6 @@
             } else {
                 playSound('incorrect');
                 wrongs++;
-                // 間違えた出題単語を記録
                 if (targetCard && targetCard.name) {
                     currentGameWrongWords.push(targetCard.name);
                 }
@@ -2560,7 +2551,7 @@
         }
 
         function hiraToKata(str) {
-            return (str || '').replace(/[\u3041-\u3096]/g, ch =>
+            return (str || '').replace(/[\u3041-\u3096]/g, ch => 
                 String.fromCharCode(ch.charCodeAt(0) + 0x60)
             );
         }
@@ -2625,7 +2616,7 @@
                     stream.getTracks().forEach(track => track.stop());
                 };
                 mediaRecorder.start();
-            } catch (err) {
+            } catch(err) {
                 showToast("マイクへのアクセスが許可されていません");
             }
         }
@@ -2835,7 +2826,7 @@
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     tempImageBase64 = e.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -2854,8 +2845,13 @@
                 const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
                 const nameWithoutExt = rawName.normalize('NFC');
 
+                if (nameWithoutExt === 'もぐら') {
+                    loadedCount++;
+                    return;
+                }
+
                 const reader = new FileReader();
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     const newCard = {
                         id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
                         name: nameWithoutExt,
@@ -2930,14 +2926,14 @@
 
             showLoading("バックアップデータを復元中...");
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (imported.setting) {
                         setting = { ...setting, ...imported.setting };
                     }
                     if (imported.cards && Array.isArray(imported.cards)) {
-                        cards = imported.cards;
+                        cards = imported.cards.filter(c => c.name !== 'もぐら');
                         cards.forEach(c => {
                             if (c.name) c.name = c.name.normalize('NFC');
                         });
@@ -2953,7 +2949,7 @@
                         hideLoading();
                         showToast("データを正常にインポートしました");
                     }, 300);
-                } catch (err) {
+                } catch(err) {
                     hideLoading();
                     showToast("データの読み込みに失敗しました");
                 }
@@ -2963,5 +2959,4 @@
         }
     </script>
 </body>
-
 </html>
