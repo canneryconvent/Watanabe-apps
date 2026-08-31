@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>おおいすくない</title>
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="img.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        /* 誤操作防止と画面フィットの共通設計 */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: calc(var(--vh, 1vh) * 100);
+            overflow: hidden;
+            background-color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+            color: #333333;
+        }
+
+        /* 画面共通定義 */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            padding-top: calc(8px + env(safe-area-inset-top));
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* ホーム画面：白背景、中央寄せ */
+        #home-screen {
+            justify-content: center;
+            background-color: #ffffff;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+            transition: transform 0.1s ease, background-color 0.2s;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-start {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .btn-start:active {
+            background-color: #e68a00;
+        }
+
+        .btn-secondary {
+            background-color: #f7f7f7;
+            color: #333333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:active {
+            background-color: #ebebeb;
+        }
+
+        /* プレイ画面 */
+        #play-screen {
+            justify-content: space-between;
+            position: relative;
+            background-color: #ffffff;
+            padding: 10px;
+            padding-top: calc(6px + env(safe-area-inset-top));
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+        }
+
+        /* 戻るボタン中央上部、進捗は左上に配置 */
+        .header-bar {
+            width: 100%;
+            height: 44px;
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+            position: relative;
+            padding: 0 16px;
+            z-index: 50; 
+            flex-shrink: 0;
+        }
+
+        .btn-back {
+            background-color: #f2f2f7;
+            color: #ff9500;
+            padding: 8px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            touch-action: manipulation;
+            z-index: 60;
+        }
+
+        .btn-back:active {
+            transform: scale(0.95);
+        }
+
+        .progress-text {
+            position: absolute;
+            left: 16px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #555555;
+            z-index: 60;
+        }
+
+        /* ターゲット枠エリア */
+        .target-zones {
+            display: flex;
+            justify-content: space-around;
+            align-items: stretch;
+            width: 100%;
+            max-width: 100%;
+            flex-grow: 1;
+            gap: 16px;
+            margin: 6px 0;
+            min-height: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            min-height: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .zone-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-align: center;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #many-zone .zone-title {
+            font-size: 36px;
+            color: #ff5722;
+        }
+
+        #few-zone .zone-title {
+            font-size: 30px;
+            color: #2196f3;
+        }
+
+        /* タイトル横の多い少ない視覚イラスト（丸ドット） */
+        .title-visual {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 14px;
+        }
+
+        .title-dot {
+            display: inline-block;
+            border-radius: 50%;
+        }
+
+        #many-zone .title-dot {
+            width: 14px;
+            height: 14px;
+            background-color: #ff5722;
+        }
+
+        #few-zone .title-dot {
+            width: 14px;
+            height: 14px;
+            background-color: #2196f3;
+        }
+
+        .box {
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+            border-style: dashed;
+            border-radius: 28px;
+            position: relative;
+            z-index: 10;
+            transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+            min-height: 0;
+        }
+
+        /* 多い枠（うっすら赤オレンジ系） */
+        #many-zone .box {
+            border-width: 5px;
+            border-color: #ff5722;
+            background-color: #fff8f6;
+        }
+
+        /* 少ない枠（うっすら青系） */
+        #few-zone .box {
+            border-width: 5px;
+            border-color: #2196f3;
+            background-color: #f3f8ff;
+        }
+
+        /* ホバー中のハイライト */
+        #many-zone .box.hover {
+            background-color: #ffebe6;
+            border-style: solid;
+            transform: scale(1.01);
+        }
+        
+        #few-zone .box.hover {
+            background-color: #e1f0ff;
+            border-style: solid;
+            transform: scale(1.01);
+        }
+        
+        /* 正解時の視覚演出 */
+        #many-zone .box.correct-animation {
+            background-color: #e8f5e9;
+            border-color: #4caf50;
+            border-style: solid;
+        }
+
+        #few-zone .box.correct-animation {
+            background-color: #e8f5e9;
+            border-color: #4caf50;
+            border-style: solid;
+        }
+
+        /* 下部アイテム出現トレイ（左寄せ・高さ固定・ドラッグ時最前面化） */
+        .item-source-area {
+            width: 100%;
+            height: 140px;
+            min-height: 140px;
+            max-height: 140px;
+            flex-shrink: 0;
+            background-color: #fbfbfb;
+            border-top: 3px dashed #eeeeee;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: flex-start; /* 初期表示を一番左寄せに */
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 14px;
+            padding: 8px 16px;
+            position: relative;
+            z-index: 80;
+            touch-action: pan-x;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ドラッグ中に枠の前面を通るようにクリッピングを一時解除 */
+        .item-source-area.dragging-active {
+            overflow: visible !important;
+            z-index: 1000 !important;
+        }
+
+        /* ドラッグ可能なカード */
+        .draggable-item {
+            cursor: grab;
+            touch-action: none;
+            position: relative;
+            z-index: 85;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px dashed rgba(0, 0, 0, 0.2);
+            border-radius: 18px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 6px;
+            will-change: transform;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 5個の塊：横に3つ並べる（上段3・下段2） */
+        .draggable-item[data-count="5"] {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            justify-content: center;
+            align-content: center;
+            gap: 2px 4px;
+            width: 148px;
+            height: 112px;
+        }
+
+        /* 4個の塊：2×2並び */
+        .draggable-item[data-count="4"] {
+            display: grid;
+            grid-template-columns: repeat(2, auto);
+            justify-content: center;
+            align-content: center;
+            gap: 2px 6px;
+            width: 118px;
+            height: 112px;
+        }
+
+        /* 2個の塊：横並び */
+        .draggable-item[data-count="2"] {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            width: 110px;
+            height: 112px;
+        }
+
+        /* 1個の塊：中央1つ */
+        .draggable-item[data-count="1"] {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 76px;
+            height: 112px;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        
+        .draggable-item.dragging {
+            z-index: 9999 !important;
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+            border-style: solid;
+            border-color: #ff9800;
+            transition: none !important;
+        }
+        
+        /* 箱に収まった絵文字（絶対配置） */
+        .draggable-item.placed {
+            pointer-events: none;
+            position: absolute !important;
+            transform: none !important;
+            margin: 0 !important;
+            z-index: 5;
+            background-color: rgba(255, 255, 255, 0.6);
+            box-shadow: none;
+            border: 1.5px dashed rgba(0, 0, 0, 0.15);
+            transition: none !important;
+        }
+
+        /* 塊の中の個々の絵文字 */
+        .cluster-emoji {
+            font-size: 42px;
+            line-height: 1;
+            display: inline-block;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* =========================================
+           iOS 設定アプリ風 2カラム／レスポンシブレイアウト
+           ========================================= */
+        #setting-screen {
+            background-color: #f2f2f7; 
+            justify-content: flex-start;
+            padding: 0;
+        }
+
+        .ios-nav-bar {
+            width: 100%;
+            height: 50px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #d1d1d6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .ios-nav-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .ios-nav-save {
+            position: absolute;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #007aff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .setting-layout-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: calc(100% - 50px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            gap: 20px;
+        }
+
+        @media (min-width: 850px) {
+            .setting-layout-container {
+                flex-direction: row; 
+                align-items: flex-start;
+                overflow-y: hidden;
+            }
+            .setting-controls-pane {
+                flex: 1.2;
+                height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-right: 10px;
+            }
+            .setting-preview-pane {
+                flex: 1;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                position: sticky;
+                top: 0;
+            }
+        }
+
+        .setting-controls-pane {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .setting-preview-pane {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sample-view-card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 16px;
+            border: 0.5px solid #c8c7cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .sample-view-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8e8e93;
+            text-align: center;
+            width: 100%;
+            border-bottom: 0.5px solid #e5e5ea;
+            padding-bottom: 8px;
+        }
+
+        .mini-play-view {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background-color: #ffffff;
+            border: 1px solid #c8c7cc;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+            pointer-events: none;
+        }
+
+        .mini-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 20px;
+            border-bottom: 0.5px solid #e5e5ea;
+            padding-bottom: 4px;
+        }
+
+        .mini-progress {
+            font-size: 10px;
+            font-weight: bold;
+            color: #8e8e93;
+        }
+
+        .mini-back-btn {
+            font-size: 8px;
+            background-color: #f2f2f7;
+            color: #ff9500;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .mini-target-zones {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            flex-grow: 1;
+            margin-top: 8px;
+            gap: 8px;
+        }
+
+        .mini-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .mini-zone-title {
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #mini-many-zone .mini-zone-title { color: #ff5722; }
+        #mini-few-zone .mini-zone-title { color: #2196f3; }
+
+        .mini-title-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+        }
+        #mini-many-zone .mini-title-dot { background-color: #ff5722; }
+        #mini-few-zone .mini-title-dot { background-color: #2196f3; }
+
+        .mini-box {
+            width: 100%;
+            border-style: dashed;
+            border-radius: 12px;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #mini-many-box {
+            border-width: 2px;
+            border-color: #ff5722;
+            background-color: #fff5f2;
+        }
+
+        #mini-few-box {
+            border-width: 2.5px;
+            border-color: #2196f3;
+            background-color: #f0f7ff;
+        }
+
+        .mini-source-area {
+            height: 50px;
+            border-top: 1.5px dashed #e5e5ea;
+            background-color: #fafafa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 8px;
+            padding: 4px 8px;
+            overflow-x: auto;
+        }
+
+        .mini-cluster {
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            background: rgba(255, 255, 255, 0.8);
+            border: 0.5px dashed #ccc;
+            border-radius: 6px;
+            padding: 2px;
+        }
+        .mini-cluster.many {
+            max-width: 38px;
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            gap: 1px;
+        }
+        .mini-cluster.few {
+            max-width: 20px;
+            display: flex;
+            gap: 1px;
+        }
+        .mini-cluster-emoji {
+            font-size: 10px;
+            line-height: 1;
+        }
+
+        .ios-list {
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 0.5px solid #c8c7cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            width: 100%;
+        }
+
+        .ios-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            min-height: 54px;
+            border-bottom: 0.5px solid #c8c7cc;
+            background-color: #ffffff;
+        }
+
+        .ios-row:last-child {
+            border-bottom: none;
+        }
+
+        .ios-row-label {
+            font-size: 16px;
+            color: #000000;
+            font-weight: 500;
+        }
+
+        .ios-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ios-segment {
+            display: flex;
+            background-color: #f2f2f7;
+            padding: 2px;
+            border-radius: 8px;
+        }
+
+        .ios-segment-btn {
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #000000;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+
+        .ios-segment-btn.selected {
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            font-weight: 600;
+        }
+
+        .ios-switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+
+        .ios-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .ios-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e5ea;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .ios-slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        input:checked + .ios-slider {
+            background-color: #34c759; 
+        }
+
+        input:checked + .ios-slider:before {
+            transform: translateX(20px);
+        }
+
+        .ios-range-slider {
+            -webkit-appearance: none;
+            width: 150px;
+            height: 4px;
+            border-radius: 2px;
+            background: #d1d1d6;
+            outline: none;
+        }
+
+        .ios-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 0.5px solid #d1d1d6;
+        }
+
+        .ios-slider-val {
+            font-size: 16px;
+            font-weight: 500;
+            color: #8e8e93;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* 履歴画面 */
+        #history-screen {
+            justify-content: flex-start;
+            padding-top: 40px;
+            background-color: #f2f2f7;
+        }
+
+        .history-list {
+            width: 100%;
+            max-width: 550px;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px;
+            margin-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-item-container {
+            background: #ffffff;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 0.5px solid #c8c7cc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .history-item-header {
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background-color: #ffffff;
+        }
+
+        .history-item-header:active {
+            background-color: #f2f2f7;
+        }
+
+        .history-item-details {
+            display: none;
+            padding: 16px;
+            background-color: #f9f9f9;
+            border-top: 0.5px solid #c8c7cc;
+            font-size: 14px;
+            color: #555555;
+            line-height: 1.6;
+        }
+
+        .history-item-container.expanded .history-item-details {
+            display: block;
+        }
+
+        .details-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 0.5px dashed #d1d1d6;
+        }
+
+        .details-row:last-child {
+            border-bottom: none;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: #8e8e93;
+            margin-top: 50px;
+            font-size: 17px;
+        }
+
+        /* ○×フィードバック */
+        .feedback-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 10000;
+            transition: opacity 0.1s ease;
+        }
+        
+        .feedback-overlay.circle { color: rgba(244, 67, 54, 0.85); }
+        .feedback-overlay.cross { color: rgba(33, 150, 243, 0.85); }
+
+        /* モーダル */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .ios-alert {
+            width: 270px;
+            background-color: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            overflow: hidden;
+            animation: alertPop 0.25s ease-out;
+        }
+
+        @keyframes alertPop {
+            from { transform: scale(1.15); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .ios-alert-title {
+            padding: 16px 16px 4px 16px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .ios-alert-message {
+            padding: 0 16px 16px 16px;
+            font-size: 13px;
+            color: #000000;
+        }
+
+        .ios-alert-buttons {
+            width: 100%;
+            display: flex;
+            border-top: 0.5px solid #c8c7cc;
+        }
+
+        .ios-alert-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 17px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .ios-alert-btn-cancel {
+            color: #007aff;
+            border-right: 0.5px solid #c8c7cc;
+            font-weight: 400;
+        }
+
+        .ios-alert-btn-confirm {
+            color: #ff3b30;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 確認モーダル -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="ios-alert">
+            <div class="ios-alert-title">確認</div>
+            <div class="ios-alert-message">ホーム画面にもどりますか？</div>
+            <div class="ios-alert-buttons">
+                <button class="ios-alert-btn ios-alert-btn-cancel" id="modal-cancel-btn">いいえ</button>
+                <button class="ios-alert-btn ios-alert-btn-confirm" id="modal-confirm-btn">もどる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 視覚的フィードバック -->
+    <div id="feedback-circle" class="feedback-overlay circle">○</div>
+    <div id="feedback-cross" class="feedback-overlay cross">×</div>
+
+    <!-- ホーム画面 -->
+    <div id="home-screen" class="screen active">
+        <div class="menu-buttons">
+            <button class="btn btn-start" id="start-btn">スタート</button>
+            <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                <button class="btn btn-secondary" id="go-setting-btn" style="margin-bottom: 6px;">設定</button>
+                <span style="font-size: 13px; color: #8e8e93; font-weight: 500; letter-spacing: 0.5px;">※トリプルタップ</span>
+            </div>
+            <button class="btn btn-secondary" id="go-history-btn" style="margin-top: 8px;">履歴</button>
+        </div>
+    </div>
+
+    <!-- プレイ画面 -->
+    <div id="play-screen" class="screen">
+        <div class="header-bar" id="play-header-bar">
+            <div class="progress-text" id="progress-display">1 / 5</div>
+            <button class="btn-back" id="play-back-btn">もどる</button>
+        </div>
+
+        <div class="target-zones">
+            <div id="many-zone" class="zone">
+                <div class="zone-title">
+                    <span>おおい</span>
+                    <span class="title-visual">
+                        <span class="title-dot"></span>
+                        <span class="title-dot"></span>
+                        <span class="title-dot"></span>
+                        <span class="title-dot"></span>
+                    </span>
+                </div>
+                <div class="box" id="many-box"></div>
+            </div>
+            <div id="few-zone" class="zone">
+                <div class="zone-title">
+                    <span>すくない</span>
+                    <span class="title-visual">
+                        <span class="title-dot"></span>
+                        <span class="title-dot"></span>
+                    </span>
+                </div>
+                <div class="box" id="few-box"></div>
+            </div>
+        </div>
+
+        <div class="item-source-area" id="source-area"></div>
+    </div>
+
+    <!-- 設定画面 -->
+    <div id="setting-screen" class="screen">
+        <div class="ios-nav-bar">
+            <span class="ios-nav-title">設定</span>
+            <button class="ios-nav-save" id="save-setting-btn">完了</button>
+        </div>
+        
+        <div class="setting-layout-container">
+            <div class="setting-controls-pane">
+                <div class="ios-list">
+                    <!-- 分類モード -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">分類モード</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-step">
+                                <button class="ios-segment-btn" data-value="many-only">多いのみ</button>
+                                <button class="ios-segment-btn" data-value="both">両方</button>
+                                <button class="ios-segment-btn" data-value="few-only">少ないのみ</button>
+                                <button class="ios-segment-btn" data-value="random">ランダム</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 同時出題ペア数 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">同時出題ペア数</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-pairs">
+                                <button class="ios-segment-btn" data-value="1">1組</button>
+                                <button class="ios-segment-btn" data-value="2">2組</button>
+                                <button class="ios-segment-btn" data-value="3">3組</button>
+                                <button class="ios-segment-btn" data-value="4">4組</button>
+                                <button class="ios-segment-btn" data-value="5">5組</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 問題数 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">問題数</span>
+                        <div class="ios-control">
+                            <input type="range" min="1" max="15" value="5" class="ios-range-slider" id="questions-slider">
+                            <span class="ios-slider-val" id="questions-val-display">5問</span>
+                        </div>
+                    </div>
+
+                    <!-- 音声読み上げ -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">音声読み上げ</span>
+                        <div class="ios-control">
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch-voice" checked>
+                                <span class="ios-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 誤答時の挙動 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">間違えたときの動き</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-wrong-behavior">
+                                <button class="ios-segment-btn" data-value="back">すぐもどる</button>
+                                <button class="ios-segment-btn" data-value="stay">その場にとまる</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- もどるボタン表示制限 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">「もどる」ボタンを表示する</span>
+                        <div class="ios-control">
+                            <label class="ios-switch">
+                                <input type="checkbox" id="switch-show-back" checked>
+                                <span class="ios-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 使用する画像の種類 -->
+                    <div class="ios-row">
+                        <span class="ios-row-label">使用する画像の種類</span>
+                        <div class="ios-control">
+                            <div class="ios-segment" id="opt-emoji-type">
+                                <button class="ios-segment-btn" data-value="all">🎨 すべて</button>
+                                <button class="ios-segment-btn" data-value="animal">🐶 動物</button>
+                                <button class="ios-segment-btn" data-value="food">🍎 食べ物</button>
+                                <button class="ios-segment-btn" data-value="vehicle">🚗 乗り物</button>
+                                <button class="ios-segment-btn" data-value="shape">🔴 図形</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- リアルタイムプレビュー -->
+            <div class="setting-preview-pane">
+                <div class="sample-view-card">
+                    <span class="sample-view-title">プレイ画面のリアルタイムプレビュー</span>
+                    <div class="mini-play-view">
+                        <div class="mini-header">
+                            <div class="mini-progress">1 / 5</div>
+                            <div class="mini-back-btn" id="mini-preview-back">もどる</div>
+                        </div>
+                        
+                        <div class="mini-target-zones">
+                            <div id="mini-many-zone" class="mini-zone">
+                                <div class="mini-zone-title">
+                                    <span>おおい</span>
+                                    <span class="mini-title-dot"></span>
+                                    <span class="mini-title-dot"></span>
+                                    <span class="mini-title-dot"></span>
+                                </div>
+                                <div class="mini-box" id="mini-many-box"></div>
+                            </div>
+                            <div id="mini-few-zone" class="mini-zone">
+                                <div class="mini-zone-title">
+                                    <span>すくない</span>
+                                    <span class="mini-title-dot"></span>
+                                    <span class="mini-title-dot"></span>
+                                </div>
+                                <div class="mini-box" id="mini-few-box"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mini-source-area" id="mini-source-area"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 履歴画面 -->
+    <div id="history-screen" class="screen">
+        <h2 style="font-size: 28px; margin-top: 10px; margin-bottom: 10px;">プレイ履歴</h2>
+        <div class="history-list" id="history-list-container"></div>
+        <button class="btn btn-secondary" id="clear-history-btn" style="max-width:320px; margin-bottom:12px; background-color:#ffebee; color:#c62828; border-color:#ffcdd2;">履歴をすべて消去</button>
+        <button class="btn btn-start" id="history-back-btn" style="max-width:320px; margin-bottom:20px;">ホームにもどる</button>
+    </div>
+
+    <script>
+        // --- データベース定義 ---
+        const EMOJI_DATA = {
+            animal: ['🐶', '🐱', '🦁', '🐻', '🐰', '🐼', '🐘', '🐵', '🐤', '🐸'],
+            food: ['🍎', '🍌', '🍉', '🍇', '🍓', '🥕', '🍅', '🍏', '🍊', '🍔'],
+            vehicle: ['🚗', '✈️', '🚢', '🚄', '🚲', '🚒', '🚑', '🚀', '🚌', '🚁'],
+            shape: ['🔴', '🔵', '🟡', '🟢', '🔶', '🔷', '⭐', '❤️', '⬛', '🌀']
+        };
+
+        const PREVIEW_EMOJIS = {
+            all: ['🐶', '🍎', '🚗', '🔴', '🍌', '🐱', '🚄', '⭐', '🍇', '🐸'],
+            animal: ['🐶', '🐱', '🦁', '🐻', '🐰', '🐼', '🐘', '🐵', '🐤', '🐸'],
+            food: ['🍎', '🍌', '🍉', '🍇', '🍓', '🥕', '🍅', '🍏', '🍊', '🍔'],
+            vehicle: ['🚗', '✈️', '🚢', '🚄', '🚲', '🚒', '🚑', '🚀', '🚌', '🚁'],
+            shape: ['🔴', '🔵', '🟡', '🟢', '🔶', '🔷', '⭐', '❤️', '⬛', '🌀']
+        };
+
+        // --- アプリステート管理 ---
+        let settings = {
+            step: 'both',
+            pairs: 1,
+            questions: 5,
+            voice: 'on',
+            wrongBehavior: 'back',
+            showBackButton: 'on', 
+            emojiType: 'all'
+        };
+
+        let gameState = {
+            currentQuestionIndex: 0,
+            currentStepMode: 'both',
+            history: [],
+            startTime: null,
+            correctCount: 0,
+            isAnimating: false,
+            
+            questionStartTime: null,
+            questionMistakes: 0,
+            detailedLog: [], 
+
+            manyPlacedCount: 0,
+            fewPlacedCount: 0,
+            manyRequiredCount: 0,
+            fewRequiredCount: 0,
+            currentEmojis: []
+        };
+
+        // --- 効果音システム（Web Audio API） ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            if (type === 'correct') {
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(659.25, now);
+                osc1.frequency.setValueAtTime(880.00, now + 0.12);
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1318.5, now);
+                osc2.frequency.setValueAtTime(1760.0, now + 0.12);
+
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.5);
+                osc2.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+                
+                gainNode.gain.setValueAtTime(0.12, now);
+                gainNode.gain.linearRampToValueAtTime(0.001, now + 0.25);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'finish') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
+                    const osc = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    const start = now + index * 0.08;
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, start);
+                    
+                    gainNode.gain.setValueAtTime(0.15, start);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    osc.start(start);
+                    osc.stop(start + 0.4);
+                });
+            }
+        }
+
+        // --- 音声読み上げ（TTS） ---
+        function speakText(text) {
+            if (settings.voice !== 'on') return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ja-JP';
+            u.rate = 1.0;
+            u.volume = 1.0;
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- iOS Safari 100vh 追従処理 ---
+        function resetVH() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        window.addEventListener('resize', resetVH);
+        window.addEventListener('orientationchange', resetVH);
+        resetVH();
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'history-screen') {
+                renderHistory();
+            }
+        }
+
+        // --- 設定ボタントリプルタップ起動 ---
+        let settingTapCount = 0;
+        let settingLastTapTime = 0;
+        document.getElementById('go-setting-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - settingLastTapTime < 500) {
+                settingTapCount++;
+            } else {
+                settingTapCount = 1;
+            }
+            settingLastTapTime = now;
+
+            if (settingTapCount === 3) {
+                settingTapCount = 0;
+                initAudio();
+                speakText('');
+                showScreen('setting-screen');
+                updateSampleView();
+            }
+        });
+
+        // --- ミニチュアプレイプレビュー ---
+        function updateSampleView() {
+            const miniManyZone = document.getElementById('mini-many-zone');
+            const miniFewZone = document.getElementById('mini-few-zone');
+            const miniSourceArea = document.getElementById('mini-source-area');
+            const miniPreviewBack = document.getElementById('mini-preview-back');
+            
+            if (settings.showBackButton === 'on') {
+                miniPreviewBack.style.visibility = 'visible';
+            } else {
+                miniPreviewBack.style.visibility = 'hidden';
+            }
+
+            if (settings.step === 'many-only') {
+                miniManyZone.style.visibility = 'visible';
+                miniFewZone.style.visibility = 'hidden';
+            } else if (settings.step === 'few-only') {
+                miniManyZone.style.visibility = 'hidden';
+                miniFewZone.style.visibility = 'visible';
+            } else {
+                miniManyZone.style.visibility = 'visible';
+                miniFewZone.style.visibility = 'visible';
+            }
+
+            const currentCategoryEmojis = PREVIEW_EMOJIS[settings.emojiType] || PREVIEW_EMOJIS.all;
+            miniSourceArea.innerHTML = '';
+            
+            for (let i = 0; i < settings.pairs; i++) {
+                const emoji = currentCategoryEmojis[i % currentCategoryEmojis.length];
+
+                // 多い塊
+                const manyCluster = document.createElement('div');
+                manyCluster.className = 'mini-cluster many';
+                for (let k = 0; k < 5; k++) {
+                    const sp = document.createElement('span');
+                    sp.className = 'mini-cluster-emoji';
+                    sp.innerText = emoji;
+                    manyCluster.appendChild(sp);
+                }
+                miniSourceArea.appendChild(manyCluster);
+
+                // 少ない塊
+                const fewCluster = document.createElement('div');
+                fewCluster.className = 'mini-cluster few';
+                const spSingle = document.createElement('span');
+                spSingle.className = 'mini-cluster-emoji';
+                spSingle.innerText = emoji;
+                fewCluster.appendChild(spSingle);
+                miniSourceArea.appendChild(fewCluster);
+            }
+        }
+
+        // --- 設定の読み込み・保存 ---
+        function initSettingsUI() {
+            const saved = localStorage.getItem('ooi_sukunai_settings');
+            if (saved) {
+                try { settings = { ...settings, ...JSON.parse(saved) }; } catch(e) {}
+            }
+            const savedHistory = localStorage.getItem('ooi_sukunai_history');
+            if (savedHistory) {
+                try { gameState.history = JSON.parse(savedHistory); } catch(e) {}
+            }
+
+            setupButtonGroup('opt-step', 'step');
+            setupButtonGroup('opt-pairs', 'pairs', true);
+            setupButtonGroup('opt-wrong-behavior', 'wrong-behavior', false, 'wrongBehavior');
+            setupButtonGroup('opt-emoji-type', 'emoji-type', false, 'emojiType');
+            
+            const slider = document.getElementById('questions-slider');
+            const display = document.getElementById('questions-val-display');
+            slider.value = settings.questions;
+            display.innerText = `${settings.questions}問`;
+
+            slider.addEventListener('input', (e) => {
+                settings.questions = parseInt(e.target.value, 10);
+                display.innerText = `${settings.questions}問`;
+            });
+
+            const voiceSwitch = document.getElementById('switch-voice');
+            voiceSwitch.checked = (settings.voice === 'on');
+            voiceSwitch.addEventListener('change', (e) => {
+                settings.voice = e.target.checked ? 'on' : 'off';
+            });
+
+            const showBackSwitch = document.getElementById('switch-show-back');
+            showBackSwitch.checked = (settings.showBackButton === 'on');
+            showBackSwitch.addEventListener('change', (e) => {
+                settings.showBackButton = e.target.checked ? 'on' : 'off';
+                updateSampleView();
+            });
+            
+            updateSettingsUI();
+            updateSampleView();
+        }
+
+        function setupButtonGroup(groupId, configKey, isInt = false, stateKey = null) {
+            const container = document.getElementById(groupId);
+            const targetKey = stateKey || configKey;
+            
+            container.querySelectorAll('.ios-segment-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    container.querySelectorAll('.ios-segment-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    let val = btn.getAttribute('data-value');
+                    settings[targetKey] = isInt ? parseInt(val, 10) : val;
+                    updateSampleView();
+                });
+            });
+        }
+
+        function updateSettingsUI() {
+            setGroupSelected('opt-step', settings.step);
+            setGroupSelected('opt-pairs', settings.pairs.toString());
+            setGroupSelected('opt-wrong-behavior', settings.wrongBehavior);
+            setGroupSelected('opt-emoji-type', settings.emojiType);
+            
+            document.getElementById('switch-voice').checked = (settings.voice === 'on');
+            document.getElementById('switch-show-back').checked = (settings.showBackButton === 'on');
+        }
+
+        function setGroupSelected(groupId, value) {
+            const container = document.getElementById(groupId);
+            container.querySelectorAll('.ios-segment-btn').forEach(btn => {
+                if (btn.getAttribute('data-value') === value) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        // --- 履歴保存・出力 ---
+        function saveHistoryItem() {
+            const endTime = Date.now();
+            const elapsedSec = Math.round((endTime - gameState.startTime) / 1000);
+            
+            let stepLabel = '';
+            if (settings.step === 'many-only') stepLabel = '多いのみ';
+            else if (settings.step === 'few-only') stepLabel = '少ないのみ';
+            else if (settings.step === 'both') stepLabel = '両方';
+            else if (settings.step === 'random') stepLabel = 'ランダム';
+
+            const newItem = {
+                id: Date.now(),
+                date: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                step: stepLabel,
+                pairs: settings.pairs,
+                score: `${gameState.correctCount} / ${settings.questions}`,
+                time: `${elapsedSec}秒`,
+                details: JSON.parse(JSON.stringify(gameState.detailedLog))
+            };
+
+            gameState.history.unshift(newItem);
+            if (gameState.history.length > 20) gameState.history.pop();
+            localStorage.setItem('ooi_sukunai_history', JSON.stringify(gameState.history));
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list-container');
+            container.innerHTML = '';
+            
+            if (gameState.history.length === 0) {
+                container.innerHTML = '<div class="history-empty">プレイデータがありません</div>';
+                return;
+            }
+
+            gameState.history.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'history-item-container';
+                
+                const header = document.createElement('div');
+                header.className = 'history-item-header';
+                header.innerHTML = `
+                    <div>
+                        <strong style="color:#000000; font-size: 16px;">${item.date}</strong><br>
+                        <span style="color:#8e8e93; font-size:13px;">${item.step} (${item.pairs}組ペア)</span>
+                    </div>
+                    <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                        <div>
+                            <span style="font-weight:bold; color:#ff9500; font-size: 18px;">${item.score}</span><br>
+                            <span style="color:#8e8e93; font-size:12px;">${item.time}</span>
+                        </div>
+                        <span style="font-size:12px; color:#c7c7cc;">▼</span>
+                    </div>
+                `;
+                
+                const details = document.createElement('div');
+                details.className = 'history-item-details';
+                
+                let detailsHTML = `<div style="font-weight:bold; margin-bottom:8px; color:#007aff;">📄 設問ごとの詳細記録</div>`;
+                if (item.details && item.details.length > 0) {
+                    item.details.forEach(q => {
+                        detailsHTML += `
+                            <div class="details-row">
+                                <span>第${q.index}問 [${q.emojis.join(', ')}] (${q.modeText})</span>
+                                <span>解答時間: <strong>${q.time}</strong> / 誤答: <strong style="color:${q.mistakes > 0 ? '#ff3b30':'#34c759'};">${q.mistakes}回</strong></span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    detailsHTML += `<div>詳細ログはありません</div>`;
+                }
+                details.innerHTML = detailsHTML;
+
+                wrapper.appendChild(header);
+                wrapper.appendChild(details);
+
+                header.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    wrapper.classList.toggle('expanded');
+                });
+
+                container.appendChild(wrapper);
+            });
+        }
+
+        // --- 出題絵文字取得 ---
+        function getQuestionEmojis(num) {
+            let pool = [];
+            if (settings.emojiType === 'all') {
+                pool = [...EMOJI_DATA.animal, ...EMOJI_DATA.food, ...EMOJI_DATA.vehicle, ...EMOJI_DATA.shape];
+            } else {
+                pool = [...(EMOJI_DATA[settings.emojiType] || EMOJI_DATA.animal)];
+            }
+            pool.sort(() => Math.random() - 0.5);
+            return pool.slice(0, num);
+        }
+
+        function startNewGame() {
+            initAudio();
+            gameState.currentQuestionIndex = 0;
+            gameState.correctCount = 0;
+            gameState.startTime = Date.now();
+            gameState.detailedLog = [];
+            
+            const backBtn = document.getElementById('play-back-btn');
+            if (settings.showBackButton === 'on') {
+                backBtn.style.visibility = 'visible';
+            } else {
+                backBtn.style.visibility = 'hidden';
+            }
+
+            showScreen('play-screen');
+            setupQuestion();
+        }
+
+        function setupQuestion() {
+            gameState.isAnimating = false;
+            gameState.manyPlacedCount = 0;
+            gameState.fewPlacedCount = 0;
+            
+            gameState.questionStartTime = Date.now();
+            gameState.questionMistakes = 0;
+            
+            document.getElementById('progress-display').innerText = `${gameState.currentQuestionIndex + 1} / ${settings.questions}`;
+
+            if (settings.step === 'random') {
+                const modes = ['many-only', 'few-only', 'both'];
+                gameState.currentStepMode = modes[Math.floor(Math.random() * modes.length)];
+            } else {
+                gameState.currentStepMode = settings.step;
+            }
+
+            const manyZone = document.getElementById('many-zone');
+            const fewZone = document.getElementById('few-zone');
+            const manyBox = document.getElementById('many-box');
+            const fewBox = document.getElementById('few-box');
+            
+            manyBox.className = 'box';
+            fewBox.className = 'box';
+            manyBox.innerHTML = '';
+            fewBox.innerHTML = '';
+
+            if (gameState.currentStepMode === 'many-only') {
+                manyZone.style.visibility = 'visible';
+                fewZone.style.visibility = 'hidden'; 
+                gameState.manyRequiredCount = settings.pairs;
+                gameState.fewRequiredCount = 0;
+            } else if (gameState.currentStepMode === 'few-only') {
+                manyZone.style.visibility = 'hidden'; 
+                fewZone.style.visibility = 'visible';
+                gameState.manyRequiredCount = 0;
+                gameState.fewRequiredCount = settings.pairs;
+            } else {
+                manyZone.style.visibility = 'visible';
+                fewZone.style.visibility = 'visible';
+                gameState.manyRequiredCount = settings.pairs;
+                gameState.fewRequiredCount = settings.pairs;
+            }
+
+            const activeEmojis = getQuestionEmojis(settings.pairs);
+            gameState.currentEmojis = activeEmojis; 
+
+            const sourceArea = document.getElementById('source-area');
+            sourceArea.innerHTML = '';
+            sourceArea.scrollLeft = 0; // 初期スクロール位置を左端へ
+
+            let itemsToCreate = [];
+            activeEmojis.forEach((emoji, emojiIndex) => {
+                const manyCount = (Math.random() > 0.5) ? 4 : 5;
+                const fewCount = (Math.random() > 0.5) ? 1 : 2;
+
+                let pairItems = [
+                    { type: 'many', emoji: emoji, count: manyCount, pairId: emojiIndex },
+                    { type: 'few', emoji: emoji, count: fewCount, pairId: emojiIndex }
+                ];
+
+                if (Math.random() > 0.5) {
+                    pairItems.reverse();
+                }
+
+                itemsToCreate.push(...pairItems);
+            });
+
+            itemsToCreate.forEach((data, index) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'draggable-item';
+                itemEl.id = `item-${data.type}-${index}`;
+                itemEl.setAttribute('data-type', data.type);
+                itemEl.setAttribute('data-count', data.count);
+
+                for (let i = 0; i < data.count; i++) {
+                    const sp = document.createElement('span');
+                    sp.className = 'cluster-emoji';
+                    sp.innerText = data.emoji;
+                    itemEl.appendChild(sp);
+                }
+
+                sourceArea.appendChild(itemEl);
+                makeElementDraggable(itemEl);
+            });
+        }
+
+        // --- ドラッグ＆ドロップ処理（最前面通過・高精度追従） ---
+        function makeElementDraggable(el) {
+            let startX = 0, startY = 0;
+            let initialTransformX = 0, initialTransformY = 0;
+            let isDragging = false;
+            const sourceArea = document.getElementById('source-area');
+
+            el.addEventListener('pointerdown', onPointerDown);
+
+            function onPointerDown(e) {
+                if (gameState.isAnimating) return;
+                e.preventDefault();
+                initAudio();
+                
+                isDragging = true;
+                el.style.transition = 'none';
+                el.classList.add('dragging');
+                sourceArea.classList.add('dragging-active'); // ドラッグ中はトレイのoverflowを解除し最前面化
+
+                startX = e.clientX;
+                startY = e.clientY;
+
+                const style = window.getComputedStyle(el);
+                const matrix = new DOMMatrixReadOnly(style.transform);
+                initialTransformX = matrix.m41;
+                initialTransformY = matrix.m42;
+
+                el.setPointerCapture(e.pointerId);
+                el.addEventListener('pointermove', onPointerMove);
+                el.addEventListener('pointerup', onPointerUp);
+                el.addEventListener('pointercancel', onPointerUp);
+            }
+
+            function onPointerMove(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                el.style.transform = `translate(${initialTransformX + dx}px, ${initialTransformY + dy}px) scale(1.04)`;
+                checkHoverEffect(el);
+            }
+
+            function onPointerUp(e) {
+                if (!isDragging) return;
+                isDragging = false;
+                el.classList.remove('dragging');
+                sourceArea.classList.remove('dragging-active');
+
+                el.releasePointerCapture(e.pointerId);
+                el.removeEventListener('pointermove', onPointerMove);
+                el.removeEventListener('pointerup', onPointerUp);
+                el.removeEventListener('pointercancel', onPointerUp);
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                evaluateDrop(el, initialTransformX + dx, initialTransformY + dy);
+            }
+        }
+
+        function checkHoverEffect(el) {
+            const rect = el.getBoundingClientRect();
+            const manyBox = document.getElementById('many-box');
+            const fewBox = document.getElementById('few-box');
+
+            const manyRect = manyBox.getBoundingClientRect();
+            const fewRect = fewBox.getBoundingClientRect();
+
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            if (gameState.currentStepMode !== 'few-only' && 
+                cx >= manyRect.left && cx <= manyRect.right && cy >= manyRect.top && cy <= manyRect.bottom) {
+                manyBox.classList.add('hover');
+            } else {
+                manyBox.classList.remove('hover');
+            }
+
+            if (gameState.currentStepMode !== 'many-only' && 
+                cx >= fewRect.left && cx <= fewRect.right && cy >= fewRect.top && cy <= fewRect.bottom) {
+                fewBox.classList.add('hover');
+            } else {
+                fewBox.classList.remove('hover');
+            }
+        }
+
+        function evaluateDrop(el, currentTransformX, currentTransformY) {
+            const rect = el.getBoundingClientRect();
+            const itemType = el.getAttribute('data-type');
+            
+            const manyBox = document.getElementById('many-box');
+            const fewBox = document.getElementById('few-box');
+            
+            manyBox.classList.remove('hover');
+            fewBox.classList.remove('hover');
+
+            const manyRect = manyBox.getBoundingClientRect();
+            const fewRect = fewBox.getBoundingClientRect();
+
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            let targetBox = null;
+            let isCorrectDrop = false;
+
+            if (gameState.currentStepMode !== 'few-only' && 
+                cx >= manyRect.left && cx <= manyRect.right && cy >= manyRect.top && cy <= manyRect.bottom) {
+                targetBox = manyBox;
+                if (itemType === 'many') isCorrectDrop = true;
+            } else if (gameState.currentStepMode !== 'many-only' && 
+                cx >= fewRect.left && cx <= fewRect.right && cy >= fewRect.top && cy <= fewRect.bottom) {
+                targetBox = fewBox;
+                if (itemType === 'few') isCorrectDrop = true;
+            }
+
+            if (targetBox && isCorrectDrop) {
+                const boxRect = targetBox.getBoundingClientRect();
+                const relativeLeft = rect.left - boxRect.left;
+                const relativeTop = rect.top - boxRect.top;
+
+                el.classList.add('placed');
+                el.style.left = `${relativeLeft}px`;
+                el.style.top = `${relativeTop}px`;
+                el.style.transform = 'none'; 
+                
+                targetBox.appendChild(el);
+
+                if (itemType === 'many') {
+                    gameState.manyPlacedCount++;
+                    speakText('おおい');
+                } else {
+                    gameState.fewPlacedCount++;
+                    speakText('すくない');
+                }
+                
+                targetBox.classList.add('correct-animation');
+                setTimeout(() => {
+                    targetBox.classList.remove('correct-animation');
+                }, 500);
+
+                checkQuestionClear();
+            } else if (targetBox && !isCorrectDrop) {
+                gameState.questionMistakes++;
+                triggerFeedback(false);
+                if (settings.wrongBehavior === 'back') {
+                    resetElementPosition(el);
+                } else {
+                    el.style.transform = `translate(${currentTransformX}px, ${currentTransformY}px)`;
+                }
+            } else {
+                resetElementPosition(el);
+            }
+        }
+
+        function resetElementPosition(el) {
+            el.style.transition = 'transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            el.style.transform = 'translate(0px, 0px)';
+            setTimeout(() => {
+                el.style.transition = 'none';
+            }, 220);
+        }
+
+        function triggerFeedback(isCorrect) {
+            const target = isCorrect ? document.getElementById('feedback-circle') : document.getElementById('feedback-cross');
+            playSound(isCorrect ? 'correct' : 'wrong');
+            target.style.opacity = '1';
+            setTimeout(() => {
+                target.style.opacity = '0';
+            }, 600);
+        }
+
+        function checkQuestionClear() {
+            let isCleared = (gameState.manyPlacedCount >= gameState.manyRequiredCount) && 
+                            (gameState.fewPlacedCount >= gameState.fewRequiredCount);
+
+            if (isCleared) {
+                gameState.isAnimating = true; 
+                gameState.correctCount++;
+                triggerFeedback(true);
+
+                const qDuration = Math.round((Date.now() - gameState.questionStartTime) / 1000);
+                let modeText = '';
+                if (gameState.currentStepMode === 'many-only') modeText = '多いのみ';
+                else if (gameState.currentStepMode === 'few-only') modeText = '少ないのみ';
+                else modeText = '両方';
+
+                gameState.detailedLog.push({
+                    index: gameState.currentQuestionIndex + 1,
+                    emojis: [...gameState.currentEmojis],
+                    modeText: modeText,
+                    time: `${qDuration}秒`,
+                    mistakes: gameState.questionMistakes
+                });
+
+                setTimeout(() => {
+                    gameState.currentQuestionIndex++;
+                    if (gameState.currentQuestionIndex < settings.questions) {
+                        setupQuestion();
+                    } else {
+                        endGame();
+                    }
+                }, 1400);
+            }
+        }
+
+        function endGame() {
+            playSound('finish');
+            saveHistoryItem();
+            alert(`ぜんぶ クリア！\nせいかい: ${gameState.correctCount} / ${settings.questions}`);
+            showScreen('home-screen');
+        }
+
+        // --- 確認モーダル制御 ---
+        const modal = document.getElementById('confirm-modal');
+        
+        function showConfirmModal() {
+            modal.classList.add('active');
+        }
+
+        function hideConfirmModal() {
+            modal.classList.remove('active');
+        }
+
+        document.getElementById('play-back-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showConfirmModal();
+        });
+
+        document.getElementById('modal-cancel-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            hideConfirmModal();
+        });
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            hideConfirmModal();
+            showScreen('home-screen');
+        });
+
+        // --- 各ボタンクリックイベント ---
+        document.getElementById('start-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            startNewGame();
+        });
+
+        document.getElementById('go-history-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            showScreen('history-screen');
+        });
+
+        document.getElementById('save-setting-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('ooi_sukunai_settings', JSON.stringify(settings));
+            showScreen('home-screen');
+        });
+
+        document.getElementById('history-back-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            showScreen('home-screen');
+        });
+
+        document.getElementById('clear-history-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            showConfirmModalForClear();
+        });
+
+        function showConfirmModalForClear() {
+            const backupMessage = document.querySelector('.ios-alert-message').innerText;
+            const backupConfirmText = document.getElementById('modal-confirm-btn').innerText;
+            
+            document.querySelector('.ios-alert-message').innerText = '履歴をすべて消去しますか？';
+            document.getElementById('modal-confirm-btn').innerText = '消去';
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            const clearHistoryAction = (e) => {
+                e.preventDefault();
+                gameState.history = [];
+                localStorage.removeItem('ooi_sukunai_history');
+                renderHistory();
+                hideConfirmModal();
+                
+                document.querySelector('.ios-alert-message').innerText = backupMessage;
+                confirmBtn.innerText = backupConfirmText;
+                confirmBtn.removeEventListener('click', clearHistoryAction);
+                confirmBtn.addEventListener('click', defaultConfirmAction);
+            };
+            
+            const defaultConfirmAction = (e) => {
+                e.preventDefault();
+                hideConfirmModal();
+                showScreen('home-screen');
+            };
+
+            const clone = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(clone, confirmBtn);
+            clone.addEventListener('click', clearHistoryAction);
+            
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+            const cancelAction = (e) => {
+                e.preventDefault();
+                hideConfirmModal();
+                document.querySelector('.ios-alert-message').innerText = backupMessage;
+                clone.innerText = backupConfirmText;
+                
+                const restoreBtn = document.getElementById('modal-confirm-btn');
+                const restoreClone = restoreBtn.cloneNode(true);
+                restoreBtn.parentNode.replaceChild(restoreClone, restoreBtn);
+                restoreClone.addEventListener('click', (evt) => {
+                    evt.preventDefault();
+                    hideConfirmModal();
+                    showScreen('home-screen');
+                });
+                cancelBtn.removeEventListener('click', cancelAction);
+                cancelBtn.addEventListener('click', (evt) => {
+                    evt.preventDefault();
+                    hideConfirmModal();
+                });
+            };
+            cancelBtn.addEventListener('click', cancelAction);
+
+            showConfirmModal();
+        }
+
+        window.onload = () => {
+            initSettingsUI();
+        };
+    </script>
+</body>
+</html>
