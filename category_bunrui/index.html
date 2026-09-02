@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>カテゴリー分類</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 1. スタート画面 -->
+  <div id="screen-start">
+    <div class="app-title">カテゴリー分類</div>
+    <div class="start-menu-btns">
+      <button class="btn-main" id="btn-start">スタート</button>
+    </div>
+
+    <!-- 管理用リンク（目立たないデザイン） -->
+    <div class="admin-links">
+      <div id="btn-settings-trigger" class="btn-settings-subtle">
+        設定 <span class="subtle-hint">(トリプルタップ)</span>
+      </div>
+      <div id="btn-history-trigger" class="btn-settings-subtle">
+        履歴 <span class="subtle-hint">(トリプルタップ)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. プレイ画面 -->
+  <div id="screen-game" class="hidden">
+    <div class="game-header">
+      <button class="btn-sub" id="btn-home">もどる</button>
+      <div class="progress-info">
+        <span class="progress-text" id="progress-display"> 0 / 0</span>
+        <span class="question-count-text" id="question-display">1 / 3</span>
+      </div>
+    </div>
+    <div class="game-body">
+      <div id="target-zones"></div>
+      <div id="spawn-area"></div>
+    </div>
+  </div>
+
+  <!-- 3. 履歴モーダル -->
+  <div id="modal-history" class="modal-overlay hidden">
+    <div class="modal-container" style="max-width: 600px; height: 80vh;">
+      <div class="modal-header">
+        <h2>プレイ履歴</h2>
+        <button class="btn-sub" id="btn-close-history">閉じる</button>
+      </div>
+      <div class="modal-body">
+        <div id="history-list"></div>
+        <button class="btn-sub" id="btn-clear-history" style="margin-top: 16px; color: #d9534f; border-color: #d9534f;">履歴を消去</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 設定モーダル -->
+  <div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>設定</h2>
+        <button class="btn-sub" id="btn-close-settings">閉じる</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="tab-play-config">プレイ設定</button>
+        <button class="tab-btn" data-tab="tab-categories">カテゴリー管理</button>
+        <button class="tab-btn" data-tab="tab-items">イラスト管理</button>
+        <button class="tab-btn" data-tab="tab-data">データ入出力</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- タブ1: プレイ設定 -->
+        <div id="tab-play-config">
+          <!-- 1. カテゴリーの数 -->
+          <div class="config-group">
+            <label class="config-label-title">カテゴリーの数:</label>
+            <div class="radio-options-row">
+              <label class="radio-label"><input type="radio" name="cfg-cat-count" value="2"> 2種類</label>
+              <label class="radio-label"><input type="radio" name="cfg-cat-count" value="3"> 3種類</label>
+              <label class="radio-label"><input type="radio" name="cfg-cat-count" value="4"> 4種類</label>
+              <label class="radio-label"><input type="radio" name="cfg-cat-count" value="5"> 5種類</label>
+            </div>
+          </div>
+
+          <!-- 2. 画面に同時に出る画像数 -->
+          <div class="config-group">
+            <label class="config-label-title">画面に同時に出る画像数:</label>
+            <div class="radio-options-row">
+              <label class="radio-label"><input type="radio" name="cfg-visible-count" value="1"> 1個</label>
+              <label class="radio-label"><input type="radio" name="cfg-visible-count" value="2"> 2個</label>
+              <label class="radio-label"><input type="radio" name="cfg-visible-count" value="3"> 3個</label>
+              <label class="radio-label"><input type="radio" name="cfg-visible-count" value="4"> 4個</label>
+              <label class="radio-label"><input type="radio" name="cfg-visible-count" value="5"> 5個</label>
+            </div>
+          </div>
+
+          <!-- 3. １問の画像数 -->
+          <div class="config-group">
+            <label class="config-label">
+              <span>１問の画像数: <strong id="val-total-count">8</strong> 個</span>
+              <small style="color:#666;">※0にすると該当カテゴリーの全画像を出題</small>
+              <input type="range" id="cfg-total-count" min="0" max="20" value="8" class="slider-input">
+            </label>
+          </div>
+
+          <!-- 4. 問題数 -->
+          <div class="config-group">
+            <label class="config-label">
+              <span>問題数: <strong id="val-question-count">3</strong> 問</span>
+              <input type="range" id="cfg-question-count" min="1" max="20" value="3" class="slider-input">
+            </label>
+          </div>
+
+          <div class="config-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="cfg-show-home" checked>
+              <span>プレイ画面に「おわる / もどる」ボタンを表示する</span>
+            </label>
+          </div>
+
+          <!-- 戻るボタン -->
+          <div style="margin-top: 24px; text-align: center;">
+            <button class="btn-sub" id="btn-back-play-config" style="min-width: 150px; font-weight: bold;">戻る</button>
+          </div>
+        </div>
+
+        <!-- タブ2: カテゴリー管理 -->
+        <div id="tab-categories" class="hidden">
+          <div id="category-list"></div>
+          <div class="add-form-box">
+            <h4>新しいカテゴリーを追加</h4>
+            <div class="form-row">
+              <input type="text" id="new-cat-name" class="setting-input" placeholder="カテゴリー名 (例: たべもの)">
+              <input type="color" id="new-cat-color" value="#d4edda" class="color-picker">
+              <label class="btn-sub file-upload-label">
+                アイコン画像
+                <input type="file" id="new-cat-icon-file" accept="image/*" class="hidden">
+              </label>
+              <button class="btn-sub" id="btn-add-category">追加</button>
+            </div>
+            <div id="cat-icon-preview" class="icon-preview"></div>
+          </div>
+        </div>
+
+        <!-- タブ3: イラスト管理 -->
+        <div id="tab-items" class="hidden">
+          <div id="item-list"></div>
+
+          <div class="add-form-box">
+            <h4>新しいイラストを追加</h4>
+            <div class="radio-group">
+              <label><input type="radio" name="input-type" value="emoji" checked onchange="toggleInputType('emoji')"> 絵文字</label>
+              <label><input type="radio" name="input-type" value="image" onchange="toggleInputType('image')"> 画像ファイル</label>
+            </div>
+
+            <div id="form-emoji" class="form-row">
+              <input type="text" id="new-item-emoji" class="setting-input" placeholder="絵文字" style="width: 100px;">
+              <input type="text" id="new-item-name-emoji" class="setting-input" placeholder="名前" style="flex:1;">
+            </div>
+
+            <div id="form-image" class="hidden form-row">
+              <input type="file" id="new-item-files" accept="image/*" multiple class="setting-input">
+            </div>
+
+            <div style="margin-top: 12px;">
+              <p style="font-size: 0.9rem; font-weight: bold; margin-bottom: 6px;">所属カテゴリー:</p>
+              <div id="new-item-tags" class="tag-checkbox-group"></div>
+            </div>
+
+            <button class="btn-sub" id="btn-add-item" style="margin-top: 16px; width: 100%;">追加する</button>
+          </div>
+        </div>
+
+        <!-- タブ4: データ管理 -->
+        <div id="tab-data" class="hidden">
+          <div class="data-btn-group">
+            <button class="btn-sub" id="btn-export-json">データを保存 (Export)</button>
+            <button class="btn-sub" onclick="document.getElementById('file-import-json').click()">データを読み込む (Import)</button>
+            <input type="file" id="file-import-json" accept=".json" class="hidden">
+            <hr style="margin: 12px 0;">
+            <button class="btn-sub" id="btn-reset-default" style="color: #d9534f; border-color: #d9534f;">初期状態にリセット</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

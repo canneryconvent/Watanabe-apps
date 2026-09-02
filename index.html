@@ -8,21 +8,19 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'G-4T10JYJ9XC');
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="特別支援学校・特別支援学級・ご家庭で使える無料のWeb教材アプリ集。国語や算数の内容を中心に、iPadやPCのブラウザですぐに使える教材を公開しています。">
+    <meta name="description" content="特別支援学校・特別支援学級・ご家庭で使える無料のWeb教材アプリ集。国語や算数の内容を中心に、iPadやPCのブラウザですぐに使える教材を公開しています。">
 
-    <!-- SNSでシェアされた時の表示（OGPタグ） -->
     <meta property="og:title" content="特別支援教育向け Webアプリ一覧">
     <meta property="og:description" content="特別支援学校・学級・療育で使える無料Web教材。インストール不要でiPad・PCで動きます。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://watanabe-apps.github.io/apps/">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://watanabe-apps.github.io/apps/">
+    <title>特別支援教育向け Webアプリ一覧</title>
 
     <style>
         body {
@@ -34,7 +32,7 @@
             background-color: #f9f9f9;
         }
 
-        /* --- 省スペース What's New --- */
+        /* --- What's New --- */
         .whats-new-card {
             background: #ffffff;
             border: 1px solid #e0e8f5;
@@ -45,20 +43,11 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
         }
 
-        .whats-new-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-
         .whats-new-title {
             font-size: 13px;
             font-weight: bold;
             color: #4A90E2;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            margin-bottom: 6px;
         }
 
         .whats-new-list {
@@ -99,13 +88,8 @@
             flex-shrink: 0;
         }
 
-        .news-badge.new {
-            background-color: #ff5b5b;
-        }
-
-        .news-badge.update {
-            background-color: #4A90E2;
-        }
+        .news-badge.new { background-color: #ff5b5b; }
+        .news-badge.update { background-color: #4A90E2; }
 
         .news-text {
             color: #444;
@@ -122,7 +106,7 @@
             text-decoration: underline;
         }
 
-        /* カテゴリータイトル・グリッド */
+        /* --- アプリカード & グリッド --- */
         .category-title {
             border-left: 5px solid #4A90E2;
             padding-left: 10px;
@@ -173,227 +157,20 @@
             line-height: 1.4;
             display: block;
         }
-    </style>
-</head>
 
-<body>
-    <h1>特別支援教育向け Webアプリ一覧</h1>
+        .item-sub {
+            display: block;
+            font-size: 10px;
+            color: #777;
+            margin-top: 4px;
+            font-weight: normal;
+        }
 
-    <!-- 🌟 省スペース What's New -->
-    <div class="whats-new-card">
-        <div class="whats-new-header">
-            <span class="whats-new-title">📢 更新情報・お知らせ</span>
-        </div>
-         <ul class="whats-new-list">
-            <li class="whats-new-item">
-                <span class="news-date">2026.09.01</span>
-                <span class="news-badge new">NEW</span>
-                <span class="news-text">「<a href="ooi_sukunai/index.html">おおいすくない</a>」を公開しました！<br>
-                <span class="news-text">「<a href="karuta/">カルタ</a>」の不具合を修正しました！
-            </li>
-        </ul>
-        <ul class="whats-new-list">
-            <li class="whats-new-item">
-                <span class="news-date">2026.08.29</span>
-                <span class="news-badge new">NEW</span>
-                <span class="news-text">「<a href="karuta/index.html">カルタ</a>」を公開しました！<br>
-               「<a href="ten_tap/index.html">点タップ</a>」のタップ時に演出を追加しました！</span>
-            </li>
-        </ul>
-    </div>
-
-    <div class="grid-container">
-        <div class="item-card">
-            <a href="keitou_map/index.html">
-                <img src="keitou_map/img.png" alt="系統マップのアイコン">
-                <span class="item-name">系統マップ</span>
-            </a>
-        </div>
-    </div>
-
-    <h2 class="category-title">国語</h2>
-    <div class="grid-container">
-        <div class="item-card">
-            <a href="hiragana_nazori_utsushi/index.html">
-                <img src="hiragana_nazori_utsushi/img.png" alt="平仮名なぞり・写し書きのアイコン">
-                <span class="item-name">平仮名なぞり・写し書き</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="keyboard/index.html">
-                <img src="keyboard/img.png" alt="平仮名キーボードのアイコン">
-                <span class="item-name">平仮名キーボード</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="keyboard_quiz/index.html">
-                <img src="keyboard_quiz/img.png" alt="平仮名キーボードクイズのアイコン">
-                <span class="item-name">平仮名キーボードクイズ</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="karuta/index.html">
-                <img src="karuta/img.png" alt="カルタのアイコン">
-                <span class="item-name">カルタ</span>
-            </a>
-        </div>
-    </div>
-
-    <h2 class="category-title">算数</h2>
-    <div class="grid-container">
-        <div class="item-card">
-            <a href="1tai1/index.html">
-                <img src="1tai1/img.png" alt="一つずつ配ろうのアイコン">
-                <span class="item-name">一つずつ配ろう</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="ookii_chiisai/index.html">
-                <img src="ookii_chiisai/img.png" alt="おおきいちいさいのアイコン">
-                <span class="item-name">おおきいちいさい</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="ooi_sukunai/index.html">
-                <img src="ooi_sukunai/img.png" alt="多い少ないのアイコン">
-                <span class="item-name">おおいすくない</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="kazoeyou_kiso/index.html">
-                <img src="kazoeyou_kiso/img.png" alt="かぞえよう基礎のアイコン">
-                <span class="item-name">かぞえよう基礎</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="suuji_narabe/index.html">
-                <img src="suuji_narabe/img.png" alt="数字ならべのアイコン">
-                <span class="item-name">数字ならべ</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="suuji_touch/index.html">
-                <img src="suuji_touch/img.png" alt="数字タッチのアイコン">
-                <span class="item-name">数字タッチ</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="ikutsuto_ikutsu/index.html">
-                <img src="ikutsuto_ikutsu/img.png" alt="いくつといくつのアイコン">
-                <span class="item-name">いくつといくつ</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="suuji_narabe_2/index.html">
-                <img src="suuji_narabe_2/img.png" alt="数字ならべ（◯ずつ増える）のアイコン">
-                <span class="item-name">数字ならべ（◯ずつ増える）</span>
-            </a>
-        </div>
-    </div>
-
-    <h2 class="category-title">その他</h2>
-    <div class="grid-container">
-        <div class="item-card">
-            <a href="ten_tap/index.html">
-                <img src="ten_tap/img.png" alt="点タップのアイコン">
-                <span class="item-name">点タップ</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="katachi_sagashi/index.html">
-                <img src="katachi_sagashi/img.png" alt="形探しのアイコン">
-                <span class="item-name">形探し</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="ichi_matching/index.html">
-                <img src="ichi_matching/img.png" alt="位置マッチングのアイコン">
-                <span class="item-name">位置マッチング</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="ten_tsunagi/index.html">
-                <img src="ten_tsunagi/img.png" alt="点つなぎのアイコン">
-                <span class="item-name">点つなぎ</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="maze/index.html">
-                <img src="maze/img.png" alt="迷路のアイコン">
-                <span class="item-name">迷路</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="kiite_oboeyou/index.html">
-                <img src="kiite_oboeyou/img.png" alt="聞いて覚えようのアイコン">
-                <span class="item-name">聞いて覚えよう</span>
-            </a>
-        </div>
-    </div>
-
-    <h2 class="category-title">ツール</h2>
-    <div class="grid-container">
-        <div class="item-card">
-            <a href="rythm_visualizer/index.html">
-                <img src="rythm_visualizer/img.png" alt="リズム視覚化ツールのアイコン">
-                <span class="item-name">リズム視覚化ツール</span>
-            </a>
-        </div>
-        <div class="item-card">
-            <a href="iPad_html_viewer/index.html">
-                <img src="iPad_html_viewer/img.png" alt="iPad HTML Viewerのアイコン">
-                <span class="item-name">iPad HTML Viewer<br>
-                    <small><small>※ローカルHTMLファイルをiPadで開くためのツールです</small></small>
-                </span>
-            </a>
-        </div>
-    </div>
-
-    <div class="guide-container">
-        <div class="guide-card">
-            <h3 class="guide-title">ホーム画面への追加方法</h3>
-            <p class="guide-intro">
-                本サイトのアプリは、端末の<strong>「ホーム画面に追加」</strong>をすると、アドレスバーや余計なボタンが消え、通常のアプリと同じ<strong>全画面（フルスクリーン）</strong>で遊べます。子どもの誤操作防止に非常に効果的ですので、ぜひお試しください。
-            </p>
-
-            <input type="radio" id="tab-ios" name="guide-tabs" checked>
-            <input type="radio" id="tab-android" name="guide-tabs">
-
-            <div class="tab-buttons">
-                <label for="tab-ios" class="tab-label label-ios">🍏 iPad / iPhone (Safari)</label>
-                <label for="tab-android" class="tab-label label-android">🤖 Android (Chrome)</label>
-            </div>
-
-            <div class="tab-content content-ios">
-                <ol class="step-list">
-                    <li><span class="step-num">1</span><strong>「Safari」</strong>でこのサイトを開きます。</li>
-                    <li><span class="step-num">2</span><strong>「共有ボタン」</strong>をタップします。</li>
-                    <li><span class="step-num">3</span><strong>「ホーム画面に追加 ➕」</strong>を選択します。</li>
-                    <li><span
-                            class="step-num">4</span><strong>「追加」</strong>を押すと、ホーム画面に可愛いアイコンが作られます。次回からはそれをタップするだけで全画面起動します！
-                    </li>
-                </ol>
-            </div>
-
-            <div class="tab-content content-android">
-                <ol class="step-list">
-                    <li><span class="step-num">1</span><strong>「Google Chrome」</strong>ブラウザでこのサイトを開きます。</li>
-                    <li><span class="step-num">2</span>画面右上にある<strong>「メニューボタン（縦に点３つ ⁝ ）」</strong>をタップします。</li>
-                    <li><span class="step-num">3</span>メニュー内の<strong>「ホーム画面に追加」</strong>（または「アプリをインストール」）を選択します。</li>
-                    <li><span
-                            class="step-num">4</span>画面の指示に従って<strong>「追加」</strong>を押すと、ホーム画面にアイコンが作成され、次回から全画面でサクサク遊べます！
-                    </li>
-                </ol>
-            </div>
-        </div>
-    </div>
-
-    <style>
+        /* --- ガイドコンテナ --- */
         .guide-container {
             max-width: 600px;
-            margin: 30px auto;
+            margin: 40px auto 20px auto;
             padding: 0 15px;
-            font-family: sans-serif;
         }
 
         .guide-card {
@@ -408,8 +185,6 @@
             margin: 0 0 10px 0;
             color: #e67e22;
             font-size: 16px;
-            display: flex;
-            align-items: center;
             font-weight: bold;
         }
 
@@ -420,9 +195,7 @@
             margin-bottom: 18px;
         }
 
-        input[name="guide-tabs"] {
-            display: none;
-        }
+        input[name="guide-tabs"] { display: none; }
 
         .tab-buttons {
             display: table;
@@ -444,7 +217,6 @@
             border-bottom: none;
             border-radius: 8px 8px 0 0;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         #tab-ios:checked~.tab-buttons .label-ios,
@@ -465,10 +237,7 @@
             border: 1px dashed #ffcc99;
         }
 
-        #tab-ios:checked~.content-ios {
-            display: block;
-        }
-
+        #tab-ios:checked~.content-ios,
         #tab-android:checked~.content-android {
             display: block;
         }
@@ -488,9 +257,7 @@
             color: #444;
         }
 
-        .step-list li:last-child {
-            margin-bottom: 0;
-        }
+        .step-list li:last-child { margin-bottom: 0; }
 
         .step-num {
             position: absolute;
@@ -506,61 +273,12 @@
             font-size: 11px;
             font-weight: bold;
         }
-    </style>
 
-    <div class="disclaimer-container">
-        <details class="disclaimer-details">
-            <summary class="disclaimer-summary">
-                <span>📄 免責事項およびご利用について (プライバシーポリシー)</span>
-                <span class="arrow">▼</span>
-            </summary>
-            <div class="disclaimer-content">
-                <p class="intro">本サイトで公開している教育用アプリをご利用いただくにあたり、以下の事項をご確認・ご了承いただけますようお願いいたします。</p>
-
-                <div class="section-block">
-                    <h4>1. ご利用範囲と著作権について</h4>
-                    <ul>
-                        <li><strong>学校・療育での利用大歓迎：</strong>
-                            ご家庭はもちろん、幼稚園、保育園、小学校、特別支援学校、放課後等デイサービス、療育施設等での学習・指導目的での利用は、原則として<strong>無料かつ自由</strong>（事前連絡不要）です。教育現場でぜひご活用ください。
-                        </li>
-                        <li><strong>著作権の帰属：</strong> アプリに含まれるプログラム、デザイン、イラスト等の著作権はサイト制作者に帰属します。</li>
-                        <li><strong>禁止事項：</strong> アプリを無断で複製・改変して有償で販売することや、商用教材に組み込んで転売する行為は禁止します。</li>
-                    </ul>
-                </div>
-
-                <div class="section-block">
-                    <h4>2. 免責事項</h4>
-                    <ul>
-                        <li><strong>動作の非保証：</strong>
-                            万全を期して制作しておりますが、正確性、安全性、および特定の環境での確実な動作（iOS/iPadOS等のアップデートに伴う挙動変化を含む）を完全に保証するものではありません。</li>
-                        <li><strong>損害の免責：</strong> 本サイトおよびアプリのご利用によって生じた一切のトラブルや損害（端末の不具合、データの消失等）について、制作者は一切の責任を負いません。
-                        </li>
-                        <li><strong>仕様変更：</strong> アプリの改善やバグ修正のため、予告なく内容の変更や公開停止を行うことがあります。</li>
-                    </ul>
-                </div>
-
-                <div class="section-block">
-                    <h4>3. アクセス解析とデータの収集について</h4>
-                    <ul>
-                        <li><strong>アクセス解析の利用：</strong> アプリの使用頻度や訪問者数を把握し、今後のアップデートの参考にするため、<strong>Google Analytics 4
-                                (GA4)</strong> および<strong>外部カウンターAPI</strong>を利用しています。</li>
-                        <li><strong>データの匿名性：</strong>
-                            収集されるデータは、閲覧されたページや端末のOS環境などの統計情報であり、お名前やご住所などの<strong>個人を特定する情報は一切含まれません（完全な匿名です）</strong>。これらはサイトの改善目的以外には使用いたしません。
-                        </li>
-                    </ul>
-                </div>
-
-                <p class="date">制定日: 2026年5月25日</p>
-            </div>
-        </details>
-    </div>
-
-    <style>
+        /* --- 免責事項 --- */
         .disclaimer-container {
             max-width: 600px;
-            margin: 40px auto 20px auto;
+            margin: 20px auto;
             padding: 0 15px;
-            font-family: sans-serif;
         }
 
         .disclaimer-details {
@@ -572,10 +290,6 @@
             transition: all 0.3s ease;
         }
 
-        .disclaimer-details[open] {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
         .disclaimer-summary {
             display: flex;
             justify-content: space-between;
@@ -585,14 +299,10 @@
             font-weight: bold;
             color: #d2691e;
             cursor: pointer;
-            list-style: none;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .disclaimer-summary::-webkit-details-marker {
-            display: none;
-        }
+        .disclaimer-summary::-webkit-details-marker { display: none; }
 
         .disclaimer-summary .arrow {
             font-size: 10px;
@@ -618,9 +328,7 @@
             color: #666;
         }
 
-        .section-block {
-            margin-bottom: 18px;
-        }
+        .section-block { margin-bottom: 18px; }
 
         .section-block h4 {
             margin: 10px 0 6px 0;
@@ -635,9 +343,7 @@
             padding-left: 20px;
         }
 
-        .section-block li {
-            margin-bottom: 6px;
-        }
+        .section-block li { margin-bottom: 6px; }
 
         .disclaimer-content .date {
             text-align: right;
@@ -646,6 +352,205 @@
             margin: 15px 0 0 0;
         }
     </style>
+</head>
+
+<body>
+    <h1>特別支援教育向け Webアプリ一覧</h1>
+
+    <!-- What's New -->
+    <div class="whats-new-card">
+        <div class="whats-new-title">📢 更新情報・お知らせ</div>
+        <ul class="whats-new-list">
+            <li class="whats-new-item">
+                <span class="news-date">2026.09.02</span>
+                <span class="news-badge new">NEW</span>
+                <span class="news-text">
+                    「<a href="category_bunrui/">カテゴリー分類</a>」を公開しました！
+                </span>
+            </li>
+            <li class="whats-new-item">
+                <span class="news-date">2026.09.01</span>
+                <span class="news-badge new">NEW</span>
+                <span class="news-text">
+                    「<a href="ooi_sukunai/index.html">おおいすくない</a>」を公開しました！<br>
+                    「<a href="karuta/index.html">カルタ</a>」の不具合を修正しました！
+                </span>
+            </li>
+            <li class="whats-new-item">
+                <span class="news-date">2026.08.29</span>
+                <span class="news-text">
+                    「<a href="karuta/index.html">カルタ</a>」を公開しました！<br>
+                    「<a href="ten_tap/index.html">点タップ</a>」のタップ時に演出を追加しました！
+                </span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 系統マップ（独立表示） -->
+    <div class="grid-container">
+        <div class="item-card">
+            <a href="keitou_map/index.html">
+                <img src="keitou_map/img.png" alt="系統マップのアイコン">
+                <span class="item-name">系統マップ</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- アプリ一覧が動的描画されるエリア -->
+    <div id="app-container"></div>
+
+    <!-- ホーム画面追加ガイド -->
+    <div class="guide-container">
+        <div class="guide-card">
+            <h3 class="guide-title">ホーム画面への追加方法</h3>
+            <p class="guide-intro">
+                本サイトのアプリは、端末の<strong>「ホーム画面に追加」</strong>をすると、アドレスバーや余計なボタンが消え、通常のアプリと同じ<strong>全画面（フルスクリーン）</strong>で遊べます。子どもの誤操作防止に非常に効果的ですので、ぜひお試しください。
+            </p>
+
+            <input type="radio" id="tab-ios" name="guide-tabs" checked>
+            <input type="radio" id="tab-android" name="guide-tabs">
+
+            <div class="tab-buttons">
+                <label for="tab-ios" class="tab-label label-ios">🍏 iPad / iPhone (Safari)</label>
+                <label for="tab-android" class="tab-label label-android">🤖 Android (Chrome)</label>
+            </div>
+
+            <div class="tab-content content-ios">
+                <ol class="step-list">
+                    <li><span class="step-num">1</span><strong>「Safari」</strong>でこのサイトを開きます。</li>
+                    <li><span class="step-num">2</span><strong>「共有ボタン」</strong>をタップします。</li>
+                    <li><span class="step-num">3</span><strong>「ホーム画面に追加 ➕」</strong>を選択します。</li>
+                    <li><span class="step-num">4</span><strong>「追加」</strong>を押すと、ホーム画面に可愛いアイコンが作られます。次回からはそれをタップするだけで全画面起動します！</li>
+                </ol>
+            </div>
+
+            <div class="tab-content content-android">
+                <ol class="step-list">
+                    <li><span class="step-num">1</span><strong>「Google Chrome」</strong>ブラウザでこのサイトを開きます。</li>
+                    <li><span class="step-num">2</span>画面右上にある<strong>「メニューボタン（縦に点３つ ⁝ ）」</strong>をタップします。</li>
+                    <li><span class="step-num">3</span>メニュー内の<strong>「ホーム画面に追加」</strong>（または「アプリをインストール」）を選択します。</li>
+                    <li><span class="step-num">4</span>画面の指示に従って<strong>「追加」</strong>を押すと、ホーム画面にアイコンが作成され、次回から全画面でサクサク遊べます！</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- 免責事項 -->
+    <div class="disclaimer-container">
+        <details class="disclaimer-details">
+            <summary class="disclaimer-summary">
+                <span>📄 免責事項およびご利用について (プライバシーポリシー)</span>
+                <span class="arrow">▼</span>
+            </summary>
+            <div class="disclaimer-content">
+                <p class="intro">本サイトで公開している教育用アプリをご利用いただくにあたり、以下の事項をご確認・ご了承いただけますようお願いいたします。</p>
+
+                <div class="section-block">
+                    <h4>1. ご利用範囲と著作権について</h4>
+                    <ul>
+                        <li><strong>学校・療育での利用大歓迎：</strong>ご家庭はもちろん、幼稚園、保育園、小学校、特別支援学校、放課後等デイサービス、療育施設等での学習・指導目的での利用は、原則として<strong>無料かつ自由</strong>（事前連絡不要）です。教育現場でぜひご活用ください。</li>
+                        <li><strong>著作権の帰属：</strong> アプリに含まれるプログラム、デザイン、イラスト等の著作権はサイト制作者に帰属します。</li>
+                        <li><strong>禁止事項：</strong> アプリを無断で複製・改変して有償で販売することや、商用教材に組み込んで転売する行為は禁止します。</li>
+                    </ul>
+                </div>
+
+                <div class="section-block">
+                    <h4>2. 免責事項</h4>
+                    <ul>
+                        <li><strong>動作の非保証：</strong>万全を期して制作しておりますが、正確性、安全性、および特定の環境での確実な動作（iOS/iPadOS等のアップデートに伴う挙動変化を含む）を完全に保証するものではありません。</li>
+                        <li><strong>損害の免責：</strong> 本サイトおよびアプリのご利用によって生じた一切のトラブルや損害について、制作者は一切の責任を負いません。</li>
+                        <li><strong>仕様変更：</strong> アプリの改善やバグ修正のため、予告なく内容の変更や公開停止を行うことがあります。</li>
+                    </ul>
+                </div>
+
+                <div class="section-block">
+                    <h4>3. アクセス解析とデータの収集について</h4>
+                    <ul>
+                        <li><strong>アクセス解析の利用：</strong> アプリの使用頻度や訪問者数を把握し、今後のアップデートの参考にするため、<strong>Google Analytics 4 (GA4)</strong> を利用しています。</li>
+                        <li><strong>データの匿名性：</strong>収集されるデータは統計情報であり、<strong>個人を特定する情報は一切含まれません</strong>。これらはサイトの改善目的以外には使用いたしません。</li>
+                    </ul>
+                </div>
+
+                <p class="date">制定日: 2026年5月25日</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- アプリ一覧データ & 動的生成スクリプト -->
+    <script>
+        // 表示順序を保持するカテゴリ定義
+        const CATEGORIES = ["国語", "算数", "その他", "ツール"];
+
+        // アプリ一覧データ（ここに追加・編集するだけで即座に反映されます）
+        const APPS_LIST = [
+            // 国語
+            { name: "平仮名なぞり・写し書き", dir: "hiragana_nazori_utsushi", category: "国語" },
+            { name: "平仮名キーボード", dir: "keyboard", category: "国語" },
+            { name: "平仮名キーボードクイズ", dir: "keyboard_quiz", category: "国語" },
+            { name: "カルタ", dir: "karuta", category: "国語" },
+
+            // 算数
+            { name: "一つずつ配ろう", dir: "1tai1", category: "算数" },
+            { name: "おおきいちいさい", dir: "ookii_chiisai", category: "算数" },
+            { name: "カテゴリー分類", dir: "category_bunrui", category: "算数" },
+            { name: "おおいすくない", dir: "ooi_sukunai", category: "算数" },
+            { name: "かぞえよう基礎", dir: "kazoeyou_kiso", category: "算数" },
+            { name: "数字ならべ", dir: "suuji_narabe", category: "算数" },
+            { name: "数字タッチ", dir: "suuji_touch", category: "算数" },
+            { name: "いくつといくつ", dir: "ikutsuto_ikutsu", category: "算数" },
+            { name: "数字ならべ（◯ずつ増える）", dir: "suuji_narabe_2", category: "算数" },
+
+            // その他
+            { name: "点タップ", dir: "ten_tap", category: "その他" },
+            { name: "形探し", dir: "katachi_sagashi", category: "その他" },
+            { name: "位置マッチング", dir: "ichi_matching", category: "その他" },
+            { name: "点つなぎ", dir: "ten_tsunagi", category: "その他" },
+            { name: "迷路", dir: "maze", category: "その他" },
+            { name: "聞いて覚えよう", dir: "kiite_oboeyou", category: "その他" },
+
+            // ツール
+            { name: "リズム視覚化ツール", dir: "rythm_visualizer", category: "ツール" },
+            { 
+                name: "iPad HTML Viewer", 
+                dir: "iPad_html_viewer", 
+                category: "ツール", 
+                sub: "※ローカルHTMLファイルをiPadで開くためのツールです" 
+            }
+        ];
+
+        // 動的レンダリング実行
+        function renderApps() {
+            const container = document.getElementById('app-container');
+            let html = '';
+
+            CATEGORIES.forEach(cat => {
+                const items = APPS_LIST.filter(app => app.category === cat);
+                if (items.length === 0) return;
+
+                html += `<h2 class="category-title">${cat}</h2>`;
+                html += `<div class="grid-container">`;
+                
+                items.forEach(app => {
+                    const subHtml = app.sub ? `<span class="item-sub">${app.sub}</span>` : '';
+                    html += `
+                        <div class="item-card">
+                            <a href="${app.dir}/index.html">
+                                <img src="${app.dir}/img.png" alt="${app.name}のアイコン" loading="lazy">
+                                <span class="item-name">${app.name}</span>
+                                ${subHtml}
+                            </a>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        renderApps();
+    </script>
 </body>
 
 </html>
