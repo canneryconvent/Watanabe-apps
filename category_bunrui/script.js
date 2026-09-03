@@ -93,7 +93,7 @@ function dbClearHistory() {
   });
 }
 
-// 初期データ
+// 初期カテゴリーデータ
 const defaultCategories = [
   { id: 1, name: "やさい", color: "#d4edda", icon: "", enabled: true },
   { id: 2, name: "くだもの", color: "#ffe8d6", icon: "", enabled: true },
@@ -107,6 +107,7 @@ const defaultCategories = [
   { id: 11, name: "しょっき", color: "#e3fafc", icon: "", enabled: true }
 ];
 
+// 初期アイテムデータ（精査済み全88アイテム）
 const defaultItems = [
   // やさい
   { name: "トマト", type: "emoji", value: "🍅", tags: ["やさい"] },
@@ -304,9 +305,10 @@ function playSound(type) {
   }
 }
 
-// カテゴリーアイコン要素生成
+// カテゴリーアイコン要素生成（常に80px固定・絵文字32pxを死守）
 function createCategoryIconElement(cat) {
   const container = document.createElement('div');
+  container.className = 'category-icon-box';
   container.style.cssText = `
     width: 80px;
     height: 80px;
@@ -466,6 +468,9 @@ function renderGameBaseUI() {
   const targetZones = document.getElementById('target-zones');
   targetZones.innerHTML = '';
 
+  const isCompact = currentGame.activeCategories.length >= 4;
+  targetZones.classList.toggle('compact-mode', isCompact);
+
   currentGame.activeCategories.forEach(cat => {
     const zone = document.createElement('div');
     zone.className = 'target-zone';
@@ -475,6 +480,7 @@ function renderGameBaseUI() {
     const title = document.createElement('div');
     title.className = 'zone-title';
 
+    // 常に80pxのアイコンを生成
     const iconEl = createCategoryIconElement(cat);
     const label = document.createElement('span');
     label.textContent = cat.name;
@@ -493,7 +499,7 @@ function renderGameBaseUI() {
   document.getElementById('spawn-area').innerHTML = '';
 }
 
-// 中央寄せ配置処理
+// 中央寄せ配置
 function fillSpawnArea() {
   const spawnArea = document.getElementById('spawn-area');
   const maxVis = appState.config.maxVisibleItems;
@@ -505,17 +511,14 @@ function fillSpawnArea() {
   const itemHeight = 120;
   const bottomMargin = 40;
 
-  // アイテム群全体を中央に寄せるための幅計算
   let gap = 20;
   let totalClusterWidth = maxVis * itemWidth + (maxVis - 1) * gap;
 
-  // 画面幅が狭い端末でのオーバーフロー防止
   if (totalClusterWidth > areaWidth - 40) {
     gap = Math.max(8, (areaWidth - 40 - maxVis * itemWidth) / Math.max(1, maxVis - 1));
     totalClusterWidth = maxVis * itemWidth + (maxVis - 1) * gap;
   }
 
-  // 中央揃えの開始X座標
   const startX = (areaWidth - totalClusterWidth) / 2;
   const posY = Math.max(10, (areaHeight - itemHeight - bottomMargin) / 2);
 
@@ -598,12 +601,15 @@ function makeItemDraggable(itemEl, itemData, initialPos, container, slotIndex) {
         itemEl.style.pointerEvents = 'none';
 
         const itemsBox = matchedZone.querySelector('.zone-items');
+        const isCompact = currentGame.activeCategories.length >= 4;
+        const targetItemSize = isCompact ? 46 : 72;
+        const scaleVal = isCompact ? (46 / 120) : 0.6;
 
         const existingItems = Array.from(itemsBox.children);
         const firstPositions = existingItems.map(el => el.getBoundingClientRect());
 
         const dummy = document.createElement('div');
-        dummy.style.cssText = 'width:72px; height:72px; flex-shrink:0;';
+        dummy.style.cssText = `width:${targetItemSize}px; height:${targetItemSize}px; flex-shrink:0;`;
         itemsBox.appendChild(dummy);
 
         const targetRect = dummy.getBoundingClientRect();
@@ -640,7 +646,7 @@ function makeItemDraggable(itemEl, itemData, initialPos, container, slotIndex) {
           itemEl.style.transition = 'left 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)';
           itemEl.style.left = `${destX}px`;
           itemEl.style.top = `${destY}px`;
-          itemEl.style.transform = 'scale(0.6)';
+          itemEl.style.transform = `scale(${scaleVal})`;
         });
 
         setTimeout(() => {

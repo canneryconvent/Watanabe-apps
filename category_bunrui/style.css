@@ -156,11 +156,12 @@ body, html {
   background-color: #ffffff;
 }
 
+/* 枠の高さを56%に広げて縦の収容力を強化 */
 #target-zones {
-  height: 52%;
+  height: 56%;
   display: flex;
   gap: 12px;
-  padding: 12px;
+  padding: 10px;
   background: #ffffff;
   position: relative;
   z-index: 1;
@@ -173,31 +174,24 @@ body, html {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
+  padding: 8px 6px;
   overflow: hidden;
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
-/* 正解時の枠ポップ演出 */
-@keyframes zone-pop-effect {
-  0% { transform: scale(1); border-color: rgba(0,0,0,0.15); }
-  50% { transform: scale(1.025); border-color: #40c057; }
-  100% { transform: scale(1); border-color: rgba(0,0,0,0.15); }
-}
-
 .target-zone.zone-success {
-  animation: zone-pop-effect 0.3s ease-out;
+  border-color: #40c057;
 }
 
 .zone-title {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 8px;
-  padding: 4px 12px;
+  margin-bottom: 6px;
+  padding: 2px 8px;
   border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .zone-items {
@@ -205,21 +199,23 @@ body, html {
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-content: flex-start;
   justify-content: center;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* 出現エリアは中央寄せのため44%で十分 */
 #spawn-area {
-  height: 48%;
+  height: 44%;
   position: relative;
   overflow: visible;
   z-index: 20;
   background-color: #ffffff;
 }
 
-/* ドラッグ要素 */
+/* ドラッグ要素（出現・手元の移動時） */
 .drag-item {
   position: absolute;
   width: 120px;
@@ -252,6 +248,7 @@ body, html {
   pointer-events: none;
 }
 
+/* 2〜3カテゴリー時の枠内配置アイテム（通常サイズ 72px） */
 .target-zone .drag-item {
   position: static !important;
   width: 72px !important;
@@ -262,6 +259,47 @@ body, html {
 }
 .target-zone .drag-content-emoji { font-size: 3.8rem; }
 .target-zone .drag-content-img { width: 66px; height: 66px; }
+
+/* ========================================================
+   4〜5カテゴリー時のスタイル（アイコン80pxは完全固定！）
+   ======================================================== */
+#target-zones.compact-mode {
+  gap: 6px;
+  padding: 6px 4px;
+}
+
+#target-zones.compact-mode .target-zone {
+  padding: 6px 2px;
+  border-radius: 14px;
+}
+
+/* 80pxのアイコンを中央に置き、文字をその下にコンパクト配置 */
+#target-zones.compact-mode .zone-title {
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  padding: 0;
+}
+
+#target-zones.compact-mode .zone-items {
+  gap: 4px;
+}
+
+/* 配置後アイテムのみを46pxに縮小（横3列×縦3〜4行で12個以上収容） */
+#target-zones.compact-mode .target-zone .drag-item {
+  width: 46px !important;
+  height: 46px !important;
+}
+
+#target-zones.compact-mode .target-zone .drag-content-emoji {
+  font-size: 2.3rem !important;
+}
+
+#target-zones.compact-mode .target-zone .drag-content-img {
+  width: 40px !important;
+  height: 40px !important;
+}
 
 .next-btn-container {
   position: absolute;
