@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>WebXR Multi-Model Occlusion Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+      background-color: #000;
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      max-width: 280px;
+    }
+    #ar-btn {
+      display: none;
+      margin-top: 8px;
+      width: 100%;
+      padding: 8px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+
+  <div id="ui">
+    <input type="file" id="files" multiple accept=".glb,.gltf">
+    <div id="status" style="margin-top: 5px;">モデルを選択してください</div>
+    <button id="ar-btn">ARを開始する</button>
+  </div>
+
+  <script>
+    let xrSession = null;
+    let xrRefSpace = null;
+    let xrGLBinding = null;
+    let hitTestSource = null;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // ライティング
+    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+    scene.add(light);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(3, 10, 5);
+    scene.add(dirLight);
+
+    // 配置用ルートグループ
+    const rootAnchor = new THREE.Group();
+    scene.add(rootAnchor);
+
+    // 床面検出マーカー（レティクル）
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    );
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    // 深度情報用Uniforms
+    const depthUniforms = {
+      uDepthTexture: { value: null },
+      uUvTransform: { value: new THREE.Matrix4() },
+      uRawValueToMeters: { value: 0.0 }
+    };
+    const depthTextureWrapper = new THREE.Texture();
+
+    // 遮蔽用カスタムシェーダーの注入関数
+    function applyOcclusionShader(material) {
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.uDepthTexture = depthUniforms.uDepthTexture;
+        shader.uniforms.uUvTransform = depthUniforms.uUvTransform;
+        shader.uniforms.uRawValueToMeters = depthUniforms.uRawValueToMeters;
+
+        shader.vertexShader = `
+          varying vec4 vViewPositionVar;
+          ${shader.vertexShader}
+        `.replace(
+          '#include <fog_vertex>',
+          `#include <fog_vertex>
+           vViewPositionVar = -mvPosition;`
+        );
+
+        shader.fragmentShader = `
+          uniform sampler2D uDepthTexture;
+          uniform mat4 uUvTransform;
+          uniform float uRawValueToMeters;
+          varying vec4 vViewPositionVar;
+          ${shader.fragmentShader}
+        `.replace(
+          '#include <dithering_fragment>',
+          `#include <dithering_fragment>
+          if (uRawValueToMeters > 0.0) {
+            vec4 ndc = projectionMatrix * vec4(-vViewPositionVar.xyz, 1.0);
+            vec2 screenUv = (ndc.xy / ndc.w) * 0.5 + 0.5;
+            vec4 depthUv = uUvTransform * vec4(screenUv, 0.0, 1.0);
+
+            if (depthUv.x >= 0.0 && depthUv.x <= 1.0 && depthUv.y >= 0.0 && depthUv.y <= 1.0) {
+              float packedDepth = texture2D(uDepthTexture, depthUv.xy).r;
+              float realDepthMeters = packedDepth * uRawValueToMeters * 255.0; // 端末深度フォーマットに応じた換算
+              float virtualDepthMeters = vViewPositionVar.z;
+
+              // 現実物体の深度よりモデルの深度が奥にある場合は描画を破棄
+              if (realDepthMeters > 0.05 && virtualDepthMeters > (realDepthMeters + 0.02)) {
+                discard;
+              }
+            }
+          }`
+        );
+      };
+    }
+
+    // モデル読み込み
+    const loader = new THREE.GLTFLoader();
+    const loadedModels = [];
+    let isPlaced = false;
+
+    document.getElementById('files').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      let offsetX = 0;
+      for (const file of files) {
+        if (!file.name.match(/\.(glb|gltf)$/i)) continue;
+        const url = URL.createObjectURL(file);
+
+        await new Promise((resolve) => {
+          loader.load(url, (gltf) => {
+            const model = gltf.scene;
+
+            // マテリアルにオクルージョンシェーダーを適用
+            model.traverse((child) => {
+              if (child.isMesh && child.material) {
+                applyOcclusionShader(child.material);
+              }
+            });
+
+            // バウンディングボックスによる接地と横並び計算
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            model.position.y = -box.min.y;
+            model.position.x = offsetX + (size.x / 2);
+            model.position.z = -center.z;
+            offsetX += size.x + 0.5; // モデル間に50cmの間隔
+
+            rootAnchor.add(model);
+            loadedModels.push(model);
+            URL.revokeObjectURL(url);
+            resolve();
+          });
+        });
+      }
+
+      rootAnchor.visible = false;
+      document.getElementById('status').innerText = `${loadedModels.length}件のモデル準備完了`;
+      document.getElementById('ar-btn').style.display = 'block';
+    });
+
+    // WebXR セッション管理
+    document.getElementById('ar-btn').addEventListener('click', async () => {
+      if (!navigator.xr) {
+        alert('WebXR非対応のブラウザです。');
+        return;
+      }
+
+      try {
+        xrSession = await navigator.xr.requestSession('immersive-ar', {
+          requiredFeatures: ['hit-test'],
+          optionalFeatures: ['depth-sensing'],
+          depthSensing: {
+            usagePreference: ['gpu-optimized', 'cpu-optimized'],
+            dataFormatPreference: ['luminance-alpha', 'float32']
+          }
+        });
+
+        renderer.xr.setReferenceSpaceType('local');
+        await renderer.xr.setSession(xrSession);
+
+        xrRefSpace = await xrSession.requestReferenceSpace('local');
+        const viewerSpace = await xrSession.requestReferenceSpace('viewer');
+        hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+        xrGLBinding = new XRWebGLBinding(xrSession, renderer.getContext());
+
+        document.getElementById('ui').style.display = 'none';
+
+        // 画面タップで床に配置
+        xrSession.addEventListener('select', () => {
+          if (reticle.visible && !isPlaced) {
+            rootAnchor.position.setFromMatrixPosition(reticle.matrix);
+            rootAnchor.quaternion.setFromRotationMatrix(reticle.matrix);
+            rootAnchor.visible = true;
+            reticle.visible = false;
+            isPlaced = true;
+          }
+        });
+
+        renderer.setAnimationLoop(renderLoop);
+      } catch (err) {
+        alert('ARセッション開始エラー: ' + err.message);
+      }
+    });
+
+    // レンダリングループ
+    function renderLoop(timestamp, frame) {
+      if (frame) {
+        // ヒットテスト（床面検出）
+        if (!isPlaced && hitTestSource) {
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
+          if (hitTestResults.length > 0) {
+            const pose = hitTestResults[0].getPose(xrRefSpace);
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+          } else {
+            reticle.visible = false;
+          }
+        }
+
+        // WebXR Depth Sensing 処理
+        const pose = frame.getViewerPose(xrRefSpace);
+        if (pose && xrGLBinding) {
+          for (const view of pose.views) {
+            const depthInfo = xrGLBinding.getDepthInformation(view);
+            if (depthInfo) {
+              // 深度テクスチャのバインド
+              renderer.properties.get(depthTextureWrapper).__webglTexture = depthInfo.texture;
+              depthTextureWrapper.needsUpdate = false;
+
+              depthUniforms.uDepthTexture.value = depthTextureWrapper;
+              depthUniforms.uRawValueToMeters.value = depthInfo.rawValueToMeters;
+              depthUniforms.uUvTransform.value.fromArray(depthInfo.normDepthBufferFromNormView.matrix);
+            }
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>

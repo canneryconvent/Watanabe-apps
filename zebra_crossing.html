@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>横断歩道シミュレーター</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+      user-select: none;
+      background-color: #000;
+      touch-action: none;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      padding: 16px;
+      z-index: 10;
+    }
+    .interactive {
+      pointer-events: auto;
+    }
+    .settings-panel {
+      background: rgba(0, 0, 0, 0.85);
+      padding: 12px 18px;
+      border-radius: 8px;
+      color: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+    .setting-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .setting-group label {
+      cursor: pointer;
+    }
+    select {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #666;
+      background: #222;
+      color: #fff;
+      font-size: 14px;
+    }
+    #btn-gyro {
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background-color: #455a64;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #btn-gyro.active {
+      background-color: #2e7d32;
+    }
+    .status-area {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .status-badge {
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #444;
+      font-weight: bold;
+    }
+    .status-badge.checked {
+      background: #2e7d32;
+    }
+    
+    .btn-ctrl {
+      width: 108px;
+      height: 108px;
+      font-size: 54px;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: none;
+      border-radius: 20px;
+      background-color: #1976d2;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-ctrl:active {
+      transform: scale(0.94);
+      background-color: #1565c0;
+    }
+    .btn-ctrl:disabled {
+      background-color: #444;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .btn-action {
+      width: 108px;
+      height: 108px;
+      font-size: 60px;
+      background-color: #e65100;
+    }
+    
+    #btn-left {
+      position: absolute;
+      bottom: 28px;
+      left: 28px;
+    }
+    .right-controls {
+      position: absolute;
+      bottom: 28px;
+      right: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    #custom-vr-button {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      border: 2px solid #fff;
+      color: #fff;
+      font-weight: bold;
+      font-size: 15px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+      z-index: 20;
+    }
+
+    #result-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
+      color: #222;
+      padding: 24px 36px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: none;
+      pointer-events: auto;
+      min-width: 240px;
+      max-width: 80%;
+      z-index: 30;
+    }
+    #result-title {
+      font-size: 28px;
+      margin: 0 0 8px 0;
+    }
+    #result-desc {
+      font-size: 16px;
+      margin: 0 0 20px 0;
+      color: #555;
+    }
+    #result-modal button {
+      font-size: 18px;
+      font-weight: bold;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      background-color: #1976d2;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<button id="custom-vr-button" class="interactive">ENTER VR</button>
+
+<div id="ui-overlay">
+  <div class="settings-panel interactive">
+    <div class="setting-group">
+      <strong>モード:</strong>
+      <label><input type="radio" name="mode" value="signal" checked onchange="changeMode(this.value)"> 信号あり</label>
+      <label><input type="radio" name="mode" value="no-signal" onchange="changeMode(this.value)"> 信号なし</label>
+    </div>
+
+    <div class="setting-group">
+      <strong>難易度:</strong>
+      <select id="select-difficulty" onchange="changeDifficulty(this.value)">
+        <option value="easy">かんたん</option>
+        <option value="normal">ふつう</option>
+        <option value="hard" selected>むずかしい</option>
+      </select>
+    </div>
+
+    <div class="setting-group" id="signal-time-group">
+      <strong>信号サイクル:</strong>
+      <select id="select-green-time" onchange="changeGreenTime(this.value)">
+        <option value="realistic" selected>リアル（青20秒 / 赤25秒）</option>
+        <option value="long">ゆったり（青30秒 / 赤30秒）</option>
+        <option value="short">短縮（青12秒 / 赤15秒）</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <strong>移動機能:</strong>
+      <label><input type="checkbox" id="check-movement" checked onchange="toggleMovement(this.checked)"> 有効</label>
+    </div>
+
+    <button id="btn-gyro" onclick="toggleGyro()">📱 ジャイロ操作: OFF</button>
+
+    <div class="status-area">
+      <span id="badge-left" class="status-badge">左未確認</span>
+      <span id="badge-right" class="status-badge">右未確認</span>
+    </div>
+  </div>
+
+  <button id="btn-left" class="btn-ctrl interactive" onclick="look('left')" aria-label="左を見る">◀</button>
+  
+  <div class="right-controls interactive">
+    <button id="btn-cross" class="btn-ctrl btn-action" onclick="startCrossing()" aria-label="渡る">🚶</button>
+    <button id="btn-right" class="btn-ctrl" onclick="look('right')" aria-label="右を見る">▶</button>
+  </div>
+</div>
+
+<div id="result-modal">
+  <h2 id="result-title"></h2>
+  <p id="result-desc"></p>
+  <button onclick="resetGame()">やり直す</button>
+</div>
+
+<script>
+  let scene, camera, renderer, xrRig;
+  let player;
+  let signalPole, redLampMesh, greenLampMesh;
+  let redTexOn, redTexOff, greenTexOn, greenTexOff;
+  let cars = [];
+
+  let currentMode = 'signal';
+  let difficulty = 'hard';
+  let greenDuration = 20;
+  let redDuration = 25;
+  const blinkDuration = 4;
+  let movementEnabled = true;
+
+  const waveConfigs = {
+    easy:   { rushDuration: 5, gapDuration: 8.0, spawnProb: 0.012, maxCars: 3, speedMin: 0.14, speedMax: 0.18 },
+    normal: { rushDuration: 7, gapDuration: 6.5, spawnProb: 0.020, maxCars: 5, speedMin: 0.18, speedMax: 0.24 },
+    hard:   { rushDuration: 8, gapDuration: 5.5, spawnProb: 0.028, maxCars: 6, speedMin: 0.22, speedMax: 0.28 }
+  };
+
+  let waveTimer = 0;
+  let isCrossing = false;
+  let isFinished = false;
+  let checkedLeft = false;
+  let checkedRight = false;
+  let wasHonked = false;
+
+  let playerZ = 4.5;
+  let prevHmdZ = 0;
+  let isVrWalkingInit = false;
+
+  let targetYaw = 0;
+  let currentYaw = 0;
+  let gyroEnabled = false;
+  let baseAlpha = null;
+
+  let signalTimer = 0;
+  let isGreenLight = true;
+  let isBlinking = false;
+
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playHorn() {
+    initAudio();
+    if (!audioCtx) return;
+
+    const now = audioCtx.currentTime;
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc1.type = 'sawtooth';
+    osc2.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(420, now);
+    osc2.frequency.setValueAtTime(470, now);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, now);
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+    gain.gain.setValueAtTime(0.18, now + 0.38);
+    gain.gain.linearRampToValueAtTime(0, now + 0.48);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.48);
+    osc2.stop(now + 0.48);
+  }
+
+  init();
+
+  function init() {
+    const container = document.getElementById('canvas-container');
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.rotation.order = 'YXZ';
+    camera.position.set(0, 1.5, 4.5);
+    scene.add(camera);
+
+    xrRig = new THREE.Group();
+    xrRig.position.set(0, 0, 4.5);
+    scene.add(xrRig);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    if ('xr' in navigator) {
+      renderer.xr.enabled = true;
+      setupCustomVRButton();
+      setupVRControllers();
+    }
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(40, 60, 30);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    generateSignalTextures();
+    buildEnvironment();
+    createPlayer();
+    createPedestrianSignal();
+
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('pointerdown', initAudio, { once: true });
+    
+    resetGame();
+    renderer.setAnimationLoop(renderLoop);
+  }
+
+  function setupCustomVRButton() {
+    const btn = document.getElementById('custom-vr-button');
+    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+      if (supported) {
+        btn.style.display = 'block';
+        let currentSession = null;
+
+        btn.onclick = () => {
+          initAudio();
+          if (currentSession === null) {
+            navigator.xr.requestSession('immersive-vr', {
+              optionalFeatures: ['local-floor', 'bounded-floor']
+            }).then((session) => {
+              currentSession = session;
+              renderer.xr.setSession(session);
+              btn.innerText = 'EXIT VR';
+
+              xrRig.add(camera);
+              xrRig.position.set(0, 0, playerZ);
+              isVrWalkingInit = false;
+
+              session.addEventListener('end', () => {
+                currentSession = null;
+                btn.innerText = 'ENTER VR';
+                scene.add(camera);
+                camera.position.set(0, 1.5, playerZ);
+              });
+            }).catch(e => console.error(e));
+          } else {
+            currentSession.end();
+          }
+        };
+      }
+    }).catch(() => {});
+  }
+
+  function setupVRControllers() {
+    const c0 = renderer.xr.getController(0);
+    c0.addEventListener('select', handleVRSelect);
+    scene.add(c0);
+
+    const c1 = renderer.xr.getController(1);
+    c1.addEventListener('select', handleVRSelect);
+    scene.add(c1);
+  }
+
+  function handleVRSelect() {
+    initAudio();
+    if (isFinished) {
+      resetGame();
+    }
+  }
+
+  function createPedestrianCanvas(type, isOn) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(0, 0, 128, 128);
+
+    const mainColor = isOn 
+      ? (type === 'red' ? '#ff2200' : '#00e676') 
+      : (type === 'red' ? '#330800' : '#002611');
+
+    ctx.fillStyle = mainColor;
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+
+    if (type === 'red') {
+      ctx.beginPath();
+      ctx.arc(64, 30, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(64, 46);
+      ctx.lineTo(64, 82);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(48, 54);
+      ctx.lineTo(80, 54);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(56, 114);
+      ctx.lineTo(60, 82);
+      ctx.lineTo(68, 82);
+      ctx.lineTo(72, 114);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(70, 28, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(68, 44);
+      ctx.lineTo(60, 78);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(44, 62);
+      ctx.lineTo(66, 50);
+      ctx.lineTo(84, 62);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(40, 112);
+      ctx.lineTo(54, 86);
+      ctx.lineTo(60, 78);
+      ctx.lineTo(74, 94);
+      ctx.lineTo(88, 112);
+      ctx.stroke();
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  function generateSignalTextures() {
+    redTexOn = createPedestrianCanvas('red', true);
+    redTexOff = createPedestrianCanvas('red', false);
+    greenTexOn = createPedestrianCanvas('green', true);
+    greenTexOff = createPedestrianCanvas('green', false);
+  }
+
+  function buildEnvironment() {
+    const groundGeo = new THREE.PlaneGeometry(300, 50);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0x90a4ae });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    const roadGeo = new THREE.PlaneGeometry(300, 8);
+    const roadMat = new THREE.MeshLambertMaterial({ color: 0x37474f });
+    const road = new THREE.Mesh(roadGeo, roadMat);
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(0, 0.02, 0);
+    scene.add(road);
+
+    for (let x = -145; x < 150; x += 8) {
+      const lineGeo = new THREE.PlaneGeometry(4, 0.2);
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(x, 0.03, 0);
+      scene.add(line);
+    }
+
+    for (let z = -3.2; z <= 3.2; z += 0.8) {
+      const stripeGeo = new THREE.PlaneGeometry(3.6, 0.45);
+      const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      stripe.rotation.x = -Math.PI / 2;
+      stripe.position.set(0, 0.03, z);
+      scene.add(stripe);
+    }
+
+    const stopGeo = new THREE.PlaneGeometry(0.4, 3.8);
+    const stopMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+    const stopLine1 = new THREE.Mesh(stopGeo, stopMat);
+    stopLine1.rotation.x = -Math.PI / 2;
+    stopLine1.position.set(3.0, 0.03, 2.0);
+    scene.add(stopLine1);
+
+    const stopLine2 = new THREE.Mesh(stopGeo, stopMat);
+    stopLine2.rotation.x = -Math.PI / 2;
+    stopLine2.position.set(-3.0, 0.03, -2.0);
+    scene.add(stopLine2);
+  }
+
+  function createPlayer() {
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.3, 1.2),
+      new THREE.MeshLambertMaterial({ color: 0x1565c0 })
+    );
+    body.position.y = 0.6;
+    group.add(body);
+
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25),
+      new THREE.MeshLambertMaterial({ color: 0xffcc80 })
+    );
+    head.position.y = 1.35;
+    group.add(head);
+
+    group.position.set(0, 0, 4.5);
+    scene.add(group);
+    player = group;
+  }
+
+  function createPedestrianSignal() {
+    signalPole = new THREE.Group();
+
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.08, 3.8),
+      new THREE.MeshLambertMaterial({ color: 0x546e7a })
+    );
+    pole.position.y = 1.9;
+    signalPole.add(pole);
+
+    const boxMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.1, 0.26), boxMat);
+    box.position.set(0, 2.4, 0);
+    signalPole.add(box);
+
+    const visorMat = new THREE.MeshLambertMaterial({ color: 0x151515 });
+    const visorGeo = new THREE.BoxGeometry(0.5, 0.06, 0.2);
+    
+    const topVisor = new THREE.Mesh(visorGeo, visorMat);
+    topVisor.position.set(0, 2.8, 0.16);
+    topVisor.rotation.x = 0.2;
+    signalPole.add(topVisor);
+
+    const midVisor = new THREE.Mesh(visorGeo, visorMat);
+    midVisor.position.set(0, 2.33, 0.16);
+    midVisor.rotation.x = 0.2;
+    signalPole.add(midVisor);
+
+    const lampGeo = new THREE.PlaneGeometry(0.42, 0.42);
+    redLampMesh = new THREE.Mesh(lampGeo, new THREE.MeshBasicMaterial({ map: redTexOff, transparent: true }));
+    redLampMesh.position.set(0, 2.62, 0.135);
+    signalPole.add(redLampMesh);
+
+    greenLampMesh = new THREE.Mesh(lampGeo, new THREE.MeshBasicMaterial({ map: greenTexOn, transparent: true }));
+    greenLampMesh.position.set(0, 2.15, 0.135);
+    signalPole.add(greenLampMesh);
+
+    signalPole.position.set(2.2, 0, -4.5);
+    scene.add(signalPole);
+  }
+
+  function changeMode(mode) {
+    currentMode = mode;
+    signalPole.visible = (mode === 'signal');
+    document.getElementById('signal-time-group').style.display = (mode === 'signal') ? 'flex' : 'none';
+    resetGame();
+  }
+
+  function changeDifficulty(val) {
+    difficulty = val;
+    resetGame();
+  }
+
+  function changeGreenTime(val) {
+    if (val === 'realistic') {
+      greenDuration = 20;
+      redDuration = 25;
+    } else if (val === 'long') {
+      greenDuration = 30;
+      redDuration = 30;
+    } else if (val === 'short') {
+      greenDuration = 12;
+      redDuration = 15;
+    }
+    resetGame();
+  }
+
+  function toggleMovement(enabled) {
+    movementEnabled = enabled;
+  }
+
+  async function toggleGyro() {
+    initAudio();
+    const btn = document.getElementById('btn-gyro');
+
+    if (gyroEnabled) {
+      window.removeEventListener('deviceorientation', handleOrientation);
+      gyroEnabled = false;
+      btn.className = '';
+      btn.innerText = '📱 ジャイロ操作: OFF';
+      return;
+    }
+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const perm = await DeviceOrientationEvent.requestPermission();
+        if (perm === 'granted') {
+          startGyroListener();
+        } else {
+          alert('ジャイロセンサーの利用が許可されませんでした。');
+        }
+      } catch (e) {
+        alert('センサーの利用にはHTTPS環境が必要です。');
+      }
+    } else if ('ondeviceorientation' in window) {
+      startGyroListener();
+    } else {
+      alert('お使いのブラウザはジャイロに対応していません。');
+    }
+  }
+
+  function startGyroListener() {
+    baseAlpha = null;
+    window.addEventListener('deviceorientation', handleOrientation);
+    gyroEnabled = true;
+    const btn = document.getElementById('btn-gyro');
+    btn.className = 'active';
+    btn.innerText = '📱 ジャイロ操作: ON';
+  }
+
+  function handleOrientation(e) {
+    if (isFinished || renderer.xr.isPresenting) return;
+    const orientation = window.orientation || (screen.orientation ? screen.orientation.angle : 0) || 0;
+
+    if (e.alpha !== null && e.alpha !== undefined) {
+      if (baseAlpha === null) baseAlpha = e.alpha;
+      let diff = e.alpha - baseAlpha;
+      while (diff > 180) diff -= 360;
+      while (diff < -180) diff += 360;
+
+      let yaw = (diff * Math.PI) / 180;
+      if (orientation === 90) yaw = (diff * Math.PI) / 180;
+      else if (orientation === -90) yaw = -(diff * Math.PI) / 180;
+
+      targetYaw = THREE.MathUtils.clamp(yaw, -Math.PI / 2.2, Math.PI / 2.2);
+    } else if (e.gamma !== null) {
+      let angle = e.gamma;
+      if (orientation === 90) angle = e.beta;
+      else if (orientation === -90) angle = -e.beta;
+      targetYaw = THREE.MathUtils.clamp((angle * Math.PI) / 180, -Math.PI / 2.2, Math.PI / 2.2);
+    }
+    checkAngleStatus(targetYaw);
+  }
+
+  function setChecked(side) {
+    if (side === 'left' && !checkedLeft) {
+      checkedLeft = true;
+      document.getElementById('badge-left').className = 'status-badge checked';
+      document.getElementById('badge-left').innerText = '左確認済';
+    } else if (side === 'right' && !checkedRight) {
+      checkedRight = true;
+      document.getElementById('badge-right').className = 'status-badge checked';
+      document.getElementById('badge-right').innerText = '右確認済';
+    }
+  }
+
+  function checkAngleStatus(yaw) {
+    if (yaw > 0.65) {
+      setChecked('left');
+    } else if (yaw < -0.65) {
+      setChecked('right');
+    }
+  }
+
+  function look(direction) {
+    if (renderer.xr.isPresenting || isCrossing || isFinished) return;
+    initAudio();
+
+    if (direction === 'left') {
+      targetYaw = Math.PI / 2.2;
+      setChecked('left');
+    } else if (direction === 'right') {
+      targetYaw = -Math.PI / 2.2;
+      setChecked('right');
+    }
+  }
+
+  function startCrossing() {
+    if (isFinished || isCrossing || !movementEnabled) return;
+    initAudio();
+    targetYaw = 0; // 渡る瞬間に自動で正面を向く
+    isCrossing = true;
+
+    document.getElementById('btn-left').disabled = true;
+    document.getElementById('btn-right').disabled = true;
+    document.getElementById('btn-cross').disabled = true;
+  }
+
+  function advancePlayer(deltaZ) {
+    if (isFinished || !movementEnabled) return;
+    playerZ -= deltaZ;
+
+    if (playerZ < 4.0 && !isCrossing) {
+      isCrossing = true;
+    }
+
+    if (playerZ <= -4.5) {
+      finishCrossing();
+    }
+  }
+
+  function finishCrossing() {
+    if (currentMode === 'signal' && !isGreenLight) {
+      endGame(false, 'あか信号です');
+    } else if (!checkedLeft || !checkedRight) {
+      endGame(false, 'かくにんしていません');
+    } else if (wasHonked) {
+      endGame(false, 'クラクションをならされました');
+    } else {
+      endGame(true, '');
+    }
+  }
+
+  function createCarMesh(direction) {
+    const carGroup = new THREE.Group();
+    const colors = [0xd32f2f, 0x1976d2, 0xfbc02d, 0x388e3c, 0xf5f5f5, 0x333333];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(3.6, 1.0, 1.6),
+      new THREE.MeshLambertMaterial({ color })
+    );
+    body.position.y = 0.6;
+    carGroup.add(body);
+
+    const roof = new THREE.Mesh(
+      new THREE.BoxGeometry(2.0, 0.7, 1.4),
+      new THREE.MeshLambertMaterial({ color: 0x222222 })
+    );
+    roof.position.set(-0.2 * direction, 1.35, 0);
+    carGroup.add(roof);
+    return carGroup;
+  }
+
+  function spawnCarAt(xPos, isNearLane) {
+    const direction = isNearLane ? -1 : 1;
+    const zPos = isNearLane ? 2.0 : -2.0;
+    const conf = waveConfigs[difficulty];
+    const baseSpeed = conf.speedMin + Math.random() * (conf.speedMax - conf.speedMin);
+
+    const carGroup = createCarMesh(direction);
+    carGroup.position.set(xPos, 0, zPos);
+    scene.add(carGroup);
+
+    cars.push({
+      mesh: carGroup,
+      isNearLane: isNearLane,
+      direction: direction,
+      baseSpeed: baseSpeed,
+      currentSpeed: baseSpeed,
+      hasHonked: false
+    });
+  }
+
+  function spawnCar() {
+    const isNearLane = Math.random() > 0.5;
+    const spawnX = isNearLane ? 130 : -130;
+
+    const tooClose = cars.some(c => c.isNearLane === isNearLane && Math.abs(c.mesh.position.x - spawnX) < 24);
+    if (tooClose) return;
+
+    spawnCarAt(spawnX, isNearLane);
+  }
+
+  function spawnInitialCars() {
+    spawnCarAt(16, true);
+    spawnCarAt(40, true);
+    spawnCarAt(-22, false);
+    spawnCarAt(-48, false);
+  }
+
+  function updateCars() {
+    const conf = waveConfigs[difficulty];
+    waveTimer += 0.016;
+
+    const waveCycle = conf.rushDuration + conf.gapDuration;
+    const isRushPeriod = (waveTimer % waveCycle) < conf.rushDuration;
+
+    if (isRushPeriod && Math.random() < conf.spawnProb && cars.length < conf.maxCars) {
+      spawnCar();
+    }
+
+    const carMustStopForSignal = (currentMode === 'signal' && isGreenLight);
+
+    for (let i = cars.length - 1; i >= 0; i--) {
+      const car = cars[i];
+      let targetSpeed = car.baseSpeed;
+
+      if (carMustStopForSignal) {
+        if (car.isNearLane) {
+          const stopTargetX = 5.2;
+          if (car.mesh.position.x >= stopTargetX) {
+            const dist = car.mesh.position.x - stopTargetX;
+            if (dist < 32) {
+              targetSpeed = THREE.MathUtils.lerp(0, car.baseSpeed, Math.min(1, dist / 20));
+              if (dist < 0.2) {
+                targetSpeed = 0;
+                car.currentSpeed = 0;
+                car.mesh.position.x = stopTargetX;
+              }
+            }
+          }
+        } else {
+          const stopTargetX = -5.2;
+          if (car.mesh.position.x <= stopTargetX) {
+            const dist = stopTargetX - car.mesh.position.x;
+            if (dist < 32) {
+              targetSpeed = THREE.MathUtils.lerp(0, car.baseSpeed, Math.min(1, dist / 20));
+              if (dist < 0.2) {
+                targetSpeed = 0;
+                car.currentSpeed = 0;
+                car.mesh.position.x = stopTargetX;
+              }
+            }
+          }
+        }
+      }
+
+      for (let j = 0; j < cars.length; j++) {
+        if (i === j) continue;
+        const other = cars[j];
+        if (car.isNearLane === other.isNearLane) {
+          if (car.direction === -1) {
+            const gap = car.mesh.position.x - other.mesh.position.x;
+            if (gap > 0 && gap < 12.0) {
+              const factor = Math.max(0, (gap - 4.5) / 7.5);
+              targetSpeed = Math.min(targetSpeed, other.currentSpeed * factor);
+              if (gap <= 4.8) {
+                targetSpeed = 0;
+                car.currentSpeed = 0;
+              }
+            }
+          } else {
+            const gap = other.mesh.position.x - car.mesh.position.x;
+            if (gap > 0 && gap < 12.0) {
+              const factor = Math.max(0, (gap - 4.5) / 7.5);
+              targetSpeed = Math.min(targetSpeed, other.currentSpeed * factor);
+              if (gap <= 4.8) {
+                targetSpeed = 0;
+                car.currentSpeed = 0;
+              }
+            }
+          }
+        }
+      }
+
+      car.currentSpeed += (targetSpeed - car.currentSpeed) * 0.12;
+      car.mesh.position.x += car.currentSpeed * car.direction;
+
+      if (Math.abs(car.mesh.position.x) > 145) {
+        scene.remove(car.mesh);
+        cars.splice(i, 1);
+        continue;
+      }
+
+      if (isCrossing && !isFinished) {
+        const dx = Math.abs(car.mesh.position.x - player.position.x);
+        const dz = Math.abs(car.mesh.position.z - player.position.z);
+
+        if (dx < 8.0 && dz < 2.6 && car.currentSpeed > 0.04) {
+          if (!car.hasHonked) {
+            playHorn();
+            car.hasHonked = true;
+            wasHonked = true;
+          }
+        }
+
+        if (dx < 2.1 && dz < 1.1) {
+          endGame(false, '車にぶつかりました');
+          break;
+        }
+      }
+    }
+  }
+
+  function updateSignal() {
+    if (currentMode !== 'signal') return;
+
+    signalTimer += 0.016;
+    const totalCycle = greenDuration + redDuration;
+    if (signalTimer >= totalCycle) signalTimer = 0;
+
+    isGreenLight = (signalTimer < greenDuration);
+    isBlinking = isGreenLight && (signalTimer > (greenDuration - blinkDuration));
+
+    if (isGreenLight) {
+      redLampMesh.material.map = redTexOff;
+      if (isBlinking) {
+        const blinkState = Math.floor(signalTimer * 4) % 2 === 0;
+        greenLampMesh.material.map = blinkState ? greenTexOn : greenTexOff;
+      } else {
+        greenLampMesh.material.map = greenTexOn;
+      }
+    } else {
+      redLampMesh.material.map = redTexOn;
+      greenLampMesh.material.map = greenTexOff;
+    }
+  }
+
+  function endGame(success, message) {
+    isFinished = true;
+
+    const modal = document.getElementById('result-modal');
+    const title = document.getElementById('result-title');
+    const desc = document.getElementById('result-desc');
+
+    title.innerText = success ? 'よくできました！' : 'やりなおし';
+    title.style.color = success ? '#2e7d32' : '#c62828';
+    desc.innerText = message;
+    modal.style.display = 'block';
+  }
+
+  function resetGame() {
+    isCrossing = false;
+    isFinished = false;
+    checkedLeft = false;
+    checkedRight = false;
+    wasHonked = false;
+
+    playerZ = 4.5;
+    prevHmdZ = 0;
+    isVrWalkingInit = false;
+    targetYaw = 0;
+    currentYaw = 0;
+    baseAlpha = null;
+    signalTimer = 0;
+    waveTimer = 0;
+
+    player.position.set(0, 0, playerZ);
+    player.visible = true;
+
+    xrRig.position.set(0, 0, playerZ);
+    camera.position.set(0, 1.5, playerZ);
+    camera.rotation.set(0, 0, 0);
+
+    cars.forEach(c => scene.remove(c.mesh));
+    cars = [];
+    spawnInitialCars();
+
+    document.getElementById('badge-left').className = 'status-badge';
+    document.getElementById('badge-left').innerText = '左未確認';
+    document.getElementById('badge-right').className = 'status-badge';
+    document.getElementById('badge-right').innerText = '右未確認';
+
+    document.getElementById('btn-left').disabled = false;
+    document.getElementById('btn-right').disabled = false;
+    document.getElementById('btn-cross').disabled = false;
+
+    document.getElementById('result-modal').style.display = 'none';
+  }
+
+  function renderLoop() {
+    updateSignal();
+    updateCars();
+
+    const isVR = renderer.xr.isPresenting;
+
+    // --- Meta Quest (VR：実空間ルームスケール歩行) ---
+    if (isVR) {
+      const headEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+      headEuler.setFromQuaternion(camera.quaternion);
+      checkAngleStatus(headEuler.y);
+
+      if (!isVrWalkingInit) {
+        prevHmdZ = camera.position.z;
+        isVrWalkingInit = true;
+      } else {
+        const deltaZ = camera.position.z - prevHmdZ;
+        if (Math.abs(deltaZ) > 0.0005) {
+          advancePlayer(-deltaZ);
+          prevHmdZ = camera.position.z;
+        }
+      }
+
+      player.position.set(camera.position.x, 0, playerZ);
+    } 
+    // --- タブレット／PC (ジャイロ視線＋渡るボタン移動) ---
+    else {
+      currentYaw += (targetYaw - currentYaw) * 0.08;
+      camera.rotation.set(0, currentYaw, 0);
+
+      if (isCrossing && !isFinished) {
+        advancePlayer(0.035);
+      }
+
+      player.position.set(0, 0, playerZ);
+
+      if (!isCrossing) {
+        camera.position.set(0, 1.5, playerZ);
+      } else {
+        const targetPos = new THREE.Vector3(player.position.x, 14.0, player.position.z + 8.5);
+        camera.position.lerp(targetPos, 0.08);
+        camera.lookAt(player.position.x, 0.0, player.position.z - 1.5);
+      }
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+</script>
+</body>
+</html>
