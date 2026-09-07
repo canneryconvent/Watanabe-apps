@@ -3,262 +3,889 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>WebXR Multi-Model Occlusion Viewer</title>
+  <title>3D Model Staging & Multi-AR Viewer</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      font-family: sans-serif;
-      background-color: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #1a1a1a;
+      color: #eee;
+      touch-action: none;
     }
-    #ui {
+    #ui-container {
       position: absolute;
       top: 10px;
       left: 10px;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.85);
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      max-width: 280px;
+      z-index: 100;
+      background: rgba(25, 25, 25, 0.94);
+      backdrop-filter: blur(10px);
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      width: 360px;
+      max-height: 94vh;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
-    #ar-btn {
-      display: none;
-      margin-top: 8px;
+    h1 {
+      font-size: 13px;
+      margin: 0 0 10px 0;
+    }
+    .file-btn-wrapper {
+      margin-bottom: 8px;
+    }
+    input[type="file"] {
+      font-size: 11px;
       width: 100%;
-      padding: 8px;
-      background: #007bff;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      margin-bottom: 10px;
+      color: #79b8ff;
+    }
+    #model-select {
+      width: 100%;
+      padding: 6px;
+      background: #333;
       color: #fff;
-      border: none;
+      border: 1px solid #555;
       border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 12px;
       font-weight: bold;
     }
+    .ctrl-group {
+      background: #252525;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #3a3a3a;
+      margin-bottom: 10px;
+    }
+    .ctrl-block {
+      margin-bottom: 8px;
+    }
+    .ctrl-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+    .ctrl-header-left {
+      font-weight: bold;
+      color: #ccc;
+    }
+    .ctrl-header-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .step-btn {
+      padding: 2px 7px;
+      background: #3a3a3a;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .step-btn:active {
+      background: #555;
+    }
+    .num-input {
+      width: 58px;
+      padding: 2px 4px;
+      background: #111;
+      border: 1px solid #555;
+      color: #fff;
+      font-size: 11px;
+      text-align: right;
+      border-radius: 3px;
+    }
+    .wide-slider {
+      width: 100%;
+      margin: 2px 0 0 0;
+      display: block;
+      cursor: pointer;
+    }
+    .btn-action {
+      display: block;
+      width: 100%;
+      padding: 9px 0;
+      border-radius: 5px;
+      border: none;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+      margin-top: 6px;
+    }
+    #xr-btn {
+      display: none;
+      background: #8a2be2;
+      color: #fff;
+    }
+    #btn-build {
+      background: #444;
+      color: #fff;
+    }
+    #ar-link {
+      display: none;
+      background: #0071e3;
+      color: #fff;
+    }
+    #ar-link img { display: none; }
+    #download-link {
+      display: none;
+      background: #34a853;
+      color: #fff;
+    }
+    #status {
+      font-size: 11px;
+      color: #aaa;
+      margin: 8px 0 4px 0;
+      white-space: pre-line;
+      line-height: 1.3;
+    }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body>
 
-  <div id="ui">
-    <input type="file" id="files" multiple accept=".glb,.gltf">
-    <div id="status" style="margin-top: 5px;">モデルを選択してください</div>
-    <button id="ar-btn">ARを開始する</button>
+  <div id="ui-container">
+    <h1>動物モデル ステージング・マルチAR</h1>
+    
+    <div class="file-btn-wrapper">
+      <input type="file" id="file-input" multiple accept=".glb,.gltf">
+    </div>
+
+    <div class="toggle-row">
+      <input type="checkbox" id="toggle-human" checked>
+      <label for="toggle-human">基準人物（170cm）を表示</label>
+    </div>
+
+    <select id="model-select" disabled>
+      <option value="">モデルを追加してください</option>
+    </select>
+
+    <div class="ctrl-group" id="controls-box" style="opacity: 0.5; pointer-events: none;">
+      <!-- 高さ -->
+      <div class="ctrl-block">
+        <div class="ctrl-header">
+          <span class="ctrl-header-left">高さ (m)</span>
+          <div class="ctrl-header-right">
+            <button class="step-btn" data-target="param-h" data-step="-0.05">-</button>
+            <input type="number" id="num-h" class="num-input" step="0.05" min="0.05" max="5.0">
+            <button class="step-btn" data-target="param-h" data-step="0.05">+</button>
+          </div>
+        </div>
+        <input type="range" id="param-h" class="wide-slider" min="0.1" max="4.0" step="0.01" value="1.0">
+      </div>
+
+      <!-- 位置 X -->
+      <div class="ctrl-block">
+        <div class="ctrl-header">
+          <span class="ctrl-header-left">左右 X (m)</span>
+          <div class="ctrl-header-right">
+            <button class="step-btn" data-target="param-x" data-step="-0.05">-</button>
+            <input type="number" id="num-x" class="num-input" step="0.05" min="-3.0" max="3.0">
+            <button class="step-btn" data-target="param-x" data-step="0.05">+</button>
+          </div>
+        </div>
+        <input type="range" id="param-x" class="wide-slider" min="-3.0" max="3.0" step="0.02" value="0.0">
+      </div>
+
+      <!-- 位置 Z -->
+      <div class="ctrl-block">
+        <div class="ctrl-header">
+          <span class="ctrl-header-left">前後 Z (m)</span>
+          <div class="ctrl-header-right">
+            <button class="step-btn" data-target="param-z" data-step="-0.05">-</button>
+            <input type="number" id="num-z" class="num-input" step="0.05" min="-3.0" max="3.0">
+            <button class="step-btn" data-target="param-z" data-step="0.05">+</button>
+          </div>
+        </div>
+        <input type="range" id="param-z" class="wide-slider" min="-3.0" max="3.0" step="0.02" value="0.0">
+      </div>
+
+      <!-- 向き -->
+      <div class="ctrl-block" style="margin-bottom: 0;">
+        <div class="ctrl-header">
+          <span class="ctrl-header-left">向き回転 (°)</span>
+          <div class="ctrl-header-right">
+            <button class="step-btn" data-target="param-rot" data-step="-15">-15°</button>
+            <input type="number" id="num-rot" class="num-input" step="5" min="0" max="360">
+            <button class="step-btn" data-target="param-rot" data-step="15">+15°</button>
+          </div>
+        </div>
+        <input type="range" id="param-rot" class="wide-slider" min="0" max="360" step="1" value="0">
+      </div>
+    </div>
+
+    <!-- Meta Quest / Android用 WebXRボタン -->
+    <button id="xr-btn" class="btn-action">パススルーARを起動 (Meta Quest)</button>
+
+    <!-- iOS / 汎用 USDZ出力ボタン -->
+    <button id="btn-build" class="btn-action">USDZを生成する</button>
+    <a id="ar-link" class="btn-action" rel="ar" href="#">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="">
+      ARで等身大配置 (iPad/iOS)
+    </a>
+    <a id="download-link" class="btn-action" href="#" download="scene.usdz">USDZを保存（ダウンロード）</a>
+
+    <div id="status">GLBファイルを選択してください。<br>画面上のモデルを直接タップ／ドラッグで移動できます。</div>
   </div>
 
-  <script>
-    let xrSession = null;
-    let xrRefSpace = null;
-    let xrGLBinding = null;
-    let hitTestSource = null;
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    const fileInput = document.getElementById('file-input');
+    const toggleHuman = document.getElementById('toggle-human');
+    const modelSelect = document.getElementById('model-select');
+    const controlsBox = document.getElementById('controls-box');
+    const statusText = document.getElementById('status');
+    const xrBtn = document.getElementById('xr-btn');
+    const btnBuild = document.getElementById('btn-build');
+    const arLink = document.getElementById('ar-link');
+    const downloadLink = document.getElementById('download-link');
+
+    const paramH = document.getElementById('param-h');
+    const paramX = document.getElementById('param-x');
+    const paramZ = document.getElementById('param-z');
+    const paramRot = document.getElementById('param-rot');
+
+    const numH = document.getElementById('num-h');
+    const numX = document.getElementById('num-x');
+    const numZ = document.getElementById('num-z');
+    const numRot = document.getElementById('num-rot');
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    scene.background = new THREE.Color(0x1a1a1a);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.05, 500);
+    camera.position.set(0, 2.0, 4.0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.xr.enabled = true; // WebXRの有効化
     document.body.appendChild(renderer.domElement);
 
-    // ライティング
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-    scene.add(light);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(3, 10, 5);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
 
-    // 配置用ルートグループ
-    const rootAnchor = new THREE.Group();
-    scene.add(rootAnchor);
+    const grid = new THREE.GridHelper(50, 50, 0x888888, 0x333333);
+    grid.position.y = -0.001;
+    scene.add(grid);
 
-    // 床面検出マーカー（レティクル）
-    const reticle = new THREE.Mesh(
-      new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    const stageGroup = new THREE.Group();
+    scene.add(stageGroup);
+
+    // 選択ハイライトリング
+    const selectionRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.3, 0.35, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide })
     );
-    reticle.matrixAutoUpdate = false;
-    reticle.visible = false;
-    scene.add(reticle);
+    selectionRing.position.y = 0.002;
+    selectionRing.visible = false;
+    scene.add(selectionRing);
 
-    // 深度情報用Uniforms
-    const depthUniforms = {
-      uDepthTexture: { value: null },
-      uUvTransform: { value: new THREE.Matrix4() },
-      uRawValueToMeters: { value: 0.0 }
-    };
-    const depthTextureWrapper = new THREE.Texture();
+    // 170cm 人型目印
+    function createHumanFigure() {
+      const human = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x4da6ff,
+        roughness: 0.4,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.85
+      });
 
-    // 遮蔽用カスタムシェーダーの注入関数
-    function applyOcclusionShader(material) {
-      material.onBeforeCompile = (shader) => {
-        shader.uniforms.uDepthTexture = depthUniforms.uDepthTexture;
-        shader.uniforms.uUvTransform = depthUniforms.uUvTransform;
-        shader.uniforms.uRawValueToMeters = depthUniforms.uRawValueToMeters;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 24, 16), mat);
+      head.position.y = 1.59;
+      human.add(head);
 
-        shader.vertexShader = `
-          varying vec4 vViewPositionVar;
-          ${shader.vertexShader}
-        `.replace(
-          '#include <fog_vertex>',
-          `#include <fog_vertex>
-           vViewPositionVar = -mvPosition;`
-        );
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.54, 20), mat);
+      torso.position.y = 1.20;
+      human.add(torso);
 
-        shader.fragmentShader = `
-          uniform sampler2D uDepthTexture;
-          uniform mat4 uUvTransform;
-          uniform float uRawValueToMeters;
-          varying vec4 vViewPositionVar;
-          ${shader.fragmentShader}
-        `.replace(
-          '#include <dithering_fragment>',
-          `#include <dithering_fragment>
-          if (uRawValueToMeters > 0.0) {
-            vec4 ndc = projectionMatrix * vec4(-vViewPositionVar.xyz, 1.0);
-            vec2 screenUv = (ndc.xy / ndc.w) * 0.5 + 0.5;
-            vec4 depthUv = uUvTransform * vec4(screenUv, 0.0, 1.0);
+      const legGeom = new THREE.CylinderGeometry(0.055, 0.045, 0.93, 16);
+      const leftLeg = new THREE.Mesh(legGeom, mat);
+      leftLeg.position.set(-0.09, 0.465, 0);
+      human.add(leftLeg);
 
-            if (depthUv.x >= 0.0 && depthUv.x <= 1.0 && depthUv.y >= 0.0 && depthUv.y <= 1.0) {
-              float packedDepth = texture2D(uDepthTexture, depthUv.xy).r;
-              float realDepthMeters = packedDepth * uRawValueToMeters * 255.0; // 端末深度フォーマットに応じた換算
-              float virtualDepthMeters = vViewPositionVar.z;
+      const rightLeg = new THREE.Mesh(legGeom, mat);
+      rightLeg.position.set(0.09, 0.465, 0);
+      human.add(rightLeg);
 
-              // 現実物体の深度よりモデルの深度が奥にある場合は描画を破棄
-              if (realDepthMeters > 0.05 && virtualDepthMeters > (realDepthMeters + 0.02)) {
-                discard;
-              }
-            }
-          }`
-        );
-      };
+      const armGeom = new THREE.CylinderGeometry(0.045, 0.04, 0.52, 16);
+      const leftArm = new THREE.Mesh(armGeom, mat);
+      leftArm.position.set(-0.21, 1.18, 0);
+      human.add(leftArm);
+
+      const rightArm = new THREE.Mesh(armGeom, mat);
+      rightArm.position.set(0.21, 1.18, 0);
+      human.add(rightArm);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#4da6ff';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('1.7m', 64, 32);
+
+      const spriteMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.position.set(0, 1.85, 0);
+      sprite.scale.set(0.5, 0.25, 1);
+      human.add(sprite);
+
+      return human;
     }
 
-    // モデル読み込み
-    const loader = new THREE.GLTFLoader();
-    const loadedModels = [];
-    let isPlaced = false;
+    const humanFigure = createHumanFigure();
+    scene.add(humanFigure);
 
-    document.getElementById('files').addEventListener('change', async (e) => {
+    toggleHuman.addEventListener('change', (e) => {
+      humanFigure.visible = e.target.checked;
+    });
+
+    // WebXR対応判定（Meta Quest Browser / Android Chrome）
+    if ('xr' in navigator && !isIOS) {
+      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        if (supported) {
+          xrBtn.style.display = 'block';
+        }
+      }).catch(() => {});
+    }
+
+    const loader = new GLTFLoader();
+    const exporter = new USDZExporter();
+
+    let items = [];
+    let selectedIndex = -1;
+
+    // SkinnedMesh姿勢ベイク
+    function convertSkinnedToStatic(root) {
+      root.updateMatrixWorld(true);
+      const replacements = [];
+      const getVal = (attr, i, c) => [attr.getX(i), attr.getY(i), attr.getZ(i), attr.getW(i)][c] || 0;
+
+      root.traverse((child) => {
+        if (child.isSkinnedMesh && child.geometry) {
+          child.skeleton.update();
+          const geom = child.geometry.clone();
+          const pos = geom.attributes.position;
+          const sIdx = geom.attributes.skinIndex;
+          const sWeight = geom.attributes.skinWeight;
+
+          if (sIdx && sWeight) {
+            const bones = child.skeleton.bones;
+            const bInvs = child.skeleton.boneInverses;
+            const bMat = child.bindMatrix ? child.bindMatrix.clone() : new THREE.Matrix4();
+            const invChild = child.matrixWorld.clone().invert();
+
+            const v = new THREE.Vector3();
+            const cur = new THREE.Vector3();
+            const res = new THREE.Vector3();
+            const mat = new THREE.Matrix4();
+
+            for (let i = 0; i < pos.count; i++) {
+              v.fromBufferAttribute(pos, i).applyMatrix4(bMat);
+              res.set(0, 0, 0);
+
+              for (let j = 0; j < 4; j++) {
+                const w = getVal(sWeight, i, j);
+                if (w > 0) {
+                  const idx = getVal(sIdx, i, j);
+                  if (bones[idx] && bInvs[idx]) {
+                    mat.multiplyMatrices(bones[idx].matrixWorld, bInvs[idx]);
+                    cur.copy(v).applyMatrix4(mat);
+                    res.addScaledVector(cur, w);
+                  }
+                }
+              }
+              res.applyMatrix4(invChild);
+              pos.setXYZ(i, res.x, res.y, res.z);
+            }
+
+            pos.needsUpdate = true;
+            geom.computeVertexNormals();
+            delete geom.attributes.skinIndex;
+            delete geom.attributes.skinWeight;
+
+            const staticMesh = new THREE.Mesh(geom, child.material);
+            staticMesh.position.copy(child.position);
+            staticMesh.quaternion.copy(child.quaternion);
+            staticMesh.scale.copy(child.scale);
+
+            replacements.push({ old: child, rep: staticMesh });
+          }
+        }
+      });
+
+      replacements.forEach(({ old, rep }) => {
+        if (old.parent) {
+          old.parent.add(rep);
+          old.parent.remove(old);
+        }
+      });
+      root.updateMatrixWorld(true);
+    }
+
+    function getVisualBounds(object) {
+      object.updateMatrixWorld(true);
+      const inv = object.matrixWorld.clone().invert();
+      const box = new THREE.Box3();
+      let found = false;
+
+      object.traverse((child) => {
+        if (child.isMesh && child.visible && child.geometry) {
+          child.geometry.computeBoundingBox();
+          const b = child.geometry.boundingBox.clone();
+          b.applyMatrix4(child.matrixWorld.clone().premultiply(inv));
+          box.union(b);
+          found = true;
+        }
+      });
+      if (!found) box.setFromObject(object);
+      return box;
+    }
+
+    // ファイル追加
+    fileInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
 
-      let offsetX = 0;
+      hideOutputs();
+      statusText.innerText = 'モデル読み込み中...';
+
       for (const file of files) {
         if (!file.name.match(/\.(glb|gltf)$/i)) continue;
-        const url = URL.createObjectURL(file);
+        const blobUrl = URL.createObjectURL(file);
 
         await new Promise((resolve) => {
-          loader.load(url, (gltf) => {
-            const model = gltf.scene;
+          loader.load(blobUrl, (gltf) => {
+            const raw = gltf.scene;
 
-            // マテリアルにオクルージョンシェーダーを適用
-            model.traverse((child) => {
-              if (child.isMesh && child.material) {
-                applyOcclusionShader(child.material);
-              }
-            });
+            if (gltf.animations && gltf.animations.length > 0) {
+              const mixer = new THREE.AnimationMixer(raw);
+              mixer.clipAction(gltf.animations[0]).play();
+              mixer.update(0);
+            }
 
-            // バウンディングボックスによる接地と横並び計算
-            const box = new THREE.Box3().setFromObject(model);
+            convertSkinnedToStatic(raw);
+
+            const wrapper = new THREE.Group();
+            const box = getVisualBounds(raw);
             const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
+            const origH = size.y > 0.001 ? size.y : 1.0;
 
-            model.position.y = -box.min.y;
-            model.position.x = offsetX + (size.x / 2);
-            model.position.z = -center.z;
-            offsetX += size.x + 0.5; // モデル間に50cmの間隔
+            raw.position.set(
+              -(box.min.x + box.max.x) / 2,
+              -box.min.y,
+              -(box.min.z + box.max.z) / 2
+            );
+            wrapper.add(raw);
 
-            rootAnchor.add(model);
-            loadedModels.push(model);
-            URL.revokeObjectURL(url);
+            let initX = 0.65 + (items.length * 0.60);
+            wrapper.position.set(initX, 0, 0);
+
+            stageGroup.add(wrapper);
+
+            const item = {
+              name: file.name,
+              wrapper: wrapper,
+              raw: raw,
+              origH: origH,
+              height: 1.0,
+              posX: initX,
+              posZ: 0,
+              rotY: 0
+            };
+
+            items.push(item);
+            applyItemTransform(item);
+            URL.revokeObjectURL(blobUrl);
             resolve();
-          });
+          }, undefined, () => resolve());
         });
       }
 
-      rootAnchor.visible = false;
-      document.getElementById('status').innerText = `${loadedModels.length}件のモデル準備完了`;
-      document.getElementById('ar-btn').style.display = 'block';
+      refreshSelect();
+      selectModel(items.length - 1);
+      statusText.innerText = `${items.length} 体のモデルが配置されています。`;
     });
 
-    // WebXR セッション管理
-    document.getElementById('ar-btn').addEventListener('click', async () => {
-      if (!navigator.xr) {
-        alert('WebXR非対応のブラウザです。');
+    function applyItemTransform(item) {
+      const scale = item.height / item.origH;
+      item.wrapper.scale.set(scale, scale, scale);
+      item.wrapper.position.x = item.posX;
+      item.wrapper.position.z = item.posZ;
+      item.wrapper.rotation.y = item.rotY;
+
+      if (items[selectedIndex] === item) {
+        selectionRing.position.x = item.posX;
+        selectionRing.position.z = item.posZ;
+      }
+    }
+
+    function refreshSelect() {
+      modelSelect.innerHTML = '';
+      if (items.length === 0) {
+        modelSelect.innerHTML = '<option value="">モデルを追加してください</option>';
+        modelSelect.disabled = true;
+        controlsBox.style.opacity = '0.5';
+        controlsBox.style.pointerEvents = 'none';
+        selectionRing.visible = false;
         return;
       }
 
-      try {
-        xrSession = await navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['hit-test'],
-          optionalFeatures: ['depth-sensing'],
-          depthSensing: {
-            usagePreference: ['gpu-optimized', 'cpu-optimized'],
-            dataFormatPreference: ['luminance-alpha', 'float32']
+      modelSelect.disabled = false;
+      controlsBox.style.opacity = '1.0';
+      controlsBox.style.pointerEvents = 'auto';
+
+      items.forEach((item, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = `${idx + 1}. ${item.name} (${item.height.toFixed(2)}m)`;
+        modelSelect.appendChild(opt);
+      });
+    }
+
+    function syncInputs(h, x, z, rotDeg) {
+      paramH.value = h;
+      numH.value = h.toFixed(2);
+      paramX.value = x;
+      numX.value = x.toFixed(2);
+      paramZ.value = z;
+      numZ.value = z.toFixed(2);
+      paramRot.value = rotDeg;
+      numRot.value = rotDeg;
+    }
+
+    function selectModel(idx) {
+      if (idx < 0 || idx >= items.length) return;
+      selectedIndex = idx;
+      modelSelect.value = idx;
+
+      const item = items[idx];
+      const rotDeg = Math.round(THREE.MathUtils.radToDeg(item.rotY));
+      syncInputs(item.height, item.posX, item.posZ, rotDeg);
+
+      selectionRing.position.x = item.posX;
+      selectionRing.position.z = item.posZ;
+      selectionRing.visible = true;
+    }
+
+    modelSelect.addEventListener('change', (e) => selectModel(parseInt(e.target.value)));
+
+    function bindControl(slider, numInput, onUpdate) {
+      slider.addEventListener('input', () => {
+        if (selectedIndex === -1) return;
+        const val = parseFloat(slider.value);
+        numInput.value = (slider === paramRot) ? Math.round(val) : val.toFixed(2);
+        onUpdate(val);
+      });
+
+      numInput.addEventListener('input', () => {
+        if (selectedIndex === -1) return;
+        const val = parseFloat(numInput.value);
+        if (!isNaN(val)) {
+          slider.value = val;
+          onUpdate(val);
+        }
+      });
+    }
+
+    bindControl(paramH, numH, (val) => {
+      items[selectedIndex].height = val;
+      applyItemTransform(items[selectedIndex]);
+      refreshSelectTitles();
+      hideOutputs();
+    });
+
+    bindControl(paramX, numX, (val) => {
+      items[selectedIndex].posX = val;
+      applyItemTransform(items[selectedIndex]);
+      hideOutputs();
+    });
+
+    bindControl(paramZ, numZ, (val) => {
+      items[selectedIndex].posZ = val;
+      applyItemTransform(items[selectedIndex]);
+      hideOutputs();
+    });
+
+    bindControl(paramRot, numRot, (val) => {
+      items[selectedIndex].rotY = THREE.MathUtils.degToRad(val);
+      applyItemTransform(items[selectedIndex]);
+      hideOutputs();
+    });
+
+    document.querySelectorAll('.step-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (selectedIndex === -1) return;
+        const targetId = btn.dataset.target;
+        const step = parseFloat(btn.dataset.step);
+        const slider = document.getElementById(targetId);
+
+        let currentVal = parseFloat(slider.value);
+        let newVal = currentVal + step;
+
+        if (slider === paramRot) {
+          newVal = (newVal + 360) % 360;
+        } else {
+          newVal = Math.min(Math.max(newVal, parseFloat(slider.min)), parseFloat(slider.max));
+        }
+
+        slider.value = newVal;
+        slider.dispatchEvent(new Event('input'));
+      });
+    });
+
+    function refreshSelectTitles() {
+      const opt = modelSelect.options[selectedIndex];
+      if (opt && items[selectedIndex]) {
+        opt.innerText = `${selectedIndex + 1}. ${items[selectedIndex].name} (${items[selectedIndex].height.toFixed(2)}m)`;
+      }
+    }
+
+    function hideOutputs() {
+      arLink.style.display = 'none';
+      downloadLink.style.display = 'none';
+    }
+
+    // タップ選択 & ドラッグ移動
+    const raycaster = new THREE.Raycaster();
+    const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const planeIntersectPoint = new THREE.Vector3();
+    const dragOffset = new THREE.Vector3();
+
+    let isDragging = false;
+    let dragItem = null;
+
+    function getPointerNDC(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      return new THREE.Vector2(x, y);
+    }
+
+    function findItemIndexFromObject(obj) {
+      let current = obj;
+      while (current && current !== stageGroup && current.parent) {
+        const found = items.findIndex(it => it.wrapper === current);
+        if (found !== -1) return found;
+        current = current.parent;
+      }
+      return -1;
+    }
+
+    window.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('#ui-container')) return;
+
+      const p = getPointerNDC(event);
+      raycaster.setFromCamera(p, camera);
+      const intersects = raycaster.intersectObjects(stageGroup.children, true);
+
+      if (intersects.length > 0) {
+        const hitIndex = findItemIndexFromObject(intersects[0].object);
+        if (hitIndex !== -1) {
+          selectModel(hitIndex);
+          dragItem = items[hitIndex];
+          isDragging = true;
+          controls.enabled = false;
+
+          if (raycaster.ray.intersectPlane(floorPlane, planeIntersectPoint)) {
+            dragOffset.set(
+              dragItem.posX - planeIntersectPoint.x,
+              0,
+              dragItem.posZ - planeIntersectPoint.z
+            );
           }
-        });
-
-        renderer.xr.setReferenceSpaceType('local');
-        await renderer.xr.setSession(xrSession);
-
-        xrRefSpace = await xrSession.requestReferenceSpace('local');
-        const viewerSpace = await xrSession.requestReferenceSpace('viewer');
-        hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
-        xrGLBinding = new XRWebGLBinding(xrSession, renderer.getContext());
-
-        document.getElementById('ui').style.display = 'none';
-
-        // 画面タップで床に配置
-        xrSession.addEventListener('select', () => {
-          if (reticle.visible && !isPlaced) {
-            rootAnchor.position.setFromMatrixPosition(reticle.matrix);
-            rootAnchor.quaternion.setFromRotationMatrix(reticle.matrix);
-            rootAnchor.visible = true;
-            reticle.visible = false;
-            isPlaced = true;
-          }
-        });
-
-        renderer.setAnimationLoop(renderLoop);
-      } catch (err) {
-        alert('ARセッション開始エラー: ' + err.message);
+        }
       }
     });
 
-    // レンダリングループ
-    function renderLoop(timestamp, frame) {
-      if (frame) {
-        // ヒットテスト（床面検出）
-        if (!isPlaced && hitTestSource) {
-          const hitTestResults = frame.getHitTestResults(hitTestSource);
-          if (hitTestResults.length > 0) {
-            const pose = hitTestResults[0].getPose(xrRefSpace);
-            reticle.visible = true;
-            reticle.matrix.fromArray(pose.transform.matrix);
-          } else {
-            reticle.visible = false;
-          }
-        }
+    window.addEventListener('pointermove', (event) => {
+      if (!isDragging || !dragItem) return;
 
-        // WebXR Depth Sensing 処理
-        const pose = frame.getViewerPose(xrRefSpace);
-        if (pose && xrGLBinding) {
-          for (const view of pose.views) {
-            const depthInfo = xrGLBinding.getDepthInformation(view);
-            if (depthInfo) {
-              // 深度テクスチャのバインド
-              renderer.properties.get(depthTextureWrapper).__webglTexture = depthInfo.texture;
-              depthTextureWrapper.needsUpdate = false;
+      const p = getPointerNDC(event);
+      raycaster.setFromCamera(p, camera);
 
-              depthUniforms.uDepthTexture.value = depthTextureWrapper;
-              depthUniforms.uRawValueToMeters.value = depthInfo.rawValueToMeters;
-              depthUniforms.uUvTransform.value.fromArray(depthInfo.normDepthBufferFromNormView.matrix);
-            }
-          }
-        }
+      if (raycaster.ray.intersectPlane(floorPlane, planeIntersectPoint)) {
+        let newX = Math.min(Math.max(planeIntersectPoint.x + dragOffset.x, -3.0), 3.0);
+        let newZ = Math.min(Math.max(planeIntersectPoint.z + dragOffset.z, -3.0), 3.0);
+
+        dragItem.posX = Math.round(newX * 50) / 50;
+        dragItem.posZ = Math.round(newZ * 50) / 50;
+
+        applyItemTransform(dragItem);
+
+        paramX.value = dragItem.posX;
+        numX.value = dragItem.posX.toFixed(2);
+        paramZ.value = dragItem.posZ;
+        numZ.value = dragItem.posZ.toFixed(2);
+
+        hideOutputs();
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (isDragging) {
+        isDragging = false;
+        dragItem = null;
+        controls.enabled = true;
+      }
+    });
+
+    // -------------------------------------------------------------
+    // Meta Quest / Android 用 WebXR パススルーAR
+    // -------------------------------------------------------------
+    xrBtn.addEventListener('click', async () => {
+      if (!navigator.xr) return;
+      try {
+        const session = await navigator.xr.requestSession('immersive-ar', {
+          requiredFeatures: ['local-floor']
+        });
+
+        renderer.xr.setReferenceSpaceType('local-floor');
+        await renderer.xr.setSession(session);
+
+        // パススルー表示のための背景透過と目印非表示
+        scene.background = null;
+        grid.visible = false;
+        humanFigure.visible = false;
+        selectionRing.visible = false;
+        document.getElementById('ui-container').style.display = 'none';
+
+        session.addEventListener('end', () => {
+          scene.background = new THREE.Color(0x1a1a1a);
+          grid.visible = true;
+          humanFigure.visible = toggleHuman.checked;
+          if (selectedIndex !== -1) selectionRing.visible = true;
+          document.getElementById('ui-container').style.display = 'block';
+        });
+      } catch (err) {
+        alert('WebXR起動エラー: ' + err.message);
+      }
+    });
+
+    // -------------------------------------------------------------
+    // iOS / 汎用 USDZ エクスポート
+    // -------------------------------------------------------------
+    btnBuild.addEventListener('click', async () => {
+      if (items.length === 0) {
+        alert('モデルが配置されていません。');
+        return;
       }
 
+      statusText.innerText = 'USDZ形式に統合変換中...\n（人型目印とリングを除外して出力）';
+      hideOutputs();
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      stageGroup.updateMatrixWorld(true);
+      const bakedGroup = new THREE.Group();
+
+      stageGroup.traverse((child) => {
+        if (child.isMesh && child.geometry && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((mat) => {
+            if (mat.metalnessMap && !mat.roughnessMap) mat.roughnessMap = mat.metalnessMap;
+            else if (mat.roughnessMap && !mat.metalnessMap) mat.metalnessMap = mat.roughnessMap;
+
+            ['map', 'roughnessMap', 'metalnessMap', 'normalMap'].forEach((key) => {
+              const tex = mat[key];
+              if (tex && tex.image && (tex.image.width > 512 || tex.image.height > 512)) {
+                const maxDim = 512;
+                let w = tex.image.width;
+                let h = tex.image.height;
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(tex.image, 0, 0, w, h);
+
+                const newImg = new Image();
+                newImg.src = canvas.toDataURL('image/jpeg', 0.7);
+                tex.image = newImg;
+                tex.needsUpdate = true;
+              }
+            });
+          });
+
+          const clonedGeom = child.geometry.clone();
+          clonedGeom.applyMatrix4(child.matrixWorld);
+          const bakedMesh = new THREE.Mesh(clonedGeom, child.material);
+          bakedGroup.add(bakedMesh);
+        }
+      });
+
+      try {
+        const usdzBuffer = await exporter.parse(bakedGroup);
+        const blob = new Blob([usdzBuffer], { type: 'model/vnd.usdz+zip' });
+        const url = URL.createObjectURL(blob);
+
+        if (isIOS) {
+          arLink.href = url;
+          arLink.style.display = 'block';
+        }
+
+        downloadLink.href = url;
+        downloadLink.style.display = 'block';
+
+        statusText.innerText = `変換完了（${items.length}体を統合、人型・リングは除外済み）\nファイル保存またはAR起動が可能です。`;
+      } catch (err) {
+        statusText.innerText = '変換エラー: ' + err.message;
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    renderer.setAnimationLoop(() => {
+      controls.update();
       renderer.render(scene, camera);
-    }
+    });
   </script>
 </body>
 </html>

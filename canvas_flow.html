@@ -1,0 +1,3177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CanvasFlow Pro - インタラクティブ画像プレゼンテーションボード</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top: env(safe-area-inset-top, 0px);
+        }
+        html, body {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-text-size-adjust: 100%;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+        }
+        body {
+            font-family: 'Klee One', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #appHeader {
+            padding-top: calc(var(--safe-top) + 0.4rem);
+            transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .bg-grid-dynamic {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(128, 128, 128, 0.08) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(128, 128, 128, 0.08) 1px, transparent 1px);
+        }
+        .selected-image-container:not(.bg-transparent) {
+            outline: 2px solid #3b82f6;
+            outline-offset: 3px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+        }
+        .selected-image-container.bg-transparent {
+            outline: 2px dashed #38bdf8;
+            outline-offset: 5px;
+        }
+        .is-grouped {
+            outline: 2px solid #10b981 !important;
+            outline-offset: 3px;
+        }
+        .is-group-selected {
+            box-shadow: 0 0 0 4px #6366f1 !important;
+        }
+        .mode-select .item-top-bar {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        .mode-select .image-wrapper {
+            cursor: pointer !important;
+        }
+        .mode-delete .image-wrapper:hover {
+            outline: 3px solid #f43f5e !important;
+            outline-offset: 4px;
+            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.4);
+            cursor: pointer !important;
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        .text-editor-area {
+            color: #f1f5f9;
+            transition: color 0.25s ease;
+        }
+        .image-wrapper.bg-transparent .text-editor-area {
+            color: var(--text-comp-color, #f1f5f9) !important;
+        }
+        .resize-handle {
+            display: none;
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background-color: #3b82f6;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            z-index: 30;
+            touch-action: none;
+        }
+        .selected-image-container .resize-handle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .resize-handle.nw { top: -11px; left: -11px; cursor: nwse-resize; }
+        .resize-handle.ne { top: -11px; right: -11px; cursor: nesw-resize; }
+        .resize-handle.sw { bottom: -11px; left: -11px; cursor: nesw-resize; }
+        .resize-handle.se { bottom: -11px; right: -11px; cursor: nwse-resize; }
+
+        .slide-order-badge {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            background-color: #0284c7;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: bold;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            border: 2px solid #ffffff;
+            z-index: 25;
+            pointer-events: none;
+        }
+
+        .group-tag-badge {
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background-color: #059669;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 1px 6px;
+            border-radius: 9999px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            border: 1.5px solid #ffffff;
+            z-index: 25;
+            pointer-events: none;
+        }
+
+        /* 目隠しカーテン（全モードで即時タップ開通） */
+        .card-curtain-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.96);
+            backdrop-filter: blur(4px);
+            border-radius: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            cursor: pointer;
+            pointer-events: auto !important;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+            border: 1.5px solid #334155;
+        }
+
+        .drag-floating-clone {
+            position: fixed !important;
+            z-index: 999999 !important;
+            pointer-events: none !important;
+            opacity: 0.95;
+            transform: scale(1.03);
+            box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.7), 0 0 0 2px #38bdf8;
+        }
+        .drag-placeholder {
+            border: 2px dashed #0284c7 !important;
+            background-color: rgba(2, 132, 199, 0.1) !important;
+            box-shadow: none !important;
+            visibility: visible !important;
+        }
+        .drag-placeholder * {
+            visibility: hidden !important;
+        }
+
+        /* 投げ縄選択用SVGオーバーレイ */
+        #lassoOverlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 44000;
+        }
+    </style>
+</head>
+<body class="text-slate-100 h-screen w-screen relative overflow-hidden select-none bg-black">
+
+    <!-- Top Header -->
+    <header id="appHeader" class="fixed top-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 pb-2 flex flex-wrap justify-between items-center z-[60000] gap-2">
+        <div class="flex items-center gap-2">
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-shapes text-base text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">CanvasFlow Pro</h1>
+                <p class="text-[9px] text-slate-400">プレゼンテーションボード</p>
+            </div>
+        </div>
+
+        <!-- メインモード切替バー（上部に集約） -->
+        <div class="flex bg-slate-800/90 p-1 rounded-xl gap-1">
+            <button id="modeEdit" onclick="setAppMode('edit')" class="mode-btn text-white bg-blue-600/30 border border-blue-500/40 px-2.5 h-8 rounded-lg flex items-center gap-1.5 text-xs transition-all" title="操作モード [V]">
+                <i class="fa-solid fa-arrows-up-down-left-right text-xs"></i>
+                <span class="font-bold text-[11px]">操作</span>
+            </button>
+            <button id="modeSelect" onclick="setAppMode('select')" class="mode-btn text-slate-400 hover:text-white px-2.5 h-8 rounded-lg flex items-center gap-1.5 text-xs transition-all" title="選択モード（投げ縄囲み・グループ化） [G]">
+                <i class="fa-solid fa-object-group text-xs text-indigo-400"></i>
+                <span class="font-bold text-[11px]">選択</span>
+            </button>
+            <button id="modePresent" onclick="setAppMode('present')" class="mode-btn text-slate-400 hover:text-white px-2.5 h-8 rounded-lg flex items-center gap-1.5 text-xs transition-all" title="プレゼンモード（誤操作防止・発表用）">
+                <i class="fa-solid fa-display text-xs text-emerald-400"></i>
+                <span class="font-bold text-[11px]">プレゼン</span>
+            </button>
+            <button id="modePointer" onclick="setAppMode('pointer')" class="mode-btn text-slate-400 hover:text-white px-2.5 h-8 rounded-lg flex items-center gap-1.5 text-xs transition-all" title="レーザーポインター [L]">
+                <i class="fa-solid fa-wand-magic-sparkles text-xs text-rose-400"></i>
+                <span class="font-bold text-[11px]">ポインタ</span>
+            </button>
+            <button id="modeDraw" onclick="setAppMode('draw')" class="mode-btn text-slate-400 hover:text-white px-2.5 h-8 rounded-lg flex items-center gap-1.5 text-xs transition-all" title="手書きペン [P]">
+                <i class="fa-solid fa-pen-nib text-xs text-amber-400"></i>
+                <span class="font-bold text-[11px]">ペン</span>
+            </button>
+            <button id="modeDelete" onclick="setAppMode('delete')" class="mode-btn text-slate-400 hover:text-white px-2.5 h-8 rounded-lg flex items-center gap-1.5 text-xs transition-all" title="削除モード">
+                <i class="fa-solid fa-eraser text-xs text-rose-400"></i>
+                <span class="font-bold text-[11px]">削除</span>
+            </button>
+        </div>
+
+        <!-- ツールコントロール -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <label class="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-xl cursor-pointer shadow-lg transition-all flex items-center gap-1.5 text-xs">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>画像</span>
+                <input type="file" id="imageInput" multiple accept="image/*" class="hidden">
+            </label>
+
+            <button onclick="addTextObject()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs">
+                <i class="fa-solid fa-file-signature text-amber-400"></i>
+                <span>テキスト</span>
+            </button>
+
+            <div class="h-5 w-[1px] bg-slate-800 mx-0.5"></div>
+
+            <!-- 整列 -->
+            <div class="flex bg-slate-800/90 p-1 rounded-xl items-center gap-1">
+                <select id="sortSelect" class="bg-slate-900 text-slate-200 text-xs px-2 py-1 rounded-lg border border-slate-700 focus:outline-none cursor-pointer">
+                    <option value="name" selected>名前順</option>
+                    <option value="added">読込順</option>
+                    <option value="random">ランダム</option>
+                </select>
+                <div class="flex items-center gap-1 bg-slate-900/60 px-1.5 py-0.5 rounded-lg border border-slate-700/60 text-[10px]">
+                    <span class="text-slate-400">列:</span>
+                    <select id="colsSelect" class="bg-slate-950 text-slate-200 text-xs py-0.5 rounded focus:outline-none cursor-pointer">
+                        <option value="auto">自動</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+                <button id="btnGrid" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold px-2.5 py-1 rounded-lg transition-all shadow-md flex items-center gap-1 text-xs active:scale-95" title="現在の調整サイズを維持したまま並べる">
+                    <i class="fa-solid fa-table-cells-large text-[10px]"></i>
+                    <span>整列</span>
+                </button>
+            </div>
+
+            <!-- スポットライト & 軸固定 -->
+            <button id="btnSpotlightHeader" onclick="toggleSpotlight()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 flex items-center justify-center transition-all" title="スポットライト [S]">
+                <i class="fa-solid fa-lightbulb text-xs"></i>
+            </button>
+            <button id="btnAxisLock" onclick="toggleAxisLock()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 flex items-center justify-center transition-all" title="ドラッグ軸固定">
+                <i class="fa-solid fa-arrows-up-to-line text-xs"></i>
+            </button>
+
+            <!-- 背景色 -->
+            <button onclick="triggerColorPicker()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition-all" title="背景色を変更">
+                <i class="fa-solid fa-palette text-xs text-amber-400"></i>
+            </button>
+            <input type="color" id="bgColorInput" class="hidden" value="#000000" oninput="changeBgColor(this.value)">
+
+            <button id="btnBulkTrans" onclick="toggleAllBgTransparency()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition-all" title="全枠を透過/復元">
+                <i class="fa-solid fa-circle-half-stroke text-xs"></i>
+            </button>
+
+            <div class="h-5 w-[1px] bg-slate-800 mx-0.5"></div>
+
+            <!-- タイマー -->
+            <button id="btnToggleTimer" onclick="toggleTimerPanel()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 flex items-center justify-center transition-all" title="タイマー [T]">
+                <i class="fa-solid fa-stopwatch text-xs text-amber-400"></i>
+            </button>
+
+            <!-- JSON保存・読込・ストレージクリア -->
+            <button onclick="exportBoardData()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition-all" title="JSON保存">
+                <i class="fa-solid fa-download text-xs"></i>
+            </button>
+            <label class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition-all cursor-pointer" title="JSON読込">
+                <i class="fa-solid fa-upload text-xs"></i>
+                <input type="file" id="jsonInput" accept=".json" class="hidden" onchange="importBoardData(event)">
+            </label>
+            <button onclick="clearStorageData()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-950 border border-slate-700 text-slate-400 hover:text-rose-400 flex items-center justify-center transition-all" title="自動保存キャッシュを完全クリア">
+                <i class="fa-solid fa-database text-xs"></i>
+            </button>
+
+            <button id="btnClear" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="全消去">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+
+            <!-- 全ツールバー非表示（完全没入） -->
+            <button onclick="toggleAllToolbars()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition-all" title="すべてのツールバーを隠す [H]">
+                <i class="fa-solid fa-eye-slash text-xs text-sky-400"></i>
+            </button>
+
+            <button id="btnHelp" class="bg-slate-800 hover:bg-slate-700 text-slate-300 w-8 h-8 rounded-xl flex items-center justify-center border border-slate-700 transition-all" title="使い方">
+                <i class="fa-solid fa-question text-xs"></i>
+            </button>
+        </div>
+
+        <button id="btnToggleHeader" onclick="toggleHeader()" class="absolute bottom-[-24px] left-1/2 -translate-x-1/2 bg-slate-900/95 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-b border-x border-slate-800 backdrop-blur-md px-3 py-0.5 rounded-b-xl shadow-lg transition-all flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold pointer-events-auto">
+            <i id="toggleHeaderIcon" class="fa-solid fa-chevron-up transition-transform"></i>
+            <span id="toggleHeaderTxt">隠す</span>
+        </button>
+    </header>
+
+    <!-- 全ツールバー非表示時の復帰フローティングタブ -->
+    <div id="reopenToolbarsTab" onclick="toggleAllToolbars()" class="hidden fixed top-2 left-1/2 -translate-x-1/2 bg-slate-900/90 hover:bg-slate-800 text-sky-400 border border-slate-700/80 px-3 py-1 rounded-full shadow-2xl z-[70000] cursor-pointer flex items-center gap-1.5 text-xs backdrop-blur-md transition-all">
+        <i class="fa-solid fa-eye text-xs"></i>
+        <span class="text-[10px] font-bold">ツールバーを表示</span>
+    </div>
+
+    <!-- オートセーブインジケーター（画面右上に一時表示） -->
+    <div id="autoSaveIndicator" class="hidden fixed top-16 right-5 bg-slate-900/90 border border-emerald-500/50 text-emerald-400 px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-xl z-[65000] pointer-events-none transition-all">
+        <i class="fa-solid fa-circle-check text-xs"></i>
+        <span>自動保存完了</span>
+    </div>
+
+    <!-- Workspace -->
+    <main id="workspace" style="background-color: #000000;" class="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing">
+        
+        <div id="dropzonePrompt" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 pointer-events-none transition-opacity duration-300 z-10">
+            <div class="w-16 h-16 bg-slate-900/70 border border-slate-800 rounded-2xl flex items-center justify-center text-slate-400 mb-3 animate-bounce">
+                <i class="fa-solid fa-images text-2xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-slate-200 mb-1">画像やテキストを配置して説明を開始</h2>
+            <p class="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">
+                Apple Pencil等で画面に触れると自動でペンが起動します。「選択」モードではドラッグして投げ縄囲み選択が可能です。
+            </p>
+        </div>
+
+        <div id="canvas-inner" class="absolute inset-0 w-full h-full pointer-events-auto bg-grid-dynamic transform origin-top-left"></div>
+
+        <!-- 投げ縄描画用SVG -->
+        <svg id="lassoOverlay">
+            <polygon id="lassoPolygon" points="" fill="rgba(99, 102, 241, 0.2)" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4" style="display:none;" />
+        </svg>
+
+        <canvas id="drawCanvas" class="absolute inset-0 pointer-events-none z-[41000]"></canvas>
+        <canvas id="spotlightCanvas" class="absolute inset-0 pointer-events-none z-[42000]"></canvas>
+        <canvas id="laserCanvas" class="absolute inset-0 pointer-events-none z-[45000]"></canvas>
+
+        <!-- 画面左右エッジナビゲーション -->
+        <div id="edgeNavLeft" onclick="prevSlide()" class="fixed left-0 top-1/4 bottom-1/4 w-10 z-[38000] flex items-center justify-start pl-1 opacity-0 hover:opacity-100 transition-opacity pointer-events-auto cursor-pointer">
+            <div class="w-7 h-12 rounded-r-xl bg-slate-900/70 border border-slate-700/80 backdrop-blur-md flex items-center justify-center text-slate-400 text-xs shadow-xl">
+                <i class="fa-solid fa-chevron-left"></i>
+            </div>
+        </div>
+        <div id="edgeNavRight" onclick="nextSlide()" class="fixed right-0 top-1/4 bottom-1/4 w-10 z-[38000] flex items-center justify-end pr-1 opacity-0 hover:opacity-100 transition-opacity pointer-events-auto cursor-pointer">
+            <div class="w-7 h-12 rounded-l-xl bg-slate-900/70 border border-slate-700/80 backdrop-blur-md flex items-center justify-center text-slate-400 text-xs shadow-xl">
+                <i class="fa-solid fa-chevron-right"></i>
+            </div>
+        </div>
+
+        <!-- 右サイドバー（縦型）：スライド進行・拡大縮小 -->
+        <div id="rightToolBar" class="fixed right-3 top-1/2 -translate-y-1/2 bg-slate-900/95 border border-slate-800 p-1.5 rounded-2xl shadow-2xl z-[60000] flex flex-col items-center gap-1.5 backdrop-blur-md select-none transition-transform">
+            <button onclick="nextSlide()" class="w-10 h-10 bg-blue-600 hover:bg-blue-500 text-white rounded-xl flex items-center justify-center text-xs transition-all active:scale-95 shadow-md" title="次のスライド [→]">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <button onclick="openSlideManager()" class="w-10 h-10 bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-[10px] font-bold text-slate-200 rounded-xl flex flex-col items-center justify-center transition-all" title="スライド一覧・並べ替え">
+                <span id="txtSlideIndicator">0/0</span>
+                <i class="fa-solid fa-bars text-[8px] text-sky-400 mt-0.5"></i>
+            </button>
+            <button onclick="prevSlide()" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center text-xs transition-all active:scale-95" title="前のスライド [←]">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="w-6 h-[1px] bg-slate-800 my-0.5"></div>
+            <button onclick="zoomToFitAll()" class="w-10 h-10 text-slate-400 hover:text-white rounded-xl text-xs flex items-center justify-center active:scale-95" title="全体表示 [Shift+F]">
+                <i class="fa-solid fa-maximize text-xs"></i>
+            </button>
+            <button id="btnZoomIn" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition-all active:scale-95" title="ズームイン">
+                <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+            <button id="btnZoomReset" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center text-[9px] font-bold transition-all active:scale-95" title="等倍リセット">
+                <span id="txtCanvasZoom">100%</span>
+            </button>
+            <button id="btnZoomOut" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition-all active:scale-95" title="ズームアウト">
+                <i class="fa-solid fa-minus text-xs"></i>
+            </button>
+            <button onclick="toggleFullScreen()" class="w-10 h-10 text-slate-400 hover:text-white rounded-xl text-xs flex items-center justify-center active:scale-95" title="全画面表示 [F]">
+                <i id="btnFsIcon" class="fa-solid fa-expand text-xs"></i>
+            </button>
+        </div>
+
+        <!-- 選択中カード専用コンテキストバー（下部に配置） -->
+        <div id="selectionContextBar" style="bottom: calc(var(--safe-bottom) + 1rem); left: 50%; transform: translateX(-50%);" class="hidden fixed bg-slate-900/95 border border-slate-700/80 px-3 py-1.5 rounded-2xl shadow-2xl z-[60000] flex items-center gap-2 backdrop-blur-md transition-all">
+            <span id="txtContextTargetName" class="text-xs font-bold text-slate-300 max-w-[100px] truncate border-r border-slate-800 pr-2">カード</span>
+            <!-- チェックマーク選択トグル -->
+            <button onclick="toggleSelectionCheckForSelected()" id="btnContextCheck" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1 shadow" title="選択チェック">
+                <i class="fa-solid fa-check text-indigo-400"></i>
+                <span>選択</span>
+            </button>
+            <button onclick="toggleMaskForSelected()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1 shadow" title="目隠しカーテン">
+                <i class="fa-solid fa-eye-slash text-sky-400"></i>
+                <span>目隠し</span>
+            </button>
+            <button onclick="cloneSelected()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1 shadow" title="複製">
+                <i class="fa-solid fa-copy text-emerald-400"></i>
+                <span>複製</span>
+            </button>
+            <!-- レイヤー順序操作 -->
+            <button onclick="bringSelectedForward()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1 shadow" title="前面へ移動">
+                <i class="fa-solid fa-arrow-up text-amber-400"></i>
+                <span>前面</span>
+            </button>
+            <button onclick="sendSelectedBackward()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1 shadow" title="背面へ移動">
+                <i class="fa-solid fa-arrow-down text-amber-400"></i>
+                <span>背面</span>
+            </button>
+            <button onclick="toggleTransparencyForSelected()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs flex items-center gap-1 shadow" title="枠の透明化">
+                <i class="fa-solid fa-circle-half-stroke text-amber-400"></i>
+                <span>透明枠</span>
+            </button>
+            <button onclick="deleteSelected()" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-300 rounded-xl text-xs flex items-center gap-1 shadow" title="削除">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>削除</span>
+            </button>
+        </div>
+
+        <!-- 複数選択時の一括アクションバー（サイズ揃え・一括削除・グループ化） -->
+        <div id="groupActionBar" style="bottom: calc(var(--safe-bottom) + 1rem); left: 50%; transform: translateX(-50%);" class="hidden fixed bg-slate-900/95 border border-indigo-500/60 px-4 py-2 rounded-2xl shadow-2xl z-[60000] flex items-center gap-2.5 backdrop-blur-md transition-all flex-wrap justify-center">
+            <span id="txtGroupSelectedCount" class="text-xs font-bold text-indigo-300 border-r border-slate-800 pr-2.5">2件選択中</span>
+            <button onclick="groupSelectedCards()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1 transition-all">
+                <i class="fa-solid fa-object-group"></i>
+                <span>グループ化</span>
+            </button>
+            <!-- サイズを揃える（横幅 / 縦幅） -->
+            <div class="flex items-center gap-1 bg-slate-800/90 p-0.5 rounded-xl border border-slate-700 text-xs">
+                <button onclick="alignSelectedSizes('width')" class="px-2 py-1 text-slate-300 hover:text-white rounded-lg hover:bg-slate-700 flex items-center gap-1 text-[11px]" title="横幅を揃える">
+                    <i class="fa-solid fa-arrows-left-right text-sky-400"></i> 幅統一
+                </button>
+                <button onclick="alignSelectedSizes('height')" class="px-2 py-1 text-slate-300 hover:text-white rounded-lg hover:bg-slate-700 flex items-center gap-1 text-[11px]" title="高さを揃える">
+                    <i class="fa-solid fa-arrows-up-down text-emerald-400"></i> 高さ統一
+                </button>
+            </div>
+            <!-- 一括削除 -->
+            <button onclick="deleteSelectedGroup()" class="bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-300 text-xs font-bold px-2.5 py-1.5 rounded-xl shadow-lg flex items-center gap-1 transition-all">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>一括削除</span>
+            </button>
+            <button onclick="clearSelectionCheck()" class="text-slate-400 hover:text-white p-1 text-xs" title="選択解除">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- レーザーポインター調整パレット -->
+        <div id="pointerToolbar" class="hidden fixed left-4 top-20 bg-slate-900/95 border border-slate-800 p-2 rounded-2xl shadow-2xl z-[60000] flex items-center gap-2 backdrop-blur-md">
+            <div class="flex gap-1.5 items-center">
+                <button onclick="setLaserColor('#f43f5e', this)" class="pointer-color-btn w-5 h-5 rounded-full bg-rose-500 border-2 border-white focus:outline-none" title="レッド"></button>
+                <button onclick="setLaserColor('#10b981', this)" class="pointer-color-btn w-5 h-5 rounded-full bg-emerald-500 border-2 border-transparent focus:outline-none" title="グリーン"></button>
+                <button onclick="setLaserColor('#06b6d4', this)" class="pointer-color-btn w-5 h-5 rounded-full bg-cyan-500 border-2 border-transparent focus:outline-none" title="シアン"></button>
+            </div>
+            <div class="h-4 w-[1px] bg-slate-800 mx-0.5"></div>
+            <button onclick="setLaserSize(6, this)" class="pointer-size-btn text-[10px] font-bold text-slate-400 hover:text-white px-1">小</button>
+            <button onclick="setLaserSize(10, this)" class="pointer-size-btn text-[10px] font-bold text-sky-400 px-1 border-b border-sky-400">中</button>
+            <button onclick="setLaserSize(16, this)" class="pointer-size-btn text-[10px] font-bold text-slate-400 hover:text-white px-1">大</button>
+        </div>
+
+        <!-- 秒単位ドラムピッカータイマー -->
+        <div id="timerPanel" class="hidden fixed top-20 left-4 bg-slate-900/95 border border-slate-800 rounded-2xl p-3 shadow-2xl z-[60000] backdrop-blur-md transition-all flex flex-col gap-2 min-w-[210px]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                <span class="text-[10px] font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-stopwatch"></i> 活動タイマー
+                </span>
+                <button onclick="toggleTimerPanel()" class="text-slate-500 hover:text-slate-300 p-0.5 text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="timerDisplay" class="text-3xl font-mono font-bold text-center text-slate-100 py-0.5">
+                03:00
+            </div>
+            <div id="timerPickerContainer" class="flex items-center justify-center gap-2 bg-slate-950/80 rounded-xl p-1.5 border border-slate-800 text-xs">
+                <div class="flex flex-col items-center">
+                    <span class="text-[9px] text-slate-400 font-bold mb-0.5">分</span>
+                    <select id="pickerMinutes" onchange="onPickerChange()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"></select>
+                </div>
+                <span class="text-slate-500 font-bold mt-3">:</span>
+                <div class="flex flex-col items-center">
+                    <span class="text-[9px] text-slate-400 font-bold mb-0.5">秒</span>
+                    <select id="pickerSeconds" onchange="onPickerChange()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"></select>
+                </div>
+            </div>
+            <div class="flex items-center justify-center gap-1.5 pt-1">
+                <button onclick="startTimer()" id="btnTimerStart" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-lg text-xs transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-play text-[10px]"></i> 開始
+                </button>
+                <button onclick="pauseTimer()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded-lg text-xs transition-all">
+                    <i class="fa-solid fa-pause text-[10px]"></i>
+                </button>
+                <button onclick="resetTimer()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded-lg text-xs transition-all">
+                    <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 手書きツールバー -->
+        <div id="drawToolbar" class="hidden fixed left-4 top-20 bg-slate-900/95 border border-slate-800 p-2.5 rounded-2xl shadow-2xl z-[60000] flex items-center gap-2.5 backdrop-blur-md">
+            <div class="flex bg-slate-800/90 p-1 rounded-xl gap-1">
+                <button id="btnToolPen" onclick="setDrawingTool('pen')" class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs transition-all" title="ペン">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button id="btnToolEraser" onclick="setDrawingTool('eraser')" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-xs transition-all" title="消しゴム">
+                    <i class="fa-solid fa-eraser"></i>
+                </button>
+            </div>
+            <div id="penColorGroup" class="flex gap-1.5 items-center border-x border-slate-800 px-2">
+                <button onclick="setPenColor('#ef4444', this)" class="pen-color-btn w-5 h-5 rounded-full bg-red-500 border-2 border-white focus:outline-none"></button>
+                <button onclick="setPenColor('#3b82f6', this)" class="pen-color-btn w-5 h-5 rounded-full bg-blue-500 border-2 border-transparent focus:outline-none"></button>
+                <button onclick="setPenColor('#10b981', this)" class="pen-color-btn w-5 h-5 rounded-full bg-emerald-500 border-2 border-transparent focus:outline-none"></button>
+                <button onclick="setPenColor('#eab308', this)" class="pen-color-btn w-5 h-5 rounded-full bg-yellow-500 border-2 border-transparent focus:outline-none"></button>
+                <button id="dynamicDarkLightColor" onclick="setPenColor('#ffffff', this)" class="pen-color-btn w-5 h-5 rounded-full bg-white border-2 border-transparent focus:outline-none"></button>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span id="txtPenWidth" class="text-[9px] font-bold text-slate-300 min-w-[24px]">6px</span>
+                <input type="range" id="penWidthSlider" min="2" max="80" value="6" class="w-16 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500" oninput="updatePenWidth(this.value)">
+            </div>
+            <div class="flex gap-1 items-center border-l border-slate-800 pl-2">
+                <button onclick="undoDraw()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 w-7 h-7 rounded-lg flex items-center justify-center text-xs active:scale-95" title="1つ戻す">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+                <button onclick="clearDraw()" class="bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/20 w-7 h-7 rounded-lg flex items-center justify-center text-xs active:scale-95" title="手書き全消去">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bird's Eye Minimap -->
+        <div id="minimapContainer" class="absolute top-16 right-16 bg-slate-900/95 border border-slate-800 rounded-2xl p-2 shadow-2xl z-[60000] backdrop-blur-md transition-all">
+            <div class="flex items-center justify-between mb-1.5 px-1">
+                <span class="text-[10px] text-slate-400 font-bold"><i class="fa-solid fa-compass mr-1 text-blue-400"></i>マップ</span>
+                <button onclick="toggleMinimap()" class="text-slate-500 hover:text-slate-300 p-1 text-[10px]">
+                    <i id="minimapToggleIcon" class="fa-solid fa-chevron-up"></i>
+                </button>
+            </div>
+            <canvas id="minimapCanvas" width="130" height="85" class="bg-slate-950 rounded-lg cursor-pointer border border-slate-800/80 block"></canvas>
+        </div>
+    </main>
+
+    <!-- スライド順序マネージャーモーダル -->
+    <div id="slideManagerModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[75000] p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative flex flex-col max-h-[80vh]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-list-ol text-sky-400"></i> スライド送り順序の並び替え
+                </h3>
+                <button onclick="closeSlideManager()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">三本線をタッチして上下に動かすと、ふわっと浮いて位置を入れ替えられます。</p>
+            <div id="slideListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 select-none relative"></div>
+            <div class="mt-4 pt-3 border-t border-slate-800">
+                <button onclick="closeSlideManager()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl text-xs transition-all">
+                    完了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[70000] p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button id="btnCloseHelp" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-circle-question text-blue-500"></i> 操作ガイド
+            </h3>
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed max-h-[65vh] overflow-y-auto pr-1">
+                <div class="border-b border-slate-800 pb-2.5">
+                    <p class="font-bold text-indigo-400 mb-1"><i class="fa-solid fa-object-group mr-1"></i> 「選択」モード & 投げ縄囲み</p>
+                    <p>「選択」モード中、画面を指やペンでぐるっと囲むと軌跡の内側にあるカードが一括選択されます。一括サイズ揃え（幅統一・高さ統一）や一括削除が可能です。</p>
+                </div>
+                <div class="border-b border-slate-800 pb-2.5">
+                    <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-pen-fancy mr-1"></i> スタイラスペン自動認識＆スライド別手書き</p>
+                    <p>Apple Pencil等のペン先が画面に触れると自動でペンモードが起動します。手書きメモは各スライドごとに独立して自動記録されます。</p>
+                </div>
+                <div class="border-b border-slate-800 pb-2.5">
+                    <p class="font-bold text-sky-400 mb-1"><i class="fa-solid fa-eye-slash mr-1"></i> 目隠し（直接オープン）</p>
+                    <p>目隠しカーテンは、カードの選択状態や固定モードに関係なく、タップするだけで瞬時に開きます。</p>
+                </div>
+            </div>
+            <div class="mt-5">
+                <button id="btnConfirmHelp" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-xl text-xs transition-all">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeImages = [];
+        let maxZIndex = 10;
+        let selectedImageId = null;
+        let currentSlideIndex = -1;
+
+        let selectedForGroupIds = new Set();
+        let groupCounter = 1;
+
+        // Modes: 'edit', 'select', 'present', 'pointer', 'draw', 'delete'
+        let currentMode = 'edit';
+        let isSpotlightActive = false;
+        let isAxisLockEnabled = false;
+        let isSpacePressed = false;
+
+        let canvasZoom = 1;
+        let canvasPanX = 0;
+        let canvasPanY = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+
+        let initialPinchDist = 0;
+        let initialPinchZoom = 1;
+        let pinchCenterLocalX = 0;
+        let pinchCenterLocalY = 0;
+        let isMultiTouching = false;
+
+        let prevWidth = window.innerWidth;
+        let prevHeight = window.innerHeight;
+        let isHeaderHidden = false;
+        let isAllToolbarsHidden = false;
+        let isMinimapCollapsed = false;
+
+        // スライドごとの手書きレイヤー分離
+        let slideDrawingMap = {}; 
+        let isDrawing = false;
+        let currentPath = null;
+        let currentPenColor = '#ef4444';
+        let currentPenWidth = 6;
+        let currentEraserWidth = 24;
+        let activeDrawingTool = 'pen';
+
+        let shapeSnapTimer = null;
+        let lastPointerMoveTime = 0;
+
+        // レーザーポインター設定
+        let laserPoints = [];
+        let isLaserActive = false;
+        let currentLaserColor = '#f43f5e';
+        let currentLaserSize = 10;
+
+        let isEditingText = false;
+
+        // 投げ縄選択
+        let isLassoSelecting = false;
+        let lassoPoints = [];
+
+        // タイマー設定
+        let timerSeconds = 180;
+        let timerInterval = null;
+        let isTimerRunning = false;
+
+        const workspace = document.getElementById('workspace');
+        const canvasInner = document.getElementById('canvas-inner');
+        const dropzonePrompt = document.getElementById('dropzonePrompt');
+        const txtCanvasZoom = document.getElementById('txtCanvasZoom');
+        const appHeader = document.getElementById('appHeader');
+        const toggleHeaderIcon = document.getElementById('toggleHeaderIcon');
+        const toggleHeaderTxt = document.getElementById('toggleHeaderTxt');
+        const rightToolBar = document.getElementById('rightToolBar');
+        const reopenToolbarsTab = document.getElementById('reopenToolbarsTab');
+        const autoSaveIndicator = document.getElementById('autoSaveIndicator');
+
+        const drawCanvas = document.getElementById('drawCanvas');
+        const drawCtx = drawCanvas.getContext('2d');
+        const drawToolbar = document.getElementById('drawToolbar');
+        const pointerToolbar = document.getElementById('pointerToolbar');
+
+        const laserCanvas = document.getElementById('laserCanvas');
+        const laserCtx = laserCanvas.getContext('2d');
+
+        const spotlightCanvas = document.getElementById('spotlightCanvas');
+        const spotlightCtx = spotlightCanvas.getContext('2d');
+
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        const txtSlideIndicator = document.getElementById('txtSlideIndicator');
+        const slideManagerModal = document.getElementById('slideManagerModal');
+        const slideListContainer = document.getElementById('slideListContainer');
+        const groupActionBar = document.getElementById('groupActionBar');
+        const txtGroupSelectedCount = document.getElementById('txtGroupSelectedCount');
+        const selectionContextBar = document.getElementById('selectionContextBar');
+        const txtContextTargetName = document.getElementById('txtContextTargetName');
+        const timerPanel = document.getElementById('timerPanel');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const btnTimerStart = document.getElementById('btnTimerStart');
+        const pickerMinutes = document.getElementById('pickerMinutes');
+        const pickerSeconds = document.getElementById('pickerSeconds');
+        const lassoOverlay = document.getElementById('lassoOverlay');
+        const lassoPolygon = document.getElementById('lassoPolygon');
+
+        window.onload = function() {
+            setupWindowSize();
+            preventBrowserPageZoom();
+            setupDragAndDrop();
+            setupClipboardPaste();
+            setupCanvasPanZoom();
+            setupLassoSelection();
+            setupZoomControls();
+            setupDrawingLayer();
+            setupLaserPointer();
+            setupShortcuts();
+            setupMinimap();
+            setupHelpModal();
+            setupTimerPickers();
+
+            changeBgColor('#000000');
+            setAppMode('edit');
+            loadAutoSavedData();
+            updateSlideIndicator();
+            requestAnimationFrame(renderLoop);
+        };
+
+        function preventBrowserPageZoom() {
+            document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+            document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+            document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 1) e.preventDefault();
+            }, { passive: false });
+
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', (e) => {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 350) {
+                    e.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, { passive: false });
+        }
+
+        function setupWindowSize() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            drawCanvas.width = w;
+            drawCanvas.height = h;
+            laserCanvas.width = w;
+            laserCanvas.height = h;
+            spotlightCanvas.width = w;
+            spotlightCanvas.height = h;
+
+            window.addEventListener('resize', () => {
+                const nw = window.innerWidth;
+                const nh = window.innerHeight;
+                drawCanvas.width = nw;
+                drawCanvas.height = nh;
+                laserCanvas.width = nw;
+                laserCanvas.height = nh;
+                spotlightCanvas.width = nw;
+                spotlightCanvas.height = nh;
+                
+                const scaleX = nw / prevWidth;
+                const scaleY = nh / prevHeight;
+                activeImages.forEach(img => {
+                    img.x *= scaleX;
+                    img.y *= scaleY;
+                    updateTransform(img);
+                });
+                prevWidth = nw;
+                prevHeight = nh;
+                updateCanvasTransform();
+                updateMinimap();
+                redrawInk();
+            });
+        }
+
+        function updateCanvasTransform() {
+            canvasInner.style.transform = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasZoom})`;
+            txtCanvasZoom.innerText = `${Math.round(canvasZoom * 100)}%`;
+            updateMinimap();
+            redrawInk();
+        }
+
+        function getActiveSpotlightTargets() {
+            const units = getSlideUnits();
+            if (units.length === 0) return [];
+
+            if (currentSlideIndex >= 0 && currentSlideIndex < units.length) {
+                const curUnit = units[currentSlideIndex];
+                return curUnit.type === 'group' ? curUnit.members : [curUnit.item];
+            }
+
+            if (selectedImageId) {
+                const cur = activeImages.find(img => img.id === selectedImageId);
+                if (cur && cur.groupId) {
+                    return activeImages.filter(img => img.groupId === cur.groupId);
+                } else if (cur) {
+                    return [cur];
+                }
+            }
+            return [];
+        }
+
+        function renderSpotlight() {
+            spotlightCtx.clearRect(0, 0, spotlightCanvas.width, spotlightCanvas.height);
+            if (!isSpotlightActive) return;
+
+            const targets = getActiveSpotlightTargets();
+
+            spotlightCtx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+            spotlightCtx.fillRect(0, 0, spotlightCanvas.width, spotlightCanvas.height);
+
+            targets.forEach(target => {
+                if (!target.element) return;
+                const rect = target.element.getBoundingClientRect();
+                const pad = 10;
+                const rx = rect.left - pad;
+                const ry = rect.top - pad;
+                const rw = rect.width + pad * 2;
+                const rh = rect.height + pad * 2;
+
+                spotlightCtx.save();
+                spotlightCtx.globalCompositeOperation = 'destination-out';
+                spotlightCtx.beginPath();
+                spotlightCtx.roundRect(rx, ry, rw, rh, 16);
+                spotlightCtx.fill();
+                spotlightCtx.restore();
+
+                spotlightCtx.save();
+                spotlightCtx.strokeStyle = target.groupId ? '#10b981' : '#38bdf8';
+                spotlightCtx.lineWidth = 3;
+                spotlightCtx.shadowColor = target.groupId ? '#10b981' : '#38bdf8';
+                spotlightCtx.shadowBlur = 15;
+                spotlightCtx.beginPath();
+                spotlightCtx.roundRect(rx, ry, rw, rh, 16);
+                spotlightCtx.stroke();
+                spotlightCtx.restore();
+            });
+        }
+
+        function toggleSpotlight() {
+            isSpotlightActive = !isSpotlightActive;
+            const btnHeader = document.getElementById('btnSpotlightHeader');
+
+            if (isSpotlightActive) {
+                btnHeader.classList.add('text-white', 'bg-amber-500/20', 'border-amber-400/40');
+                btnHeader.classList.remove('text-slate-400');
+            } else {
+                btnHeader.classList.remove('text-white', 'bg-amber-500/20', 'border-amber-400/40');
+                btnHeader.classList.add('text-slate-400');
+            }
+        }
+
+        function screenToWorld(clientX, clientY) {
+            const rect = workspace.getBoundingClientRect();
+            const x = (clientX - rect.left - canvasPanX) / canvasZoom;
+            const y = (clientY - rect.top - canvasPanY) / canvasZoom;
+            return { x, y };
+        }
+
+        // --- 投げ縄（フリーハンド囲み）選択機能 ---
+        function isPointInPolygon(pt, poly) {
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                const xi = poly[i].x, yi = poly[i].y;
+                const xj = poly[j].x, yj = poly[j].y;
+                const intersect = ((yi > pt.y) !== (yj > pt.y)) &&
+                    (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function setupLassoSelection() {
+            workspace.addEventListener('pointerdown', (e) => {
+                if (currentMode !== 'select' || isMultiTouching) return;
+                if (e.target !== workspace && e.target !== canvasInner && !e.target.closest('#dropzonePrompt')) return;
+
+                isLassoSelecting = true;
+                lassoPoints = [{ x: e.clientX, y: e.clientY }];
+                lassoPolygon.setAttribute('points', `${e.clientX},${e.clientY}`);
+                lassoPolygon.style.display = 'block';
+
+                function onPointerMove(ev) {
+                    if (!isLassoSelecting) return;
+                    lassoPoints.push({ x: ev.clientX, y: ev.clientY });
+                    const ptsStr = lassoPoints.map(p => `${p.x},${p.y}`).join(' ');
+                    lassoPolygon.setAttribute('points', ptsStr);
+                }
+
+                function onPointerUp() {
+                    if (!isLassoSelecting) return;
+                    isLassoSelecting = false;
+                    lassoPolygon.style.display = 'none';
+
+                    if (lassoPoints.length > 5) {
+                        // 投げ縄の軌跡内に中心点が含まれるカードをすべて選択
+                        activeImages.forEach(img => {
+                            const rect = img.element.getBoundingClientRect();
+                            const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                            if (isPointInPolygon(center, lassoPoints)) {
+                                if (!selectedForGroupIds.has(img.id)) {
+                                    toggleSelectionCheck(img.id);
+                                }
+                            }
+                        });
+                    }
+
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                }
+
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+            });
+        }
+
+        function setupCanvasPanZoom() {
+            let activeAxis = null;
+            let pointerDownPos = { x: 0, y: 0 };
+
+            workspace.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    isMultiTouching = true;
+                    isDrawing = false;
+                    isLaserActive = false;
+                    isPanning = false;
+
+                    initialPinchDist = getTouchDist(e.touches);
+                    initialPinchZoom = canvasZoom;
+
+                    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                    pinchCenterLocalX = (midX - canvasPanX) / canvasZoom;
+                    pinchCenterLocalY = (midY - canvasPanY) / canvasZoom;
+                }
+            }, { passive: false });
+
+            workspace.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && isMultiTouching) {
+                    e.preventDefault();
+                    const currentDist = getTouchDist(e.touches);
+                    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                    if (initialPinchDist > 0) {
+                        const factor = currentDist / initialPinchDist;
+                        canvasZoom = Math.max(0.02, Math.min(20, initialPinchZoom * factor));
+                        canvasPanX = midX - pinchCenterLocalX * canvasZoom;
+                        canvasPanY = midY - pinchCenterLocalY * canvasZoom;
+                        updateCanvasTransform();
+                    }
+                }
+            }, { passive: false });
+
+            workspace.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) isMultiTouching = false;
+            });
+
+            workspace.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'pen') return;
+                if (isEditingText || isMultiTouching || isLassoSelecting) return;
+                
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+
+                const canPan = isSpacePressed || currentMode === 'present' || 
+                               (currentMode === 'edit' && (e.target === workspace || e.target === canvasInner || e.target.closest('#dropzonePrompt')));
+
+                if (canPan && currentMode !== 'draw' && currentMode !== 'pointer') {
+                    isPanning = true;
+                    panStartX = e.clientX - canvasPanX;
+                    panStartY = e.clientY - canvasPanY;
+                    activeAxis = null;
+                }
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (isPanning && !isMultiTouching) {
+                    let targetX = e.clientX - panStartX;
+                    let targetY = e.clientY - panStartY;
+
+                    if (e.shiftKey || isAxisLockEnabled) {
+                        if (!activeAxis) {
+                            const dx = targetX - canvasPanX;
+                            const dy = targetY - canvasPanY;
+                            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+                                activeAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+                            }
+                        }
+                        if (activeAxis === 'x') canvasPanX = targetX;
+                        else if (activeAxis === 'y') canvasPanY = targetY;
+                    } else {
+                        activeAxis = null;
+                        canvasPanX = targetX;
+                        canvasPanY = targetY;
+                    }
+                    updateCanvasTransform();
+                }
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                // 背景部分のタップ判定（ドラッグなしで背景をクリックした場合）
+                const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+                if (moveDist < 6) {
+                    if (e.target === workspace || e.target === canvasInner || e.target.closest('#dropzonePrompt')) {
+                        // 背景タップで即座に非選択＆下部ツールバー消去
+                        deselectAll();
+                    }
+                }
+
+                isPanning = false;
+                activeAxis = null;
+            });
+
+            workspace.addEventListener('wheel', (e) => {
+                if (isEditingText) return;
+                if (e.target.closest('#drawToolbar') || e.target.closest('#timerPanel') || e.target.closest('#selectionContextBar') || e.target.closest('#pointerToolbar') || e.target.closest('#rightToolBar')) return;
+                e.preventDefault();
+
+                const zoomFactor = 1.12;
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+
+                const localX = (mouseX - canvasPanX) / canvasZoom;
+                const localY = (mouseY - canvasPanY) / canvasZoom;
+
+                if (e.deltaY < 0) {
+                    canvasZoom = Math.min(canvasZoom * zoomFactor, 20);
+                } else {
+                    canvasZoom = Math.max(canvasZoom / zoomFactor, 0.02);
+                }
+
+                canvasPanX = mouseX - localX * canvasZoom;
+                canvasPanY = mouseY - localY * canvasZoom;
+                updateCanvasTransform();
+            }, { passive: false });
+        }
+
+        // --- 背景タップによる完全非選択化 ---
+        function deselectAll() {
+            selectedImageId = null;
+            activeImages.forEach(img => {
+                img.element.classList.remove('selected-image-container');
+            });
+            hideSelectionContextBar();
+            updateMinimap();
+        }
+
+        function getTouchDist(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function setupZoomControls() {
+            const step = 1.25;
+            document.getElementById('btnZoomIn').addEventListener('click', () => zoomAtCenter(canvasZoom * step));
+            document.getElementById('btnZoomOut').addEventListener('click', () => zoomAtCenter(Math.max(canvasZoom / step, 0.02)));
+            document.getElementById('btnZoomReset').addEventListener('click', () => {
+                canvasZoom = 1;
+                canvasPanX = 0;
+                canvasPanY = 0;
+                updateCanvasTransform();
+            });
+        }
+
+        function zoomAtCenter(targetZoom) {
+            const wW = workspace.clientWidth;
+            const wH = workspace.clientHeight;
+            const localX = ((wW / 2) - canvasPanX) / canvasZoom;
+            const localY = ((wH / 2) - canvasPanY) / canvasZoom;
+
+            canvasZoom = targetZoom;
+            canvasPanX = (wW / 2) - localX * canvasZoom;
+            canvasPanY = (wH / 2) - localY * canvasZoom;
+            updateCanvasTransform();
+        }
+
+        function zoomToFitAll() {
+            if (activeImages.length === 0) return;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            activeImages.forEach(img => {
+                const w = img.element.offsetWidth || 260;
+                const h = img.element.offsetHeight || 200;
+                minX = Math.min(minX, img.x);
+                minY = Math.min(minY, img.y);
+                maxX = Math.max(maxX, img.x + w);
+                maxY = Math.max(maxY, img.y + h);
+            });
+
+            const margin = 60;
+            const boundsW = (maxX - minX) + margin * 2;
+            const boundsH = (maxY - minY) + margin * 2;
+            const wW = workspace.clientWidth;
+            const wH = workspace.clientHeight;
+
+            canvasZoom = Math.min(wW / boundsW, wH / boundsH, 1.5);
+            canvasZoom = Math.max(canvasZoom, 0.05);
+
+            canvasPanX = wW / 2 - ((minX + maxX) / 2) * canvasZoom;
+            canvasPanY = wH / 2 - ((minY + maxY) / 2) * canvasZoom;
+
+            canvasInner.style.transition = 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)';
+            updateCanvasTransform();
+            setTimeout(() => { canvasInner.style.transition = 'none'; }, 450);
+        }
+
+        function setAppMode(mode) {
+            currentMode = mode;
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('text-white', 'bg-blue-600/30', 'border', 'border-blue-500/40');
+                btn.classList.add('text-slate-400');
+            });
+            const activeHeaderBtn = document.getElementById(`mode${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+            if (activeHeaderBtn) {
+                activeHeaderBtn.classList.remove('text-slate-400');
+                activeHeaderBtn.classList.add('text-white', 'bg-blue-600/30', 'border', 'border-blue-500/40');
+            }
+
+            workspace.classList.remove('mode-edit', 'mode-select', 'mode-present', 'mode-pointer', 'mode-draw', 'mode-delete');
+            workspace.classList.add(`mode-${mode}`);
+
+            if (mode === 'draw') {
+                drawCanvas.style.pointerEvents = 'auto';
+                drawToolbar.classList.remove('hidden');
+            } else {
+                drawCanvas.style.pointerEvents = 'none';
+                drawToolbar.classList.add('hidden');
+            }
+
+            if (mode === 'pointer') {
+                pointerToolbar.classList.remove('hidden');
+            } else {
+                pointerToolbar.classList.add('hidden');
+            }
+
+            laserCanvas.classList.add('pointer-events-none');
+            workspace.style.cursor = (mode === 'draw' || mode === 'pointer') ? 'crosshair' : (mode === 'select' ? 'crosshair' : 'grab');
+
+            activeImages.forEach(img => {
+                const el = img.element;
+                const topBar = el.querySelector('.item-top-bar');
+
+                if (mode === 'draw' || mode === 'pointer') {
+                    el.classList.add('pointer-events-none');
+                    el.classList.remove('selected-image-container');
+                    if (topBar) topBar.classList.add('hidden');
+                } else if (mode === 'present') {
+                    // プレゼンモード：誤操作防止のためカード本体は選択・ドラッグを禁止、目隠しのみ有効
+                    el.classList.remove('selected-image-container');
+                    if (topBar) topBar.classList.add('hidden');
+                } else if (mode === 'select') {
+                    el.classList.remove('pointer-events-none');
+                    if (topBar) topBar.classList.remove('hidden');
+                } else {
+                    el.classList.remove('pointer-events-none');
+                    if (topBar) topBar.classList.remove('hidden');
+                }
+            });
+
+            if (mode !== 'edit') {
+                hideSelectionContextBar();
+            }
+        }
+
+        // --- 全ツールバー非表示トグル（完全没入） ---
+        function toggleAllToolbars() {
+            isAllToolbarsHidden = !isAllToolbarsHidden;
+            if (isAllToolbarsHidden) {
+                appHeader.style.transform = 'translateY(-100%)';
+                rightToolBar.style.transform = 'translateY(-50%) translateX(120%)';
+                selectionContextBar.classList.add('hidden');
+                groupActionBar.classList.add('hidden');
+                drawToolbar.classList.add('hidden');
+                pointerToolbar.classList.add('hidden');
+                reopenToolbarsTab.classList.remove('hidden');
+            } else {
+                appHeader.style.transform = 'translateY(0)';
+                rightToolBar.style.transform = 'translateY(-50%) translateX(0)';
+                reopenToolbarsTab.classList.add('hidden');
+                if (currentMode === 'draw') drawToolbar.classList.remove('hidden');
+                if (currentMode === 'pointer') pointerToolbar.classList.remove('hidden');
+            }
+        }
+
+        function setLaserColor(color, btn) {
+            currentLaserColor = color;
+            document.querySelectorAll('.pointer-color-btn').forEach(b => b.classList.replace('border-white', 'border-transparent'));
+            if (btn) btn.classList.replace('border-transparent', 'border-white');
+        }
+
+        function setLaserSize(size, btn) {
+            currentLaserSize = size;
+            document.querySelectorAll('.pointer-size-btn').forEach(b => {
+                b.classList.remove('text-sky-400', 'border-b', 'border-sky-400');
+                b.classList.add('text-slate-400');
+            });
+            if (btn) {
+                btn.classList.add('text-sky-400', 'border-b', 'border-sky-400');
+                btn.classList.remove('text-slate-400');
+            }
+        }
+
+        function setupLaserPointer() {
+            function addLaserPoint(clientX, clientY) {
+                laserPoints.push({
+                    x: clientX,
+                    y: clientY,
+                    alpha: 1.0,
+                    size: currentLaserSize,
+                    color: currentLaserColor
+                });
+            }
+
+            workspace.addEventListener('pointerdown', (e) => {
+                if (currentMode !== 'pointer' || isMultiTouching) return;
+                if (e.target.closest('#appHeader') || e.target.closest('#rightToolBar') || 
+                    e.target.closest('#drawToolbar') || e.target.closest('#minimapContainer') || 
+                    e.target.closest('#helpModal') || e.target.closest('#slideManagerModal') || 
+                    e.target.closest('#groupActionBar') || e.target.closest('#timerPanel') || 
+                    e.target.closest('#selectionContextBar') || e.target.closest('#pointerToolbar') ||
+                    e.target.closest('#reopenToolbarsTab')) {
+                    return;
+                }
+                isLaserActive = true;
+                addLaserPoint(e.clientX, e.clientY);
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (currentMode === 'pointer' && isLaserActive && !isMultiTouching) {
+                    addLaserPoint(e.clientX, e.clientY);
+                }
+            });
+
+            window.addEventListener('pointerup', () => { isLaserActive = false; });
+            window.addEventListener('pointercancel', () => { isLaserActive = false; });
+        }
+
+        function renderLoop() {
+            laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+
+            if (laserPoints.length > 0) {
+                for (let i = 0; i < laserPoints.length; i++) {
+                    const p = laserPoints[i];
+                    p.alpha -= 0.024;
+                    p.size = Math.max(1, p.size * 0.98);
+
+                    if (p.alpha > 0) {
+                        laserCtx.beginPath();
+                        laserCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        laserCtx.fillStyle = p.color;
+                        laserCtx.globalAlpha = p.alpha;
+                        laserCtx.shadowColor = p.color;
+                        laserCtx.shadowBlur = 10;
+                        laserCtx.fill();
+                        laserCtx.globalAlpha = 1.0;
+                    }
+                }
+                laserPoints = laserPoints.filter(p => p.alpha > 0);
+            }
+
+            renderSpotlight();
+            requestAnimationFrame(renderLoop);
+        }
+
+        function setDrawingTool(tool) {
+            activeDrawingTool = tool;
+            const btnPen = document.getElementById('btnToolPen');
+            const btnEraser = document.getElementById('btnToolEraser');
+            const colorGroup = document.getElementById('penColorGroup');
+            const widthSlider = document.getElementById('penWidthSlider');
+            const txtWidth = document.getElementById('txtPenWidth');
+
+            if (tool === 'pen') {
+                btnPen.className = 'w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs transition-all';
+                btnEraser.className = 'w-7 h-7 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-xs transition-all';
+                colorGroup.style.opacity = '1';
+                colorGroup.style.pointerEvents = 'auto';
+                widthSlider.value = currentPenWidth;
+                txtWidth.innerText = `${currentPenWidth}px`;
+            } else {
+                btnEraser.className = 'w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center text-xs transition-all';
+                btnPen.className = 'w-7 h-7 rounded-lg text-slate-400 hover:text-white flex items-center justify-center text-xs transition-all';
+                colorGroup.style.opacity = '0.35';
+                colorGroup.style.pointerEvents = 'none';
+                widthSlider.value = currentEraserWidth;
+                txtWidth.innerText = `${currentEraserWidth}px`;
+            }
+        }
+
+        function getCurrentSlideTargetId() {
+            const units = getSlideUnits();
+            if (currentSlideIndex >= 0 && currentSlideIndex < units.length) {
+                return units[currentSlideIndex].id;
+            }
+            if (selectedImageId) {
+                const cur = activeImages.find(img => img.id === selectedImageId);
+                if (cur) return cur.groupId || cur.id;
+            }
+            return 'global';
+        }
+
+        function detectAndSnapShape(points) {
+            if (points.length < 8) return null;
+            const start = points[0];
+            const end = points[points.length - 1];
+            const distStartEnd = Math.hypot(end.x - start.x, end.y - start.y);
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let totalLen = 0;
+            for (let i = 0; i < points.length; i++) {
+                minX = Math.min(minX, points[i].x);
+                minY = Math.min(minY, points[i].y);
+                maxX = Math.max(maxX, points[i].x);
+                maxY = Math.max(maxY, points[i].y);
+                if (i > 0) totalLen += Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y);
+            }
+            const w = maxX - minX;
+            const h = maxY - minY;
+            const diag = Math.hypot(w, h);
+
+            if (distStartEnd < diag * 0.25) {
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const rEst = (w + h) / 4;
+                let rVariance = 0;
+                points.forEach(p => {
+                    const d = Math.hypot(p.x - centerX, p.y - centerY);
+                    rVariance += Math.abs(d - rEst);
+                });
+                const avgVariance = rVariance / points.length;
+
+                if (avgVariance < rEst * 0.22 && Math.abs(w - h) < Math.max(w, h) * 0.35) {
+                    const snapPoints = [];
+                    const steps = 36;
+                    for (let i = 0; i <= steps; i++) {
+                        const theta = (i / steps) * Math.PI * 2;
+                        snapPoints.push({ x: centerX + (w/2) * Math.cos(theta), y: centerY + (h/2) * Math.sin(theta) });
+                    }
+                    return snapPoints;
+                }
+
+                return [
+                    { x: minX, y: minY },
+                    { x: maxX, y: minY },
+                    { x: maxX, y: maxY },
+                    { x: minX, y: maxY },
+                    { x: minX, y: minY }
+                ];
+            }
+
+            if (distStartEnd / totalLen > 0.88) {
+                return [start, end];
+            }
+
+            if (points.length > 15) {
+                const headLen = Math.min(30, distStartEnd * 0.3);
+                const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                const arrowP1 = {
+                    x: end.x - headLen * Math.cos(angle - Math.PI / 6),
+                    y: end.y - headLen * Math.sin(angle - Math.PI / 6)
+                };
+                const arrowP2 = {
+                    x: end.x - headLen * Math.cos(angle + Math.PI / 6),
+                    y: end.y - headLen * Math.sin(angle + Math.PI / 6)
+                };
+                return [start, end, arrowP1, end, arrowP2];
+            }
+
+            return null;
+        }
+
+        function setupDrawingLayer() {
+            // スタイラスペン（Apple Pencil）検知で自動ペンモード切替
+            window.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'pen' && currentMode !== 'draw') {
+                    setAppMode('draw');
+                    setDrawingTool('pen');
+                }
+            });
+
+            drawCanvas.addEventListener('pointerdown', (e) => {
+                if (currentMode !== 'draw' || isMultiTouching) return;
+                e.preventDefault();
+                e.stopPropagation();
+                drawCanvas.setPointerCapture(e.pointerId);
+
+                isDrawing = true;
+                const pt = screenToWorld(e.clientX, e.clientY);
+                const isEraser = (activeDrawingTool === 'eraser');
+                
+                const slideKey = getCurrentSlideTargetId();
+                if (!slideDrawingMap[slideKey]) slideDrawingMap[slideKey] = [];
+
+                currentPath = {
+                    points: [pt],
+                    color: isEraser ? 'rgba(0,0,0,1)' : currentPenColor,
+                    width: isEraser ? currentEraserWidth : currentPenWidth,
+                    isEraser: isEraser
+                };
+                slideDrawingMap[slideKey].push(currentPath);
+                redrawInk();
+
+                lastPointerMoveTime = Date.now();
+                clearTimeout(shapeSnapTimer);
+            });
+
+            drawCanvas.addEventListener('pointermove', (e) => {
+                if (!isDrawing || currentMode !== 'draw' || isMultiTouching) return;
+                e.preventDefault();
+                const pt = screenToWorld(e.clientX, e.clientY);
+                if (currentPath) {
+                    currentPath.points.push(pt);
+                    redrawInk();
+                }
+
+                lastPointerMoveTime = Date.now();
+                clearTimeout(shapeSnapTimer);
+
+                if (!currentPath.isEraser) {
+                    shapeSnapTimer = setTimeout(() => {
+                        if (isDrawing && currentPath && currentPath.points.length > 8) {
+                            const snapped = detectAndSnapShape(currentPath.points);
+                            if (snapped) {
+                                currentPath.points = snapped;
+                                redrawInk();
+                            }
+                        }
+                    }, 380);
+                }
+            });
+
+            function endDrawing(e) {
+                clearTimeout(shapeSnapTimer);
+                if (isDrawing && e.pointerId !== undefined) {
+                    try { drawCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
+                }
+                isDrawing = false;
+                currentPath = null;
+                scheduleAutoSave();
+            }
+
+            drawCanvas.addEventListener('pointerup', endDrawing);
+            drawCanvas.addEventListener('pointercancel', endDrawing);
+        }
+
+        function redrawInk() {
+            drawCtx.save();
+            drawCtx.setTransform(1, 0, 0, 1, 0, 0);
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            drawCtx.setTransform(canvasZoom, 0, 0, canvasZoom, canvasPanX, canvasPanY);
+
+            const slideKey = getCurrentSlideTargetId();
+            const pathsToDraw = (slideDrawingMap[slideKey] || []).concat(slideKey !== 'global' ? (slideDrawingMap['global'] || []) : []);
+
+            pathsToDraw.forEach(path => {
+                if (path.points.length < 1) return;
+                drawCtx.beginPath();
+                if (path.isEraser) {
+                    drawCtx.globalCompositeOperation = 'destination-out';
+                    drawCtx.strokeStyle = 'rgba(0,0,0,1)';
+                } else {
+                    drawCtx.globalCompositeOperation = 'source-over';
+                    drawCtx.strokeStyle = path.color;
+                }
+                drawCtx.lineWidth = path.width;
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+                drawCtx.moveTo(path.points[0].x, path.points[0].y);
+                for (let i = 1; i < path.points.length; i++) {
+                    drawCtx.lineTo(path.points[i].x, path.points[i].y);
+                }
+                drawCtx.stroke();
+            });
+            drawCtx.restore();
+        }
+
+        function setPenColor(color, btn) {
+            currentPenColor = color;
+            document.querySelectorAll('.pen-color-btn').forEach(b => {
+                b.classList.remove('border-white', 'border-slate-800');
+                b.classList.add('border-transparent');
+            });
+            if (btn) {
+                btn.classList.remove('border-transparent');
+                btn.classList.add(color === '#ffffff' ? 'border-slate-800' : 'border-white');
+            }
+        }
+
+        function updatePenWidth(val) {
+            const width = parseInt(val, 10);
+            if (activeDrawingTool === 'pen') {
+                currentPenWidth = width;
+            } else {
+                currentEraserWidth = width;
+            }
+            document.getElementById('txtPenWidth').innerText = `${width}px`;
+        }
+
+        function undoDraw() {
+            const slideKey = getCurrentSlideTargetId();
+            if (slideDrawingMap[slideKey] && slideDrawingMap[slideKey].length > 0) {
+                slideDrawingMap[slideKey].pop();
+                redrawInk();
+                scheduleAutoSave();
+            }
+        }
+
+        function clearDraw() {
+            const slideKey = getCurrentSlideTargetId();
+            if (!slideDrawingMap[slideKey] || slideDrawingMap[slideKey].length === 0) return;
+            if (confirm("このスライドの手書きメモをすべて消去しますか？")) {
+                slideDrawingMap[slideKey] = [];
+                redrawInk();
+                scheduleAutoSave();
+            }
+        }
+
+        function getSlideUnits() {
+            const units = [];
+            const processedGroupIds = new Set();
+
+            activeImages.forEach(img => {
+                if (img.groupId) {
+                    if (!processedGroupIds.has(img.groupId)) {
+                        processedGroupIds.add(img.groupId);
+                        const groupMembers = activeImages.filter(x => x.groupId === img.groupId);
+                        units.push({
+                            type: 'group',
+                            id: img.groupId,
+                            groupId: img.groupId,
+                            members: groupMembers
+                        });
+                    }
+                } else {
+                    units.push({
+                        type: 'single',
+                        id: img.id,
+                        item: img
+                    });
+                }
+            });
+            return units;
+        }
+
+        function updateSlideIndicator() {
+            const units = getSlideUnits();
+            if (units.length === 0) {
+                txtSlideIndicator.innerText = "0/0";
+                currentSlideIndex = -1;
+                redrawInk();
+                return;
+            }
+            if (currentSlideIndex >= units.length) currentSlideIndex = units.length - 1;
+            const currentNum = currentSlideIndex >= 0 ? currentSlideIndex + 1 : "-";
+            txtSlideIndicator.innerText = `${currentNum}/${units.length}`;
+            updateSlideBadges();
+            redrawInk();
+        }
+
+        function updateSlideBadges() {
+            const units = getSlideUnits();
+            units.forEach((unit, unitIdx) => {
+                const num = unitIdx + 1;
+                if (unit.type === 'group') {
+                    unit.members.forEach(member => {
+                        const badge = member.element.querySelector('.slide-order-badge');
+                        if (badge) {
+                            badge.innerText = `${num}`;
+                            badge.style.backgroundColor = '#059669';
+                        }
+                    });
+                } else {
+                    const badge = unit.item.element.querySelector('.slide-order-badge');
+                    if (badge) {
+                        badge.innerText = `${num}`;
+                        badge.style.backgroundColor = '#0284c7';
+                    }
+                }
+            });
+        }
+
+        function nextSlide() {
+            const units = getSlideUnits();
+            if (units.length === 0) return;
+            currentSlideIndex = (currentSlideIndex + 1) % units.length;
+            goToSlide(currentSlideIndex);
+        }
+
+        function prevSlide() {
+            const units = getSlideUnits();
+            if (units.length === 0) return;
+            currentSlideIndex = (currentSlideIndex - 1 + units.length) % units.length;
+            goToSlide(currentSlideIndex);
+        }
+
+        function goToSlide(index) {
+            const units = getSlideUnits();
+            if (index < 0 || index >= units.length) return;
+            currentSlideIndex = index;
+            const targetUnit = units[index];
+
+            if (targetUnit.type === 'group') {
+                selectImage(targetUnit.members[0].id);
+                focusGroupOnScreen(targetUnit.groupId);
+            } else {
+                selectImage(targetUnit.item.id);
+                focusItemOnScreen(targetUnit.item);
+            }
+            updateSlideIndicator();
+        }
+
+        function focusItemOnScreen(imgObj) {
+            const el = imgObj.element;
+            const wW = workspace.clientWidth;
+            const wH = workspace.clientHeight;
+
+            const imgW = el.offsetWidth || 280;
+            const imgH = el.offsetHeight || 220;
+
+            const itemCenterX = imgObj.x + imgW / 2;
+            const itemCenterY = imgObj.y + imgH / 2;
+
+            const targetZoom = Math.min(Math.max((wH * 0.65) / imgH, 0.4), 2.5);
+            canvasZoom = targetZoom;
+
+            canvasPanX = wW / 2 - itemCenterX * canvasZoom;
+            canvasPanY = wH / 2 - itemCenterY * canvasZoom;
+
+            canvasInner.style.transition = 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)';
+            updateCanvasTransform();
+            setTimeout(() => { canvasInner.style.transition = 'none'; }, 450);
+        }
+
+        function focusGroupOnScreen(groupId) {
+            const groupMembers = activeImages.filter(img => img.groupId === groupId);
+            if (groupMembers.length === 0) return;
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            groupMembers.forEach(img => {
+                const w = img.element.offsetWidth || 260;
+                const h = img.element.offsetHeight || 200;
+                minX = Math.min(minX, img.x);
+                minY = Math.min(minY, img.y);
+                maxX = Math.max(maxX, img.x + w);
+                maxY = Math.max(maxY, img.y + h);
+            });
+
+            const margin = 60;
+            const boundsW = (maxX - minX) + margin * 2;
+            const boundsH = (maxY - minY) + margin * 2;
+            const wW = workspace.clientWidth;
+            const wH = workspace.clientHeight;
+
+            canvasZoom = Math.min(wW / boundsW, wH / boundsH, 1.8);
+            canvasZoom = Math.max(canvasZoom, 0.2);
+
+            canvasPanX = wW / 2 - ((minX + maxX) / 2) * canvasZoom;
+            canvasPanY = wH / 2 - ((minY + maxY) / 2) * canvasZoom;
+
+            canvasInner.style.transition = 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)';
+            updateCanvasTransform();
+            setTimeout(() => { canvasInner.style.transition = 'none'; }, 450);
+        }
+
+        function toggleSelectionCheck(id, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const obj = activeImages.find(item => item.id === id);
+            if (!obj) return;
+
+            if (selectedForGroupIds.has(id)) {
+                selectedForGroupIds.delete(id);
+                obj.element.classList.remove('is-group-selected');
+                const btn = obj.element.querySelector('.btn-select-check');
+                if (btn) btn.className = 'btn-select-check bg-slate-800 text-slate-400 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700 shadow-md border border-slate-700 text-sm';
+            } else {
+                selectedForGroupIds.add(id);
+                obj.element.classList.add('is-group-selected');
+                const btn = obj.element.querySelector('.btn-select-check');
+                if (btn) btn.className = 'btn-select-check bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-md border border-indigo-500 text-sm';
+            }
+
+            if (selectedForGroupIds.size >= 2) {
+                txtGroupSelectedCount.innerText = `${selectedForGroupIds.size}件選択中`;
+                groupActionBar.classList.remove('hidden');
+                hideSelectionContextBar();
+            } else {
+                groupActionBar.classList.add('hidden');
+            }
+        }
+
+        function toggleSelectionCheckForSelected() {
+            if (selectedImageId) toggleSelectionCheck(selectedImageId);
+        }
+
+        function clearSelectionCheck() {
+            selectedForGroupIds.forEach(id => {
+                const obj = activeImages.find(item => item.id === id);
+                if (obj) {
+                    obj.element.classList.remove('is-group-selected');
+                    const btn = obj.element.querySelector('.btn-select-check');
+                    if (btn) btn.className = 'btn-select-check bg-slate-800 text-slate-400 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700 shadow-md border border-slate-700 text-sm';
+                }
+            });
+            selectedForGroupIds.clear();
+            groupActionBar.classList.add('hidden');
+        }
+
+        function groupSelectedCards() {
+            if (selectedForGroupIds.size < 2) return;
+            const newGroupId = 'grp_' + Date.now() + '_' + (groupCounter++);
+
+            selectedForGroupIds.forEach(id => {
+                const obj = activeImages.find(item => item.id === id);
+                if (obj) {
+                    obj.groupId = newGroupId;
+                    updateGroupAppearance(obj);
+                }
+            });
+
+            clearSelectionCheck();
+            updateSlideIndicator();
+            updateMinimap();
+            scheduleAutoSave();
+        }
+
+        function unbindGroup(id, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const obj = activeImages.find(item => item.id === id);
+            if (!obj || !obj.groupId) return;
+
+            const targetGroupId = obj.groupId;
+            activeImages.forEach(item => {
+                if (item.groupId === targetGroupId) {
+                    item.groupId = null;
+                    updateGroupAppearance(item);
+                }
+            });
+            updateSlideIndicator();
+            updateMinimap();
+            scheduleAutoSave();
+        }
+
+        function updateGroupAppearance(imgObj) {
+            const el = imgObj.element;
+            let tagBadge = el.querySelector('.group-tag-badge');
+            let unbindBtn = el.querySelector('.btn-unbind-group');
+
+            if (imgObj.groupId) {
+                el.classList.add('is-grouped');
+                if (!tagBadge) {
+                    tagBadge = document.createElement('div');
+                    tagBadge.className = 'group-tag-badge';
+                    tagBadge.innerHTML = '<i class="fa-solid fa-object-group mr-1"></i>グループ';
+                    el.appendChild(tagBadge);
+                }
+                if (!unbindBtn) {
+                    unbindBtn = document.createElement('button');
+                    unbindBtn.className = 'btn-unbind-group bg-emerald-700 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-emerald-600 shadow-md border border-emerald-500 text-xs';
+                    unbindBtn.title = 'グループ解除';
+                    unbindBtn.onclick = (ev) => unbindGroup(imgObj.id, ev);
+                    unbindBtn.innerHTML = '<i class="fa-solid fa-object-ungroup"></i>';
+                    const topBar = el.querySelector('.item-top-bar');
+                    if (topBar) topBar.insertBefore(unbindBtn, topBar.firstChild);
+                }
+            } else {
+                el.classList.remove('is-grouped');
+                if (tagBadge) tagBadge.remove();
+                if (unbindBtn) unbindBtn.remove();
+            }
+        }
+
+        // --- 選択中の複数カードのサイズを揃える（横基準 / 縦基準） ---
+        function alignSelectedSizes(dimension) {
+            if (selectedForGroupIds.size < 2) return;
+            const selectedList = activeImages.filter(item => selectedForGroupIds.has(item.id));
+            if (selectedList.length === 0) return;
+
+            // 先頭の選択カードを基準サイズとする
+            const ref = selectedList[0];
+            const refRect = ref.element.getBoundingClientRect();
+            const refWidth = refRect.width / canvasZoom;
+            const refHeight = refRect.height / canvasZoom;
+
+            selectedList.forEach(item => {
+                if (item === ref) return;
+                const baseW = item.element.offsetWidth || 260;
+                const baseH = item.element.offsetHeight || 200;
+
+                if (dimension === 'width') {
+                    item.scale = Math.max(0.08, refWidth / baseW);
+                } else if (dimension === 'height') {
+                    item.scale = Math.max(0.08, refHeight / baseH);
+                }
+                updateTransform(item);
+            });
+
+            updateMinimap();
+            scheduleAutoSave();
+        }
+
+        // --- 一括削除 ---
+        function deleteSelectedGroup() {
+            if (selectedForGroupIds.size === 0) return;
+            if (!confirm(`選択された ${selectedForGroupIds.size} 件のカードを削除しますか？`)) return;
+
+            const idsToDelete = Array.from(selectedForGroupIds);
+            idsToDelete.forEach(id => {
+                deleteImage(id);
+            });
+            clearSelectionCheck();
+        }
+
+        // --- レイヤー順序操作（前面へ / 背面へ） ---
+        function bringSelectedForward() {
+            if (!selectedImageId) return;
+            const obj = activeImages.find(item => item.id === selectedImageId);
+            if (!obj) return;
+            obj.zIndex = ++maxZIndex;
+            obj.element.style.zIndex = obj.zIndex;
+            scheduleAutoSave();
+        }
+
+        function sendSelectedBackward() {
+            if (!selectedImageId) return;
+            const obj = activeImages.find(item => item.id === selectedImageId);
+            if (!obj) return;
+            // 最小ZIndexより下に下げる
+            let minZ = Infinity;
+            activeImages.forEach(item => minZ = Math.min(minZ, item.zIndex));
+            obj.zIndex = Math.max(1, minZ - 1);
+            obj.element.style.zIndex = obj.zIndex;
+            scheduleAutoSave();
+        }
+
+        function toggleMask(id, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            const obj = activeImages.find(item => item.id === id);
+            if (!obj) return;
+
+            obj.isMasked = !obj.isMasked;
+            const el = obj.element;
+            let curtain = el.querySelector('.card-curtain-overlay');
+
+            if (obj.isMasked) {
+                if (!curtain) {
+                    curtain = document.createElement('div');
+                    curtain.className = 'card-curtain-overlay';
+                    curtain.innerHTML = `
+                        <div class="w-11 h-11 rounded-full bg-slate-800/90 flex items-center justify-center mb-1 text-sky-400 shadow-lg">
+                            <i class="fa-solid fa-eye-slash text-lg"></i>
+                        </div>
+                        <span class="text-[11px] font-bold tracking-wider text-slate-300">タップして開く</span>
+                    `;
+                    curtain.addEventListener('pointerdown', (ev) => {
+                        ev.stopPropagation();
+                        ev.preventDefault();
+                        toggleMask(id, ev);
+                    });
+                    el.appendChild(curtain);
+                }
+            } else {
+                if (curtain) curtain.remove();
+            }
+            scheduleAutoSave();
+        }
+
+        function cloneItem(id, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const origin = activeImages.find(item => item.id === id);
+            if (!origin) return;
+
+            if (origin.isText) {
+                addTextObject(origin.textContent);
+                const clone = activeImages[activeImages.length - 1];
+                clone.x = origin.x + 30;
+                clone.y = origin.y + 30;
+                clone.scale = origin.scale;
+                clone.rotation = origin.rotation;
+                clone.fontSize = origin.fontSize;
+                clone.markerColor = origin.markerColor;
+                clone.isTransparent = origin.isTransparent;
+                if (clone.isTransparent) toggleBgTransparency(clone.id);
+                updateTransform(clone);
+                selectImage(clone.id);
+            } else {
+                const imgEl = origin.element.querySelector('img');
+                const src = imgEl ? imgEl.src : '';
+                createImageElement(src, `${origin.name}_コピー`, 1);
+                const clone = activeImages[activeImages.length - 1];
+                if (clone) {
+                    clone.x = origin.x + 30;
+                    clone.y = origin.y + 30;
+                    clone.scale = origin.scale;
+                    clone.rotation = origin.rotation;
+                    clone.aspectRatio = origin.aspectRatio;
+                    clone.isTransparent = origin.isTransparent;
+                    if (clone.isTransparent) toggleBgTransparency(clone.id);
+                    updateTransform(clone);
+                    selectImage(clone.id);
+                }
+            }
+            scheduleAutoSave();
+        }
+
+        function showSelectionContextBar(imgObj) {
+            if (currentMode === 'present') return; // プレゼンモード時は非表示
+            txtContextTargetName.innerText = imgObj.isText ? (imgObj.textContent || 'テキスト') : imgObj.name;
+            selectionContextBar.classList.remove('hidden');
+        }
+
+        function hideSelectionContextBar() {
+            selectionContextBar.classList.add('hidden');
+        }
+
+        function toggleMaskForSelected() {
+            if (selectedImageId) toggleMask(selectedImageId);
+        }
+
+        function cloneSelected() {
+            if (selectedImageId) cloneItem(selectedImageId);
+        }
+
+        function toggleTransparencyForSelected() {
+            if (selectedImageId) toggleBgTransparency(selectedImageId);
+        }
+
+        function deleteSelected() {
+            if (selectedImageId) deleteImage(selectedImageId);
+            hideSelectionContextBar();
+        }
+
+        // --- 秒単位対応ドラムピッカータイマー ---
+        function setupTimerPickers() {
+            pickerMinutes.innerHTML = '';
+            for (let m = 0; m <= 60; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m.toString().padStart(2, '0');
+                if (m === 3) opt.selected = true;
+                pickerMinutes.appendChild(opt);
+            }
+
+            pickerSeconds.innerHTML = '';
+            for (let s = 0; s < 60; s++) {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.innerText = s.toString().padStart(2, '0');
+                if (s === 0) opt.selected = true;
+                pickerSeconds.appendChild(opt);
+            }
+        }
+
+        function onPickerChange() {
+            pauseTimer();
+            const mins = parseInt(pickerMinutes.value, 10) || 0;
+            const secs = parseInt(pickerSeconds.value, 10) || 0;
+            timerSeconds = mins * 60 + secs;
+            updateTimerUI();
+        }
+
+        function toggleTimerPanel() {
+            const isHidden = timerPanel.classList.toggle('hidden');
+            const btn = document.getElementById('btnToggleTimer');
+            btn.classList.toggle('text-white', !isHidden);
+            btn.classList.toggle('bg-amber-500/20', !isHidden);
+        }
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateTimerUI() {
+            timerDisplay.innerText = formatTime(timerSeconds);
+            if (timerSeconds === 0) {
+                timerDisplay.classList.add('text-rose-500', 'animate-pulse');
+            } else {
+                timerDisplay.classList.remove('text-rose-500', 'animate-pulse');
+            }
+        }
+
+        function startTimer() {
+            if (isTimerRunning || timerSeconds <= 0) return;
+            isTimerRunning = true;
+            btnTimerStart.classList.replace('bg-emerald-600', 'bg-slate-700');
+            btnTimerStart.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-600');
+
+            timerInterval = setInterval(() => {
+                if (timerSeconds > 0) {
+                    timerSeconds--;
+                    updateTimerUI();
+                    const m = Math.floor(timerSeconds / 60);
+                    const s = timerSeconds % 60;
+                    if (pickerMinutes.value != m) pickerMinutes.value = m;
+                    if (pickerSeconds.value != s) pickerSeconds.value = s;
+                } else {
+                    pauseTimer();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isTimerRunning = false;
+            clearInterval(timerInterval);
+            btnTimerStart.classList.replace('bg-slate-700', 'bg-emerald-600');
+            btnTimerStart.classList.replace('hover:bg-slate-600', 'hover:bg-emerald-500');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            onPickerChange();
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function getUnitThumbnailHTML(unit) {
+            if (unit.type === 'single') {
+                if (unit.item.isText) {
+                    const previewText = escapeHtml(unit.item.textContent.slice(0, 18));
+                    return `
+                        <div class="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 p-1 flex items-center justify-center shrink-0 overflow-hidden text-[9px] text-amber-300 font-bold leading-tight text-center break-all">
+                            ${previewText || 'テキスト'}
+                        </div>
+                    `;
+                } else {
+                    const imgEl = unit.item.element.querySelector('img');
+                    const src = imgEl ? imgEl.src : '';
+                    return `
+                        <img src="${src}" class="w-12 h-12 object-cover rounded-lg border border-slate-700 shrink-0 bg-slate-950" alt="thumbnail">
+                    `;
+                }
+            } else {
+                let innerPreviews = '';
+                const displayMembers = unit.members.slice(0, 3);
+                displayMembers.forEach((m, i) => {
+                    if (m.isText) {
+                        innerPreviews += `<div class="absolute w-7 h-7 rounded bg-slate-800 border border-emerald-500/80 flex items-center justify-center text-[7px] text-amber-300 font-bold overflow-hidden shadow" style="top:${i*5}px; left:${i*5}px; z-index:${10-i}">T</div>`;
+                    } else {
+                        const imgEl = m.element.querySelector('img');
+                        const src = imgEl ? imgEl.src : '';
+                        innerPreviews += `<img src="${src}" class="absolute w-7 h-7 object-cover rounded border border-emerald-500/80 shadow" style="top:${i*5}px; left:${i*5}px; z-index:${10-i}" alt="thumb">`;
+                    }
+                });
+                return `
+                    <div class="w-12 h-12 relative rounded-lg border border-emerald-600/70 bg-slate-950 shrink-0 overflow-hidden">
+                        ${innerPreviews}
+                    </div>
+                `;
+            }
+        }
+
+        function openSlideManager() {
+            renderSlideManagerList();
+            slideManagerModal.classList.remove('hidden');
+        }
+
+        function closeSlideManager() {
+            slideManagerModal.classList.add('hidden');
+        }
+
+        function renderSlideManagerList() {
+            slideListContainer.innerHTML = '';
+            const units = getSlideUnits();
+
+            if (units.length === 0) {
+                slideListContainer.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">アイテムが配置されていません</p>';
+                return;
+            }
+
+            units.forEach((unit, idx) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `sortable-item flex items-center justify-between p-2.5 rounded-xl border ${idx === currentSlideIndex ? 'bg-blue-950/40 border-blue-500/50' : 'bg-slate-800/90 border-slate-700/80'} transition-all gap-2`;
+                itemDiv.dataset.unitId = unit.id;
+                itemDiv.dataset.unitType = unit.type;
+
+                const thumbHTML = getUnitThumbnailHTML(unit);
+                let titleText = '';
+                let badgeGroupHTML = '';
+
+                if (unit.type === 'single') {
+                    titleText = unit.item.isText ? (unit.item.textContent || "テキスト") : unit.item.name;
+                } else {
+                    titleText = `グループ (${unit.members.length}件)`;
+                    badgeGroupHTML = `<span class="bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold ml-1.5 shrink-0"><i class="fa-solid fa-object-group mr-0.5"></i>G</span>`;
+                }
+
+                itemDiv.innerHTML = `
+                    <div class="flex items-center gap-2.5 overflow-hidden pointer-events-none flex-1 min-w-0">
+                        <span class="w-6 h-6 rounded-full ${unit.type === 'group' ? 'bg-emerald-600' : 'bg-blue-600'} text-white font-bold text-xs flex items-center justify-center shrink-0">${idx + 1}</span>
+                        ${thumbHTML}
+                        <div class="truncate text-xs font-semibold text-slate-200">${escapeHtml(titleText)}</div>
+                        ${badgeGroupHTML}
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="goToSlide(${idx}); closeSlideManager();" class="p-2 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-lg text-xs" title="このスライドへジャンプ">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <div class="drag-handle touch-none cursor-grab active:cursor-grabbing p-2 text-slate-400 hover:text-white flex items-center justify-center">
+                            <i class="fa-solid fa-bars text-sm"></i>
+                        </div>
+                    </div>
+                `;
+
+                attachFloatDragEvent(itemDiv);
+                slideListContainer.appendChild(itemDiv);
+            });
+        }
+
+        function attachFloatDragEvent(rowEl) {
+            const handle = rowEl.querySelector('.drag-handle');
+            let isDragging = false;
+            let floatingClone = null;
+            let placeholder = null;
+            let offsetY = 0;
+
+            handle.addEventListener('pointerdown', (e) => {
+                isDragging = true;
+                handle.setPointerCapture(e.pointerId);
+
+                const rect = rowEl.getBoundingClientRect();
+                offsetY = e.clientY - rect.top;
+
+                placeholder = document.createElement('div');
+                placeholder.className = 'drag-placeholder rounded-xl border-2 border-dashed border-sky-400';
+                placeholder.style.height = `${rect.height}px`;
+
+                floatingClone = rowEl.cloneNode(true);
+                floatingClone.classList.add('drag-floating-clone');
+                floatingClone.style.width = `${rect.width}px`;
+                floatingClone.style.height = `${rect.height}px`;
+                floatingClone.style.left = `${rect.left}px`;
+                floatingClone.style.top = `${rect.top}px`;
+                document.body.appendChild(floatingClone);
+
+                rowEl.parentNode.insertBefore(placeholder, rowEl);
+                rowEl.style.display = 'none';
+
+                function onPointerMove(ev) {
+                    if (!isDragging || !floatingClone) return;
+                    ev.preventDefault();
+
+                    const currentY = ev.clientY - offsetY;
+                    floatingClone.style.top = `${currentY}px`;
+
+                    const items = Array.from(slideListContainer.children).filter(el => el !== placeholder && el !== rowEl);
+                    for (let item of items) {
+                        const itemRect = item.getBoundingClientRect();
+                        const itemMiddleY = itemRect.top + itemRect.height / 2;
+
+                        if (ev.clientY < itemMiddleY) {
+                            slideListContainer.insertBefore(placeholder, item);
+                            break;
+                        } else if (item === items[items.length - 1] && ev.clientY > itemMiddleY) {
+                            slideListContainer.appendChild(placeholder);
+                        }
+                    }
+                }
+
+                function onPointerUp(ev) {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    handle.releasePointerCapture(ev.pointerId);
+
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+
+                    const placeRect = placeholder.getBoundingClientRect();
+                    floatingClone.style.transition = 'top 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.18s ease, opacity 0.18s ease';
+                    floatingClone.style.top = `${placeRect.top}px`;
+                    floatingClone.style.transform = 'scale(1)';
+
+                    setTimeout(() => {
+                        if (floatingClone) floatingClone.remove();
+                        placeholder.parentNode.insertBefore(rowEl, placeholder);
+                        placeholder.remove();
+                        rowEl.style.display = 'flex';
+
+                        const newOrderedUnitIds = Array.from(slideListContainer.children).map(el => el.dataset.unitId);
+                        const currentUnits = getSlideUnits();
+                        const reorderedImages = [];
+
+                        newOrderedUnitIds.forEach(uId => {
+                            const foundUnit = currentUnits.find(u => u.id === uId);
+                            if (foundUnit) {
+                                if (foundUnit.type === 'group') {
+                                    reorderedImages.push(...foundUnit.members);
+                                } else {
+                                    reorderedImages.push(foundUnit.item);
+                                }
+                            }
+                        });
+
+                        activeImages = reorderedImages;
+
+                        updateSlideIndicator();
+                        renderSlideManagerList();
+                        updateMinimap();
+                        scheduleAutoSave();
+                    }, 180);
+                }
+
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+            });
+        }
+
+        function setupMinimap() {
+            minimapCanvas.addEventListener('click', (e) => {
+                if (activeImages.length === 0) return;
+                const rect = minimapCanvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const bbox = getBoardBoundingBox();
+                const worldX = bbox.minX + (clickX / minimapCanvas.width) * bbox.width;
+                const worldY = bbox.minY + (clickY / minimapCanvas.height) * bbox.height;
+
+                const wW = workspace.clientWidth;
+                const wH = workspace.clientHeight;
+                canvasPanX = wW / 2 - worldX * canvasZoom;
+                canvasPanY = wH / 2 - worldY * canvasZoom;
+
+                canvasInner.style.transition = 'transform 0.35s ease-out';
+                updateCanvasTransform();
+                setTimeout(() => { canvasInner.style.transition = 'none'; }, 350);
+            });
+        }
+
+        function toggleMinimap() {
+            isMinimapCollapsed = !isMinimapCollapsed;
+            minimapCanvas.style.display = isMinimapCollapsed ? 'none' : 'block';
+            document.getElementById('minimapToggleIcon').className = isMinimapCollapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+        }
+
+        function getBoardBoundingBox() {
+            if (activeImages.length === 0) {
+                return { minX: -500, minY: -500, maxX: 1500, maxY: 1500, width: 2000, height: 2000 };
+            }
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            activeImages.forEach(img => {
+                minX = Math.min(minX, img.x);
+                minY = Math.min(minY, img.y);
+                maxX = Math.max(maxX, img.x + (img.element.offsetWidth || 260));
+                maxY = Math.max(maxY, img.y + (img.element.offsetHeight || 200));
+            });
+            const pad = 240;
+            return {
+                minX: minX - pad,
+                minY: minY - pad,
+                maxX: maxX + pad,
+                maxY: maxY + pad,
+                width: (maxX - minX) + pad * 2,
+                height: (maxY - minY) + pad * 2
+            };
+        }
+
+        function updateMinimap() {
+            minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+            const bbox = getBoardBoundingBox();
+
+            function toMapX(worldX) { return ((worldX - bbox.minX) / bbox.width) * minimapCanvas.width; }
+            function toMapY(worldY) { return ((worldY - bbox.minY) / bbox.height) * minimapCanvas.height; }
+
+            activeImages.forEach((img) => {
+                const mx = toMapX(img.x);
+                const my = toMapY(img.y);
+                const mw = Math.max(3, toMapX(img.x + (img.element.offsetWidth || 260)) - mx);
+                const mh = Math.max(3, toMapY(img.y + (img.element.offsetHeight || 200)) - my);
+
+                minimapCtx.fillStyle = img.id === selectedImageId ? '#38bdf8' : (img.groupId ? '#10b981' : (img.isText ? '#fbbf24' : '#64748b'));
+                minimapCtx.fillRect(mx, my, mw, mh);
+            });
+
+            const wW = workspace.clientWidth;
+            const wH = workspace.clientHeight;
+            const camWorldX1 = (0 - canvasPanX) / canvasZoom;
+            const camWorldY1 = (0 - canvasPanY) / canvasZoom;
+            const camWorldX2 = (wW - canvasPanX) / canvasZoom;
+            const camWorldY2 = (wH - canvasPanY) / canvasZoom;
+
+            const vx = toMapX(camWorldX1);
+            const vy = toMapY(camWorldY1);
+            const vw = toMapX(camWorldX2) - vx;
+            const vh = toMapY(camWorldY2) - vy;
+
+            minimapCtx.strokeStyle = '#ef4444';
+            minimapCtx.lineWidth = 1.5;
+            minimapCtx.strokeRect(vx, vy, vw, vh);
+        }
+
+        function setupClipboardPaste() {
+            window.addEventListener('paste', (e) => {
+                if (isEditingText) return;
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            createImageElement(event.target.result, "貼り付け画像", 0);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+        }
+
+        function setupDragAndDrop() {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+                workspace.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+
+            workspace.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+
+            document.getElementById('imageInput').addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
+
+        function handleFiles(files) {
+            const imgFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (imgFiles.length === 0) return;
+            dropzonePrompt.classList.add('opacity-0', 'pointer-events-none');
+
+            imgFiles.forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.onload = (e) => createImageElement(e.target.result, file.name, idx);
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('imageInput').value = '';
+        }
+
+        function getResizeHandlesHTML() {
+            return `
+                <div class="resize-handle nw" data-handle="nw"></div>
+                <div class="resize-handle ne" data-handle="ne"></div>
+                <div class="resize-handle sw" data-handle="sw"></div>
+                <div class="resize-handle se" data-handle="se"></div>
+            `;
+        }
+
+        function createImageElement(src, name, index) {
+            const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            const imgObj = {
+                id: id,
+                name: name,
+                isText: false,
+                addedAt: Date.now() + index,
+                x: 0,
+                y: 0,
+                scale: 1,
+                rotation: 0,
+                aspectRatio: 1,
+                isTransparent: false,
+                zIndex: ++maxZIndex,
+                groupId: null,
+                isMasked: false
+            };
+
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = "image-wrapper absolute p-2 bg-slate-800 rounded-xl shadow-md border border-slate-700/80 cursor-grab active:cursor-grabbing select-none transition-shadow group";
+            wrapper.style.zIndex = imgObj.zIndex;
+            wrapper.style.transformOrigin = "center center";
+
+            canvasInner.appendChild(wrapper);
+
+            const img = new Image();
+            img.onload = function() {
+                const wW = workspace.clientWidth;
+                const wH = workspace.clientHeight;
+                imgObj.aspectRatio = img.width / img.height;
+
+                const displayWidth = Math.min(Math.max(wW * 0.25, 200), 320);
+                const displayHeight = displayWidth / imgObj.aspectRatio;
+
+                const offset = index * 25;
+                const viewCenterX = (wW / 2 - canvasPanX) / canvasZoom;
+                const viewCenterY = (wH / 2 - canvasPanY) / canvasZoom;
+
+                imgObj.x = viewCenterX - (displayWidth / 2) + offset;
+                imgObj.y = viewCenterY - (displayHeight / 2) + offset;
+
+                wrapper.innerHTML = `
+                    <div class="slide-order-badge"></div>
+
+                    <!-- 整理モード時のみ展開されるチェックボタン -->
+                    <div class="item-top-bar absolute -top-9 right-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                        <button class="btn-select-check bg-slate-800 text-slate-400 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700 shadow-md border border-slate-700 text-sm" onclick="toggleSelectionCheck('${id}', event)" title="グループ選択">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="relative overflow-hidden rounded-lg bg-slate-900 pointer-events-none">
+                        <img src="${src}" alt="${name}" class="w-full h-auto block select-none pointer-events-none" style="width: ${displayWidth}px; height: ${displayHeight}px;">
+                    </div>
+                    
+                    <span class="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur-md text-[9px] text-slate-300 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        ${Math.round(imgObj.scale * 100)}%
+                    </span>
+                    
+                    ${getResizeHandlesHTML()}
+                `;
+
+                imgObj.element = wrapper;
+                activeImages.push(imgObj);
+
+                updateTransform(imgObj);
+                attachInteractions(imgObj);
+                attachResizeInteractions(imgObj);
+                selectImage(id);
+                updateSlideIndicator();
+                updateMinimap();
+                scheduleAutoSave();
+            };
+            img.src = src;
+        }
+
+        function addTextObject(initialContent = "テキストを入力") {
+            setAppMode('edit');
+
+            dropzonePrompt.classList.add('opacity-0', 'pointer-events-none');
+            const id = 'txt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            const index = activeImages.length;
+
+            const textObj = {
+                id: id,
+                name: initialContent,
+                textContent: initialContent,
+                isText: true,
+                addedAt: Date.now() + index,
+                x: 0,
+                y: 0,
+                scale: 1,
+                rotation: 0,
+                aspectRatio: 1.5,
+                isTransparent: false,
+                zIndex: ++maxZIndex,
+                fontSize: 'text-xl',
+                markerColor: 'none',
+                groupId: null,
+                isMasked: false
+            };
+
+            const wW = workspace.clientWidth;
+            const wH = workspace.clientHeight;
+            const offset = index * 20;
+            textObj.x = ((wW / 2 - canvasPanX) / canvasZoom) - 130 + offset;
+            textObj.y = ((wH / 2 - canvasPanY) / canvasZoom) - 45 + offset;
+
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = "image-wrapper absolute p-4 bg-slate-800/95 rounded-2xl shadow-xl border border-slate-700/80 cursor-grab active:cursor-grabbing select-none transition-shadow group min-w-[220px] max-w-[420px]";
+            wrapper.style.zIndex = textObj.zIndex;
+            wrapper.style.transformOrigin = "center center";
+
+            wrapper.innerHTML = `
+                <div class="slide-order-badge"></div>
+
+                <div class="item-top-bar absolute -top-9 right-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                    <button class="btn-select-check bg-slate-800 text-slate-400 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-700 shadow-md border border-slate-700 text-sm" onclick="toggleSelectionCheck('${id}', event)" title="グループ選択">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
+
+                <div class="relative min-h-[44px] flex items-center justify-center pointer-events-none">
+                    <div class="text-editor-area outline-none break-words ${textObj.fontSize} font-semibold leading-relaxed w-full text-center whitespace-pre-wrap select-none" contenteditable="false">${initialContent}</div>
+                </div>
+
+                ${getResizeHandlesHTML()}
+            `;
+
+            canvasInner.appendChild(wrapper);
+            textObj.element = wrapper;
+            activeImages.push(textObj);
+
+            updateTransform(textObj);
+            attachInteractions(textObj);
+            attachResizeInteractions(textObj);
+            setupTextEditing(textObj);
+            selectImage(id);
+            updateSlideIndicator();
+            updateMinimap();
+
+            setTimeout(() => {
+                startTextEditing(textObj);
+            }, 60);
+
+            scheduleAutoSave();
+        }
+
+        function attachResizeInteractions(imgObj) {
+            const el = imgObj.element;
+            const handles = el.querySelectorAll('.resize-handle');
+
+            handles.forEach(handle => {
+                handle.addEventListener('pointerdown', (e) => {
+                    if (currentMode !== 'edit' || isMultiTouching) return;
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    handle.setPointerCapture(e.pointerId);
+
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startScale = imgObj.scale;
+
+                    const rect = el.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+
+                    const initialDistance = Math.hypot(startX - centerX, startY - centerY);
+
+                    function onPointerMove(ev) {
+                        const currentDistance = Math.hypot(ev.clientX - centerX, ev.clientY - centerY);
+                        if (initialDistance > 0) {
+                            const scaleRatio = currentDistance / initialDistance;
+                            imgObj.scale = Math.max(0.08, Math.min(15, startScale * scaleRatio));
+                            updateTransform(imgObj);
+                        }
+                    }
+
+                    function onPointerUp(ev) {
+                        handle.releasePointerCapture(ev.pointerId);
+                        window.removeEventListener('pointermove', onPointerMove);
+                        window.removeEventListener('pointerup', onPointerUp);
+                        updateMinimap();
+                        scheduleAutoSave();
+                    }
+
+                    window.addEventListener('pointermove', onPointerMove);
+                    window.addEventListener('pointerup', onPointerUp);
+                });
+            });
+        }
+
+        function startTextEditing(idOrObj, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const textObj = typeof idOrObj === 'string' ? activeImages.find(item => item.id === idOrObj) : idOrObj;
+            if (!textObj || !textObj.isText) return;
+
+            const el = textObj.element;
+            const textContainer = el.querySelector('.relative');
+            const textEditor = el.querySelector('.text-editor-area');
+            if (!textEditor) return;
+
+            textContainer.classList.remove('pointer-events-none');
+            textEditor.contentEditable = "true";
+            textEditor.classList.remove('select-none');
+            textEditor.classList.add('select-text', 'cursor-text');
+            textEditor.focus();
+
+            const range = document.createRange();
+            range.selectNodeContents(textEditor);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            isEditingText = true;
+            el.classList.add('ring-2', 'ring-amber-500/80');
+        }
+
+        function setupTextEditing(textObj) {
+            const el = textObj.element;
+            const textContainer = el.querySelector('.relative');
+            const textEditor = el.querySelector('.text-editor-area');
+            if (!textEditor) return;
+
+            el.addEventListener('dblclick', (e) => {
+                if (currentMode === 'draw' || currentMode === 'pointer') return;
+                e.stopPropagation();
+                startTextEditing(textObj);
+            });
+
+            textEditor.addEventListener('blur', () => {
+                textContainer.classList.add('pointer-events-none');
+                textEditor.contentEditable = "false";
+                textEditor.classList.remove('select-text', 'cursor-text');
+                textEditor.classList.add('select-none');
+
+                textObj.textContent = textEditor.innerText.trim() || "テキストを入力";
+                textObj.name = textObj.textContent;
+                textEditor.innerText = textObj.textContent;
+
+                isEditingText = false;
+                el.classList.remove('ring-2', 'ring-amber-500/80');
+                updateMinimap();
+                scheduleAutoSave();
+            });
+
+            textEditor.addEventListener('keydown', (e) => e.stopPropagation());
+            textEditor.addEventListener('pointerdown', (e) => e.stopPropagation());
+        }
+
+        function attachInteractions(imgObj) {
+            const el = imgObj.element;
+            let isDragging = false;
+            let startX = 0, startY = 0;
+            let groupInitialPositions = [];
+            let dragAxis = null;
+            let lastTapTime = 0;
+
+            el.addEventListener('pointerdown', (e) => {
+                // 目隠しカーテンがタップされた場合は全モードで開く処理を実行
+                if (e.target.closest('.card-curtain-overlay')) {
+                    e.stopPropagation();
+                    toggleMask(imgObj.id, e);
+                    return;
+                }
+
+                if (currentMode === 'draw' || currentMode === 'pointer' || isEditingText || isMultiTouching) return;
+                if (currentMode === 'present') return; // プレゼンモード時はカード移動・選択を防止
+
+                if (currentMode === 'delete') {
+                    deleteImage(imgObj.id, e);
+                    return;
+                }
+
+                if (e.target.closest('button') || e.target.classList.contains('resize-handle')) return;
+
+                if (currentMode === 'select') {
+                    e.stopPropagation();
+                    toggleSelectionCheck(imgObj.id, e);
+                    return;
+                }
+
+                // スライド番号との同期
+                const units = getSlideUnits();
+                const matchedUnitIdx = units.findIndex(u => u.id === (imgObj.groupId || imgObj.id));
+                if (matchedUnitIdx !== -1) {
+                    currentSlideIndex = matchedUnitIdx;
+                    updateSlideIndicator();
+                }
+
+                const now = Date.now();
+                if (now - lastTapTime < 350) {
+                    if (imgObj.isText) {
+                        e.stopPropagation();
+                        startTextEditing(imgObj);
+                        lastTapTime = 0;
+                        return;
+                    } else {
+                        e.stopPropagation();
+                        if (imgObj.groupId) focusGroupOnScreen(imgObj.groupId);
+                        else focusItemOnScreen(imgObj);
+                        lastTapTime = 0;
+                        return;
+                    }
+                }
+                lastTapTime = now;
+
+                e.stopPropagation();
+                isDragging = true;
+                selectImage(imgObj.id);
+                showSelectionContextBar(imgObj);
+
+                startX = e.clientX;
+                startY = e.clientY;
+                dragAxis = null;
+
+                if (imgObj.groupId) {
+                    groupInitialPositions = activeImages
+                        .filter(item => item.groupId === imgObj.groupId)
+                        .map(item => ({ obj: item, initX: item.x, initY: item.y }));
+                } else {
+                    groupInitialPositions = [{ obj: imgObj, initX: imgObj.x, initY: imgObj.y }];
+                }
+
+                function onPointerMove(ev) {
+                    if (!isDragging || isMultiTouching) return;
+                    let dx = (ev.clientX - startX) / canvasZoom;
+                    let dy = (ev.clientY - startY) / canvasZoom;
+
+                    if (ev.shiftKey || isAxisLockEnabled) {
+                        if (!dragAxis) {
+                            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                                dragAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+                            }
+                        }
+                        if (dragAxis === 'x') dy = 0;
+                        else if (dragAxis === 'y') dx = 0;
+                    } else {
+                        dragAxis = null;
+                    }
+
+                    groupInitialPositions.forEach(item => {
+                        item.obj.x = item.initX + dx;
+                        item.obj.y = item.initY + dy;
+                        updateTransform(item.obj);
+                    });
+                }
+
+                function onPointerUp() {
+                    isDragging = false;
+                    dragAxis = null;
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                    updateMinimap();
+                    scheduleAutoSave();
+                }
+
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+            });
+
+            el.addEventListener('wheel', (e) => {
+                if (currentMode === 'present' || currentMode === 'draw' || currentMode === 'pointer' || isEditingText) return;
+                e.preventDefault();
+                e.stopPropagation();
+                selectImage(imgObj.id);
+
+                if (e.shiftKey) {
+                    imgObj.rotation += e.deltaY > 0 ? 5 : -5;
+                } else {
+                    const step = 0.05;
+                    imgObj.scale = e.deltaY < 0 ? imgObj.scale + step : Math.max(imgObj.scale - step, 0.05);
+                }
+                updateTransform(imgObj);
+                scheduleAutoSave();
+            }, { passive: false });
+        }
+
+        function updateTransform(imgObj) {
+            if (!imgObj.element) return;
+            imgObj.element.style.transform = `translate(${imgObj.x}px, ${imgObj.y}px) scale(${imgObj.scale}) rotate(${imgObj.rotation}deg)`;
+            const badge = imgObj.element.querySelector('span.absolute.bottom-2');
+            if (badge) badge.innerText = `${Math.round(imgObj.scale * 100)}%`;
+        }
+
+        function selectImage(id) {
+            if (currentMode === 'present' || currentMode === 'delete' || isEditingText) return;
+            selectedImageId = id;
+            activeImages.forEach(img => {
+                if (img.id === id) {
+                    img.zIndex = ++maxZIndex;
+                    img.element.style.zIndex = img.zIndex;
+                    img.element.classList.add('selected-image-container');
+                    showSelectionContextBar(img);
+                } else {
+                    img.element.classList.remove('selected-image-container');
+                }
+            });
+            updateMinimap();
+        }
+
+        function deleteImage(id, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const idx = activeImages.findIndex(img => img.id === id);
+            if (idx !== -1) {
+                const imgObj = activeImages[idx];
+                selectedForGroupIds.delete(id);
+                imgObj.element.remove();
+                activeImages.splice(idx, 1);
+                if (activeImages.length === 0) {
+                    dropzonePrompt.classList.remove('opacity-0', 'pointer-events-none');
+                }
+                if (selectedImageId === id) {
+                    selectedImageId = null;
+                    hideSelectionContextBar();
+                }
+                updateSlideIndicator();
+                updateMinimap();
+                scheduleAutoSave();
+            }
+        }
+
+        function toggleBgTransparency(id, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const imgObj = activeImages.find(img => img.id === id);
+            if (!imgObj) return;
+
+            imgObj.isTransparent = !imgObj.isTransparent;
+            const el = imgObj.element;
+            const innerDiv = el.querySelector('div.relative');
+
+            if (imgObj.isTransparent) {
+                el.classList.remove('p-2', 'p-4', 'bg-slate-800', 'bg-slate-800/95', 'shadow-md', 'shadow-xl', 'border', 'border-slate-700/80');
+                el.classList.add('p-0', 'bg-transparent', 'border-0', 'shadow-none');
+                if (innerDiv && !imgObj.isText) innerDiv.classList.replace('bg-slate-900', 'bg-transparent');
+            } else {
+                el.classList.remove('p-0', 'bg-transparent', 'border-0', 'shadow-none');
+                if (imgObj.isText) {
+                    el.classList.add('p-4', 'bg-slate-800/95', 'shadow-xl', 'border', 'border-slate-700/80');
+                } else {
+                    el.classList.add('p-2', 'bg-slate-800', 'shadow-md', 'border', 'border-slate-700/80');
+                    if (innerDiv) innerDiv.classList.replace('bg-transparent', 'bg-slate-900');
+                }
+            }
+            scheduleAutoSave();
+        }
+
+        function toggleAllBgTransparency() {
+            if (activeImages.length === 0) return;
+            const target = activeImages.some(img => !img.isTransparent);
+            activeImages.forEach(img => {
+                img.isTransparent = !target;
+                toggleBgTransparency(img.id);
+            });
+            scheduleAutoSave();
+        }
+
+        // --- 整列処理（現在の調整サイズを完全維持したまま格子状に整列） ---
+        document.getElementById('btnGrid').addEventListener('click', () => {
+            const allUnits = getSlideUnits();
+            const layoutUnits = allUnits.filter(u => u.type === 'group' || !u.item.isText);
+
+            if (layoutUnits.length === 0) return;
+
+            const sortVal = document.getElementById('sortSelect').value;
+            if (sortVal === 'name') {
+                layoutUnits.sort((a, b) => {
+                    const nameA = a.type === 'group' ? a.members[0].name : a.item.name;
+                    const nameB = b.type === 'group' ? b.members[0].name : b.item.name;
+                    return nameA.localeCompare(nameB, undefined, {numeric: true});
+                });
+            } else if (sortVal === 'random') {
+                layoutUnits.sort(() => Math.random() - 0.5);
+            }
+
+            const colsVal = document.getElementById('colsSelect').value;
+            const N = layoutUnits.length;
+            const cols = colsVal === 'auto' ? Math.max(1, Math.round(Math.sqrt(N * 1.6))) : parseInt(colsVal, 10);
+
+            const gap = 30;
+
+            // 各ユニットの「現在の実寸（scale込み）」バウンディングボックスを算出
+            const unitBoxes = layoutUnits.map(unit => {
+                if (unit.type === 'single') {
+                    const el = unit.item.element;
+                    const baseW = el.offsetWidth || 260;
+                    const baseH = el.offsetHeight || 200;
+                    const scaledW = baseW * unit.item.scale;
+                    const scaledH = baseH * unit.item.scale;
+                    return { w: scaledW, h: scaledH, minX: unit.item.x, minY: unit.item.y, rawW: baseW, rawH: baseH };
+                } else {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    unit.members.forEach(m => {
+                        const mw = (m.element.offsetWidth || 260) * m.scale;
+                        const mh = (m.element.offsetHeight || 200) * m.scale;
+                        minX = Math.min(minX, m.x);
+                        minY = Math.min(minY, m.y);
+                        maxX = Math.max(maxX, m.x + mw);
+                        maxY = Math.max(maxY, m.y + mh);
+                    });
+                    return { w: maxX - minX, h: maxY - minY, minX: minX, minY: minY };
+                }
+            });
+
+            // 列ごとの最大幅と行ごとの最大高さを算出
+            const colWidths = [];
+            const rowHeights = [];
+
+            unitBoxes.forEach((box, idx) => {
+                const c = idx % cols;
+                const r = Math.floor(idx / cols);
+                colWidths[c] = Math.max(colWidths[c] || 0, box.w);
+                rowHeights[r] = Math.max(rowHeights[r] || 0, box.h);
+            });
+
+            layoutUnits.forEach((unit, idx) => {
+                const c = idx % cols;
+                const r = Math.floor(idx / cols);
+
+                let targetX = gap;
+                for (let i = 0; i < c; i++) targetX += colWidths[i] + gap;
+
+                let targetY = gap;
+                for (let i = 0; i < r; i++) targetY += rowHeights[i] + gap;
+
+                if (unit.type === 'single') {
+                    const img = unit.item;
+                    img.element.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+                    // scale は一切変更せず、座標のみ更新！
+                    img.x = targetX;
+                    img.y = targetY;
+                    updateTransform(img);
+                    setTimeout(() => { if (img.element) img.element.style.transition = 'none'; }, 500);
+                } else {
+                    const box = unitBoxes[idx];
+                    const dx = targetX - box.minX;
+                    const dy = targetY - box.minY;
+
+                    unit.members.forEach(m => {
+                        m.element.style.transition = 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+                        m.x += dx;
+                        m.y += dy;
+                        updateTransform(m);
+                        setTimeout(() => { if (m.element) m.element.style.transition = 'none'; }, 500);
+                    });
+                }
+            });
+
+            zoomToFitAll();
+            scheduleAutoSave();
+        });
+
+        // --- LocalStorage 自動保存＆復元＆手動クリア ---
+        let autoSaveTimeout = null;
+        function scheduleAutoSave() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                try {
+                    const data = serializeBoardData();
+                    localStorage.setItem('canvasflow_autosave_state', JSON.stringify(data));
+                    showAutoSaveBadge();
+                } catch(e) {}
+            }, 700);
+        }
+
+        function showAutoSaveBadge() {
+            autoSaveIndicator.classList.remove('hidden');
+            setTimeout(() => {
+                autoSaveIndicator.classList.add('hidden');
+            }, 1800);
+        }
+
+        function clearStorageData() {
+            if (confirm("自動保存されているすべてのボードデータと手書きメモを初期化しますか？")) {
+                localStorage.removeItem('canvasflow_autosave_state');
+                location.reload();
+            }
+        }
+
+        function serializeBoardData() {
+            return {
+                version: "3.5",
+                bgColor: workspace.style.backgroundColor,
+                canvasPanX,
+                canvasPanY,
+                canvasZoom,
+                slideDrawingMap,
+                items: activeImages.map(img => ({
+                    id: img.id,
+                    name: img.name,
+                    isText: img.isText,
+                    textContent: img.textContent,
+                    x: img.x,
+                    y: img.y,
+                    scale: img.scale,
+                    rotation: img.rotation,
+                    aspectRatio: img.aspectRatio,
+                    isTransparent: img.isTransparent,
+                    fontSize: img.fontSize,
+                    markerColor: img.markerColor,
+                    groupId: img.groupId,
+                    isMasked: img.isMasked || false,
+                    src: img.isText ? null : img.element.querySelector('img').src
+                }))
+            };
+        }
+
+        function loadAutoSavedData() {
+            try {
+                const saved = localStorage.getItem('canvasflow_autosave_state');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    restoreBoardData(data);
+                }
+            } catch(e) {}
+        }
+
+        function exportBoardData() {
+            const data = serializeBoardData();
+            const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `canvasflow_board_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importBoardData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    restoreBoardData(data);
+                    scheduleAutoSave();
+                } catch (err) {
+                    alert("JSONファイルの読み込みに失敗しました。");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function restoreBoardData(data) {
+            activeImages.forEach(img => img.element.remove());
+            activeImages = [];
+
+            changeBgColor(data.bgColor || '#000000');
+            canvasPanX = data.canvasPanX || 0;
+            canvasPanY = data.canvasPanY || 0;
+            canvasZoom = data.canvasZoom || 1;
+            slideDrawingMap = data.slideDrawingMap || (data.drawingPaths ? { 'global': data.drawingPaths } : {});
+
+            if (data.items) {
+                data.items.forEach((item, idx) => {
+                    if (item.isText) {
+                        addTextObject(item.textContent || item.name);
+                        const cur = activeImages[activeImages.length - 1];
+                        cur.x = item.x;
+                        cur.y = item.y;
+                        cur.scale = item.scale;
+                        cur.rotation = item.rotation;
+                        cur.fontSize = item.fontSize || 'text-xl';
+                        cur.markerColor = item.markerColor || 'none';
+                        cur.groupId = item.groupId || null;
+                        cur.isMasked = item.isMasked || false;
+                        updateTransform(cur);
+                        updateGroupAppearance(cur);
+                        if (cur.isMasked) {
+                            cur.isMasked = false;
+                            toggleMask(cur.id);
+                        }
+                    } else {
+                        createImageElement(item.src, item.name, idx);
+                        const cur = activeImages[activeImages.length - 1];
+                        if (cur) {
+                            cur.x = item.x;
+                            cur.y = item.y;
+                            cur.scale = item.scale;
+                            cur.rotation = item.rotation;
+                            cur.groupId = item.groupId || null;
+                            cur.isMasked = item.isMasked || false;
+                            updateTransform(cur);
+                            updateGroupAppearance(cur);
+                            if (cur.isMasked) {
+                                cur.isMasked = false;
+                                toggleMask(cur.id);
+                            }
+                        }
+                    }
+                });
+            }
+            dropzonePrompt.classList.add('opacity-0', 'pointer-events-none');
+            updateCanvasTransform();
+            updateMinimap();
+            updateSlideIndicator();
+            redrawInk();
+        }
+
+        function setupShortcuts() {
+            window.addEventListener('keydown', (e) => {
+                if (isEditingText) return;
+
+                if (e.code === 'Space' && !isSpacePressed) {
+                    isSpacePressed = true;
+                    workspace.style.cursor = 'grab';
+                }
+
+                if (e.key === 'v' || e.key === 'V') setAppMode('edit');
+                if (e.key === 'g' || e.key === 'G') setAppMode('select');
+                if (e.key === 'l' || e.key === 'L') setAppMode('pointer');
+                if (e.key === 'p' || e.key === 'P') {
+                    setAppMode('draw');
+                    setDrawingTool('pen');
+                }
+                if ((e.key === 'e' || e.key === 'E') && currentMode === 'draw') {
+                    setDrawingTool('eraser');
+                }
+                if (e.key === 's' || e.key === 'S') toggleSpotlight();
+                if (e.key === 't' || e.key === 'T') toggleTimerPanel();
+                if (e.key === 'h' || e.key === 'H') toggleAllToolbars();
+                if (e.key === 'f' || e.key === 'F') {
+                    if (e.shiftKey) zoomToFitAll();
+                    else toggleFullScreen();
+                }
+
+                if (e.key === 'ArrowRight' || e.key === 'PageDown') nextSlide();
+                if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
+
+                if ((e.key === 'Delete' || e.key === 'Backspace') && selectedImageId) {
+                    deleteImage(selectedImageId);
+                    selectedImageId = null;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    isSpacePressed = false;
+                    workspace.style.cursor = (currentMode === 'draw' || currentMode === 'pointer') ? 'crosshair' : 'grab';
+                }
+            });
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+                document.getElementById('btnFsIcon').className = 'fa-solid fa-compress text-xs';
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                document.getElementById('btnFsIcon').className = 'fa-solid fa-expand text-xs';
+            }
+        }
+
+        function toggleHeader() {
+            isHeaderHidden = !isHeaderHidden;
+            appHeader.style.transform = isHeaderHidden ? 'translateY(-100%)' : 'translateY(0)';
+            toggleHeaderIcon.className = isHeaderHidden ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+            toggleHeaderTxt.innerText = isHeaderHidden ? '表示' : '隠す';
+        }
+
+        function toggleAxisLock() {
+            isAxisLockEnabled = !isAxisLockEnabled;
+            const btn = document.getElementById('btnAxisLock');
+            btn.classList.toggle('text-white', isAxisLockEnabled);
+            btn.classList.toggle('bg-emerald-600/30', isAxisLockEnabled);
+            btn.classList.toggle('border-emerald-500/40', isAxisLockEnabled);
+        }
+
+        function triggerColorPicker() {
+            document.getElementById('bgColorInput').click();
+        }
+
+        function changeBgColor(color) {
+            workspace.style.backgroundColor = color;
+            const r = parseInt(color.slice(1, 3), 16) || 0;
+            const g = parseInt(color.slice(3, 5), 16) || 0;
+            const b = parseInt(color.slice(5, 7), 16) || 0;
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            workspace.style.setProperty('--text-comp-color', brightness > 128 ? '#0f172a' : '#f8fafc');
+            scheduleAutoSave();
+        }
+
+        function setupHelpModal() {
+            const modal = document.getElementById('helpModal');
+            document.getElementById('btnHelp').addEventListener('click', () => modal.classList.remove('hidden'));
+            document.getElementById('btnCloseHelp').addEventListener('click', () => modal.classList.add('hidden'));
+            document.getElementById('btnConfirmHelp').addEventListener('click', () => modal.classList.add('hidden'));
+        }
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            if (activeImages.length === 0 && Object.keys(slideDrawingMap).length === 0) return;
+            if (confirm("すべてのアイテムと手書きを消去しますか？")) {
+                activeImages.forEach(img => img.element.remove());
+                activeImages = [];
+                slideDrawingMap = {};
+                selectedForGroupIds.clear();
+                groupActionBar.classList.add('hidden');
+                hideSelectionContextBar();
+                redrawInk();
+                dropzonePrompt.classList.remove('opacity-0', 'pointer-events-none');
+                canvasZoom = 1;
+                canvasPanX = 0;
+                canvasPanY = 0;
+                updateCanvasTransform();
+                updateSlideIndicator();
+                updateMinimap();
+                localStorage.removeItem('canvasflow_autosave_state');
+            }
+        });
+    </script>
+</body>
+</html>
