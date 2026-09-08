@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>3D Model Staging & Multi-AR Viewer</title>
+  <title>3D Model Staging & Multi-AR Viewer (Hand Occlusion)</title>
   <style>
     body {
       margin: 0;
@@ -236,8 +236,8 @@
       </div>
     </div>
 
-    <!-- Meta Quest / Android用 WebXRボタン -->
-    <button id="xr-btn" class="btn-action">パススルーARを起動 (Meta Quest)</button>
+    <!-- Meta Quest用 WebXR ハンドオクルージョンARボタン -->
+    <button id="xr-btn" class="btn-action">パススルーAR起動（ハンドオクルージョン）</button>
 
     <!-- iOS / 汎用 USDZ出力ボタン -->
     <button id="btn-build" class="btn-action">USDZを生成する</button>
@@ -288,7 +288,7 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.xr.enabled = true; // WebXRの有効化
+    renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -378,7 +378,32 @@
       humanFigure.visible = e.target.checked;
     });
 
-    // WebXR対応判定（Meta Quest Browser / Android Chrome）
+    // -------------------------------------------------------------
+    // Meta Quest ハンドオクルージョン（関節球体プール）
+    // -------------------------------------------------------------
+    const handOcclusionGroup = new THREE.Group();
+    scene.add(handOcclusionGroup);
+
+    // 深度値のみを書き込み、色は完全透明にするマテリアル
+    const handOcclusionMaterial = new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      depthWrite: true
+    });
+
+    // 両手分の関節（25関節 × 2手 = 50個）の球体メッシュプール
+    const sphereGeom = new THREE.SphereGeometry(1, 10, 8);
+    const handJointMeshes = [];
+    for (let i = 0; i < 50; i++) {
+      const jointMesh = new THREE.Mesh(sphereGeom, handOcclusionMaterial);
+      jointMesh.renderOrder = -1; // 3Dモデルより前に深度バッファに書き込む
+      jointMesh.matrixAutoUpdate = false;
+      jointMesh.visible = false;
+      handOcclusionGroup.add(jointMesh);
+      handJointMeshes.push(jointMesh);
+    }
+
+    let currentXRSession = null;
+
     if ('xr' in navigator && !isIOS) {
       navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
         if (supported) {
@@ -393,7 +418,6 @@
     let items = [];
     let selectedIndex = -1;
 
-    // SkinnedMesh姿勢ベイク
     function convertSkinnedToStatic(root) {
       root.updateMatrixWorld(true);
       const replacements = [];
@@ -480,7 +504,6 @@
       return box;
     }
 
-    // ファイル追加
     fileInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
@@ -769,19 +792,20 @@
     });
 
     // -------------------------------------------------------------
-    // Meta Quest / Android 用 WebXR パススルーAR
+    // Meta Quest WebXR パススルーAR（ハンドトラッキング要求）
     // -------------------------------------------------------------
     xrBtn.addEventListener('click', async () => {
       if (!navigator.xr) return;
       try {
         const session = await navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['local-floor']
+          requiredFeatures: ['local-floor'],
+          optionalFeatures: ['hand-tracking']
         });
 
+        currentXRSession = session;
         renderer.xr.setReferenceSpaceType('local-floor');
         await renderer.xr.setSession(session);
 
-        // パススルー表示のための背景透過と目印非表示
         scene.background = null;
         grid.visible = false;
         humanFigure.visible = false;
@@ -789,11 +813,15 @@
         document.getElementById('ui-container').style.display = 'none';
 
         session.addEventListener('end', () => {
+          currentXRSession = null;
           scene.background = new THREE.Color(0x1a1a1a);
           grid.visible = true;
           humanFigure.visible = toggleHuman.checked;
           if (selectedIndex !== -1) selectionRing.visible = true;
           document.getElementById('ui-container').style.display = 'block';
+
+          // 全関節球体の非表示化
+          handJointMeshes.forEach(m => { m.visible = false; });
         });
       } catch (err) {
         alert('WebXR起動エラー: ' + err.message);
@@ -809,7 +837,7 @@
         return;
       }
 
-      statusText.innerText = 'USDZ形式に統合変換中...\n（人型目印とリングを除外して出力）';
+      statusText.innerText = 'USDZ形式に統合変換中...\n（テクスチャ最適化と姿勢ベイク）';
       hideOutputs();
 
       const canvas = document.createElement('canvas');
@@ -882,7 +910,48 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    renderer.setAnimationLoop(() => {
+    // -------------------------------------------------------------
+    // レンダリングループ（WebXR Hand Tracking 関節追従オクルージョン）
+    // -------------------------------------------------------------
+    const scaleMatrix = new THREE.Matrix4();
+
+    renderer.setAnimationLoop((timestamp, frame) => {
+      if (frame && currentXRSession) {
+        const refSpace = renderer.xr.getReferenceSpace();
+        let meshIdx = 0;
+
+        // Meta Questの各手（左右）の関節走査
+        for (const inputSource of currentXRSession.inputSources) {
+          if (inputSource.hand) {
+            for (const jointSpace of inputSource.hand.values()) {
+              if (meshIdx >= handJointMeshes.length) break;
+
+              const jointPose = frame.getJointPose(jointSpace, refSpace);
+              const jointMesh = handJointMeshes[meshIdx];
+
+              if (jointPose) {
+                // 関節の半径（未定義の場合はデフォルト1.2cm）を取得し、指の肉付き分1.25倍に拡大
+                const r = (jointPose.radius || 0.012) * 1.25;
+
+                jointMesh.matrix.fromArray(jointPose.transform.matrix);
+                scaleMatrix.makeScale(r, r, r);
+                jointMesh.matrix.multiply(scaleMatrix);
+
+                jointMesh.visible = true;
+              } else {
+                jointMesh.visible = false;
+              }
+              meshIdx++;
+            }
+          }
+        }
+
+        // 追従していない余剰メッシュを非表示化
+        for (let i = meshIdx; i < handJointMeshes.length; i++) {
+          handJointMeshes[i].visible = false;
+        }
+      }
+
       controls.update();
       renderer.render(scene, camera);
     });
